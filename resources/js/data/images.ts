@@ -1,6 +1,6 @@
 export const images = {
-    logo: '/images/logo-30-virada.png',
-    logoMark: '/images/logo-mark-30-virada.png',
+    logo: '/images/logo-30-virada.png?v=2',
+    logoMark: '/images/logo-mark-30-virada.png?v=2',
     helen: '/images/helen-freitas.jpg',
     treino: '/images/treino_movimento.png',
     hidratacao: '/images/hidratacao_sono.png',

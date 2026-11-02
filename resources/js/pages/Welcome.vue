@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ParticipationCta from '@/components/ParticipationCta.vue';
 import { useChallenge } from '@/composables/useChallenge';
 
 import type { GoalKey } from '@/data/goalDetails';
@@ -157,9 +158,10 @@ const navLinks = [
             <div class="relative z-10 flex flex-col gap-7">
                 <div class="flex items-center gap-3 text-sm font-bold uppercase tracking-[3px] text-brand-gold">
                     <span class="h-0.5 w-8 bg-brand-gold" />
-                    <span>9 nov → 8 dez · 30 dias · Desafio da Virada</span>
+                    <span>9 nov → 8 dez · 30 dias</span>
                 </div>
                 <h1 class="display-title m-0 text-[clamp(56px,8.4vw,112px)] tracking-[-1px]">
+                    <span class="block text-[clamp(28px,4vw,44px)] italic leading-tight tracking-normal">DESAFIO DA VIRADA</span>
                     <span class="text-brand-gold">30 dias.</span><br />5 objetivos.
                 </h1>
                 <p class="m-0 max-w-[520px] text-[clamp(18px,1.6vw,21px)] leading-normal text-brand-muted-3">
@@ -271,6 +273,7 @@ const navLinks = [
                     </span>
                 </Link>
             </div>
+            <ParticipationCta class="mt-8" />
         </section>
 
         <section id="regras" class="mx-auto flex max-w-[1200px] flex-col gap-10 px-6 py-[clamp(72px,9vw,120px)]">
@@ -357,6 +360,7 @@ const navLinks = [
                     </div>
                 </div>
             </div>
+            <ParticipationCta />
         </section>
 
         <section id="jornada" class="border-y border-brand-line bg-brand-strip">
@@ -381,10 +385,11 @@ const navLinks = [
                         <span class="text-[15px] leading-normal text-brand-muted">{{ mile.line }}</span>
                     </div>
                 </div>
+                <ParticipationCta />
             </div>
         </section>
 
-        <section id="mindset" class="mx-auto flex max-w-[1200px] flex-col gap-10 px-6 pb-0 pt-[clamp(72px,9vw,120px)]">
+        <section id="mindset" class="mx-auto flex max-w-[1200px] flex-col gap-10 px-6 py-[clamp(72px,9vw,120px)]">
             <div class="flex flex-wrap items-end justify-between gap-6">
                 <div class="flex flex-col gap-3.5">
                     <div class="eyebrow">O mindset</div>
@@ -443,8 +448,9 @@ const navLinks = [
                 </div>
             </div>
 
-            <div class="flex justify-center pt-2">
+            <div class="flex flex-col items-center gap-5 pt-2">
                 <span class="font-script text-center text-[clamp(34px,5vw,60px)] leading-tight text-brand-gold">“A gente cresce junto”</span>
+                <ParticipationCta class="justify-center" />
             </div>
         </section>
 
@@ -502,6 +508,7 @@ const navLinks = [
                         </span>
                     </div>
                 </article>
+                <ParticipationCta />
             </div>
         </section>
 
@@ -530,6 +537,7 @@ const navLinks = [
                         </a>
                         <a href="tel:+5561992098384" class="font-semibold text-brand-cream hover:text-brand-gold">Telefone · (61) 99209-8384</a>
                     </div>
+                    <ParticipationCta />
                 </div>
             </article>
         </section>
@@ -584,13 +592,12 @@ const navLinks = [
             <div class="flex items-center gap-3">
                 <img :src="images.logo" alt="" class="size-[52px] object-contain" />
                 <div class="flex flex-col gap-0.5">
-                    <span class="font-display text-xl font-extrabold italic uppercase">
-                        Desafio <span class="text-brand-gold">30</span> Dias
-                    </span>
-                    <span class="text-sm text-brand-muted-2">Virada · 9 nov — 8 dez</span>
+                    <span class="font-display text-xl font-extrabold italic leading-tight">DESAFIO DA VIRADA</span>
+                    <span class="font-display text-xl font-extrabold italic leading-tight text-brand-gold">30 dias.</span>
+                    <span class="mt-1 text-sm font-bold text-brand-muted-2">9 nov → 8 dez</span>
                 </div>
             </div>
-            <span class="text-sm font-semibold text-brand-muted-2">#Desafio30Dias #Virada #AGenteCresceJunto</span>
+            <span class="text-sm font-semibold text-brand-muted-2">#DesafiodaVirada #30Dias #5Objetivos #AGenteCresceJunto</span>
         </footer>
     </div>
 </template>

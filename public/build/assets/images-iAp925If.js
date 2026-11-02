@@ -1,0 +1,1 @@
+const a={logo:"/images/logo-30-virada.png?v=2",logoMark:"/images/logo-mark-30-virada.png?v=2",helen:"/images/helen-freitas.jpg",treino:"/images/treino_movimento.png",hidratacao:"/images/hidratacao_sono.png",habilidade:"/images/habilidade_nova.png",alimentacao:"/images/alimentacao.png",plus:"/images/refeicao_luxo.png"};export{a as i};
