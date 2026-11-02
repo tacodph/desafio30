@@ -153,7 +153,7 @@ const navLinks = [
 
         <section
             id="topo"
-            class="relative mx-auto grid max-w-[1200px] items-center gap-8 px-6 py-10 sm:py-16 lg:grid-cols-2 lg:gap-16 lg:py-24"
+            class="relative mx-auto max-w-[1200px] px-6 py-10 sm:py-16 lg:py-24"
         >
             <div class="relative z-10 flex flex-col gap-7">
                 <div class="flex items-center gap-3 text-sm font-bold uppercase tracking-[3px] text-brand-gold">
@@ -210,17 +210,6 @@ const navLinks = [
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-3.5 sm:grid-cols-3">
-                <div
-                    v-for="goal in goals"
-                    :key="goal.key"
-                    class="flex flex-col justify-between gap-3 overflow-hidden rounded-[22px] border border-brand-line2 bg-brand-card2 p-5"
-                    :style="{ borderTop: `4px solid ${goal.color}` }"
-                >
-                    <img :src="goal.icon" alt="" class="size-20 object-contain" />
-                    <span class="font-display text-[clamp(18px,2vw,24px)] font-extrabold uppercase leading-[0.95]">{{ goal.title }}</span>
-                </div>
-            </div>
         </section>
 
         <div class="border-y border-brand-line bg-brand-strip">
@@ -241,7 +230,7 @@ const navLinks = [
 
             <div class="mb-10 flex max-w-[760px] flex-col gap-5">
                 <p class="m-0 text-[18px] leading-relaxed text-brand-muted">
-                    O Desafio 30 Dias é um compromisso de 30 dias seguidos, de segunda, 9 de novembro, a terça, 8 de dezembro de 2026. Virada é o convite para transformar a rotina e construir novos hábitos.
+                    O Desafio da Virada é um compromisso de 30 dias seguidos, de segunda, 9 de novembro, a terça, 8 de dezembro de 2026. Virada é o convite para transformar a rotina e construir novos hábitos.
                 </p>
                 <p class="m-0 text-[18px] leading-relaxed text-brand-muted">
                     São 5 objetivos que cuidam do movimento, da hidratação e do sono, da autonomia na rotina, da alimentação e de pequenas experiências que deixam a vida mais prazerosa.
