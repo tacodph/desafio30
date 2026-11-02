@@ -458,23 +458,6 @@ const navLinks = [
                     </p>
                 </div>
 
-                <div class="flex flex-col gap-4 rounded-[22px] border border-brand-gold/30 bg-brand-gold/5 p-5 sm:flex-row sm:items-start sm:gap-5 sm:p-6">
-                    <div class="flex size-11 shrink-0 items-center justify-center rounded-full bg-brand-gold/10 text-brand-gold">
-                        <CalendarDays class="size-5" aria-hidden="true" />
-                    </div>
-                    <div class="flex flex-col gap-2">
-                        <h3 class="m-0 text-lg font-bold text-brand-cream">Liberação na última semana do desafio</h3>
-                        <p class="m-0 max-w-[780px] text-base leading-relaxed text-brand-muted-3">
-                            Os cinco materiais do Cantinho da nutri serão liberados na última semana, com acesso exclusivo para participantes dentro da plataforma.
-                            Conteúdo prático para ajudar você a manter os hábitos e levar sua virada adiante.
-                        </p>
-                        <span class="mt-1 inline-flex items-center gap-2 text-sm font-semibold text-brand-gold">
-                            <LockKeyhole class="size-4" aria-hidden="true" />
-                            Exclusivo para quem participa do Desafio da Virada
-                        </span>
-                    </div>
-                </div>
-
                 <div class="grid grid-cols-1 gap-x-6 gap-y-9 sm:grid-cols-2 lg:grid-cols-3">
                     <article v-for="item in nutriMaterials" :key="item.title" class="flex min-w-0 flex-col gap-4">
                         <img
@@ -492,6 +475,33 @@ const navLinks = [
                         </div>
                     </article>
                 </div>
+
+                <article class="flex flex-col gap-4 rounded-[22px] border border-brand-gold/30 bg-brand-gold/5 p-5 sm:flex-row sm:items-start sm:gap-5 sm:p-6">
+                    <div class="flex size-11 shrink-0 items-center justify-center rounded-full bg-brand-gold/10 text-brand-gold">
+                        <CalendarDays class="size-5" aria-hidden="true" />
+                    </div>
+                    <div class="flex min-w-0 flex-1 flex-col gap-4">
+                        <h3 class="m-0 text-lg font-bold text-brand-cream">Bônus exclusivo</h3>
+                        <div class="flex flex-col gap-4 border-t border-brand-gold/20 pt-5">
+                            <p class="m-0 max-w-[780px] text-[18px] leading-relaxed text-brand-cream">
+                                Material: <strong>GUIA DE CONTINUIDADE — Como não perder tudo o que você construiu nesses 30 dias.</strong>
+                            </p>
+                            <div class="flex flex-col gap-3">
+                                <p class="m-0 text-base font-semibold text-brand-muted-3">O bônus</p>
+                                <ul class="m-0 flex list-disc flex-col gap-2 pl-5 text-base leading-relaxed text-brand-muted-3">
+                                    <li>Como manter os hábitos depois do desafio.</li>
+                                    <li>Como organizar a próxima semana.</li>
+                                    <li>Como lidar com dias ruins sem abandonar tudo.</li>
+                                    <li>Como estabelecer novas metas.</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <span class="mt-1 inline-flex items-center gap-2 text-sm font-semibold text-brand-gold">
+                            <LockKeyhole class="size-4 shrink-0" aria-hidden="true" />
+                            Exclusivo a partir da última semana do Desafio da Virada
+                        </span>
+                    </div>
+                </article>
             </div>
         </section>
 
