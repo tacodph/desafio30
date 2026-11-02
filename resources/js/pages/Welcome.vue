@@ -275,24 +275,29 @@ const navLinks = [
                 </p>
             </div>
 
-            <div class="grid grid-cols-[repeat(auto-fit,minmax(min(100%,250px),1fr))] gap-3">
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
                 <div class="surface-card flex flex-col gap-3 p-7">
                     <span class="font-display text-xl font-extrabold text-brand-gold">01</span>
+                    <h3 class="font-display m-0 text-[28px] font-extrabold uppercase leading-none">Plataforma</h3>
+                    <p class="m-0 text-base leading-normal text-brand-muted">Você terá acesso a uma plataforma exclusiva do Desafio da Virada, onde vai acompanhar suas metas, registrar sua evolução e marcar suas conquistas ao longo dos 30 dias.</p>
+                </div>
+                <div class="surface-card flex flex-col gap-3 p-7">
+                    <span class="font-display text-xl font-extrabold text-brand-gold">02</span>
                     <h3 class="font-display m-0 text-[28px] font-extrabold uppercase leading-none">Check-in até 23h</h3>
                     <p class="m-0 text-base leading-normal text-brand-muted">Faça seu check-in diário dos cinco objetivos: alimentação, treino, água, sono, habilidade nova e refeição luxo.</p>
                 </div>
                 <div class="surface-card flex flex-col gap-3 p-7">
-                    <span class="font-display text-xl font-extrabold text-brand-gold">02</span>
+                    <span class="font-display text-xl font-extrabold text-brand-gold">03</span>
                     <h3 class="font-display m-0 text-[28px] font-extrabold uppercase leading-none">Conquistas do dia</h3>
                     <p class="m-0 text-base leading-normal text-brand-muted">Registre suas conquistas, metas batidas e situações que você superou. Reconheça sua evolução ao longo dos 30 dias.</p>
                 </div>
                 <div class="surface-card flex flex-col gap-3 p-7">
-                    <span class="font-display text-xl font-extrabold text-brand-gold">03</span>
+                    <span class="font-display text-xl font-extrabold text-brand-gold">04</span>
                     <h3 class="font-display m-0 text-[28px] font-extrabold uppercase leading-none">Superação e aprendizado</h3>
                     <p class="m-0 text-base leading-normal text-brand-muted">Teve um dia difícil? Identifique o que pode melhorar, aprenda com a experiência e siga em frente no dia seguinte.</p>
                 </div>
                 <div class="surface-card flex flex-col gap-3 p-7">
-                    <span class="font-display text-xl font-extrabold text-brand-gold">04</span>
+                    <span class="font-display text-xl font-extrabold text-brand-gold">05</span>
                     <h3 class="font-display m-0 text-[28px] font-extrabold uppercase leading-none">Evolução na prática</h3>
                     <p class="m-0 text-base leading-normal text-brand-muted">Bateu uma meta ou foi além do planejado? Registre suas vitórias e valorize cada avanço. Toda conquista conta!</p>
                 </div>
