@@ -47,7 +47,7 @@ const fieldClass = 'h-11 rounded-xl border border-brand-line2 bg-brand-card2 px-
                 <div class="eyebrow">{{ firstAccess ? 'Passo 1 de 2 · ponto de partida' : 'Ponto de partida' }}</div>
                 <h1 class="display-title text-[clamp(36px,5vw,56px)]">Primeiro dia</h1>
                 <p class="m-0 text-brand-muted">
-                    Registre como você está hoje. Peso, cintura, abdômen e quadril, e uma foto se quiser. No dia 45, essa foto mostra a sua evolução.
+                    Registre como você está hoje. Peso, cintura, abdômen e quadril, e uma foto se quiser. No dia 30, essa foto mostra a sua evolução.
                 </p>
             </div>
 

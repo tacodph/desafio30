@@ -4,18 +4,51 @@ import { useChallenge } from '@/composables/useChallenge';
 import type { GoalKey } from '@/data/goalDetails';
 import { images } from '@/data/images';
 import { Head, Link } from '@inertiajs/vue3';
-import { Menu, X } from 'lucide-vue-next';
+import { CalendarDays, LockKeyhole, Menu, X } from 'lucide-vue-next';
 import { ref } from 'vue';
 
 const { countdown, goals, fails, failTotal, failNote, failDots, incFail, decFail, milestones } = useChallenge();
 
 const menuOpen = ref(false);
 
+const nutriMaterials = [
+    {
+        title: 'Kit da vida real',
+        description: 'Produtos industrializados práticos para ter à mão: iogurtes, bebidas proteicas, mix de castanhas, barrinhas e outras opções de mercado.',
+        image: '/images/nutri/kit.jpg',
+        alt: 'Iogurtes, castanhas e lanches práticos para a rotina.',
+    },
+    {
+        title: 'Refeições práticas',
+        description: '5 opções de café da manhã, 5 almoços, 5 jantares e 5 lanches fáceis de preparar.',
+        image: '/images/nutri/refeicoes.jpg',
+        alt: 'Opções simples de café da manhã, almoço e jantar.',
+    },
+    {
+        title: 'Produtos do dia a dia',
+        description: 'Aprenda a ler rótulos, comparar produtos e fazer escolhas mais conscientes no supermercado.',
+        image: '/images/nutri/produtos.jpg',
+        alt: 'Comparação de rótulos de produtos no supermercado.',
+    },
+    {
+        title: 'SOS da vida real',
+        description: 'SOS fim de semana, vontade de doce e como fazer escolhas em restaurantes.',
+        image: '/images/nutri/sos.jpg',
+        alt: 'Refeições compartilhadas em um encontro no restaurante.',
+    },
+    {
+        title: 'Guia de hidratação e sono',
+        description: 'Estratégias simples para melhorar sua hidratação e qualidade do sono.',
+        image: '/images/nutri/sono.jpg',
+        alt: 'Quarto tranquilo com água disponível na mesa de cabeceira.',
+    },
+];
+
 const goalCardCopy: Record<GoalKey, { frequency: string; title: string; desc: string; supportTitle?: string }> = {
     alimentacao: {
         frequency: 'Diariamente',
         title: 'Alimentação e organização',
-        desc: '45 dias de alimentação limpa, com planejamento e praticidade.',
+        desc: '30 dias de alimentação limpa, com planejamento e praticidade.',
     },
     treino: {
         frequency: 'Check-in diário',
@@ -31,12 +64,12 @@ const goalCardCopy: Record<GoalKey, { frequency: string; title: string; desc: st
         frequency: '3x / sem',
         title: 'Habilidade nova',
         supportTitle: 'Autonomia na rotina',
-        desc: 'Desenvolva habilidades que facilitem sua alimentação no dia a dia: planejar o cardápio, preparar marmitas, aprender receitas e organizar suas compras.',
+        desc: 'Desenvolva habilidades: planejar o cardápio, preparar marmitas, aprender receitas e organizar suas compras.',
     },
     plus: {
         frequency: '2x / sem',
         title: 'Refeição luxo',
-        desc: 'Programe duas refeições luxo por semana. Isso mantém sua motivação para seguir firme!',
+        desc: 'Escolha previamente 2 refeições na semana para comer o que gosta, dessa forma você se mantém firme para seguir no desafio.',
     },
 };
 
@@ -59,9 +92,9 @@ const navLinks = [
         <header class="sticky top-0 z-20 border-b border-brand-line bg-brand-ink/88 backdrop-blur-[10px]">
             <div class="mx-auto flex max-w-[1200px] items-center justify-between gap-4 px-6 py-3">
                 <a href="#topo" class="flex items-center gap-2.5 text-brand-cream hover:text-brand-cream">
-                    <img :src="images.logoMark" alt="Desafio 45 Dias" class="size-11 object-contain" />
+                    <img :src="images.logoMark" alt="Desafio 30 Dias" class="size-11 object-contain" />
                     <span class="font-display text-[22px] font-extrabold italic uppercase tracking-wide">
-                        Desafio <span class="text-brand-gold">45</span> Dias
+                        Desafio <span class="text-brand-gold">30</span> Dias
                     </span>
                 </a>
 
@@ -124,14 +157,15 @@ const navLinks = [
             <div class="relative z-10 flex flex-col gap-7">
                 <div class="flex items-center gap-3 text-sm font-bold uppercase tracking-[3px] text-brand-gold">
                     <span class="h-0.5 w-8 bg-brand-gold" />
-                    <span>6 nov → 20 dez · 45 dias antes do verão</span>
+                    <span>9 nov → 8 dez · 30 dias · Desafio da Virada</span>
                 </div>
                 <h1 class="display-title m-0 text-[clamp(56px,8.4vw,112px)] tracking-[-1px]">
-                    <span class="text-brand-gold">45 dias.</span><br />5 objetivos.<br />Antes do verão.
+                    <span class="text-brand-gold">30 dias.</span><br />5 objetivos.
                 </h1>
                 <p class="m-0 max-w-[520px] text-[clamp(18px,1.6vw,21px)] leading-normal text-brand-muted-3">
-                    De 6 de novembro a 20 de dezembro de 2026. Alimentação, movimento, água, sono e uma habilidade nova. Serão 45 dias
-                    para trocar a intenção pela ação e começar a fazer diferente.
+                    Enquanto 2027 se aproxima, a gente se prepara.<br />
+                    Não é só ficar com o corpo melhor (spoiler: vai ficar).<br />
+                    É sobre não esperar o momento perfeito pra começar sua transformação.
                 </p>
                 <div class="flex flex-wrap gap-3">
                     <Link
@@ -162,14 +196,14 @@ const navLinks = [
                     </div>
                     <div v-else-if="countdown.isRunning" class="flex max-w-[440px] flex-col gap-2.5">
                         <div class="font-display text-[44px] font-extrabold italic uppercase leading-none">
-                            Dia <span class="text-brand-gold">{{ countdown.day }}</span> de 45
+                            Dia <span class="text-brand-gold">{{ countdown.day }}</span> de 30
                         </div>
                         <div class="h-2.5 overflow-hidden rounded-full bg-brand-line">
                             <div class="h-full rounded-full bg-brand-gold" :style="{ width: countdown.pct }" />
                         </div>
                     </div>
                     <div v-else class="font-display text-[44px] font-extrabold italic uppercase leading-none text-brand-gold">
-                        45 dias firmes. Até o verão.
+                        30 dias firmes. Uma virada de hábitos.
                     </div>
                 </div>
             </div>
@@ -201,14 +235,11 @@ const navLinks = [
                     <div class="eyebrow">Consistência, não perfeição</div>
                     <h2 class="display-title m-0 text-[clamp(44px,6vw,80px)]">5 objetivos</h2>
                 </div>
-                <p class="m-0 max-w-[360px] text-[17px] leading-normal text-brand-muted">
-                    Nem tudo é diário. Toque em cada objetivo para ver a regra, por que funciona e as dicas.
-                </p>
             </div>
 
             <div class="mb-10 flex max-w-[760px] flex-col gap-5">
                 <p class="m-0 text-[18px] leading-relaxed text-brand-muted">
-                    O Desafio 45 Dias é um compromisso de 45 dias seguidos, de sexta, 6 de novembro, a domingo, 20 de dezembro de 2026. O último dia cai na véspera do início do verão (21 de dezembro), daí o subtítulo "Antes do verão".
+                    O Desafio 30 Dias é um compromisso de 30 dias seguidos, de segunda, 9 de novembro, a terça, 8 de dezembro de 2026. Virada é o convite para transformar a rotina e construir novos hábitos.
                 </p>
                 <p class="m-0 text-[18px] leading-relaxed text-brand-muted">
                     São 5 objetivos que cuidam do movimento, da hidratação e do sono, da autonomia na rotina, da alimentação e de pequenas experiências que deixam a vida mais prazerosa.
@@ -261,7 +292,7 @@ const navLinks = [
                 <div class="surface-card flex flex-col gap-3 p-7">
                     <span class="font-display text-xl font-extrabold text-brand-gold">02</span>
                     <h3 class="font-display m-0 text-[28px] font-extrabold uppercase leading-none">Conquistas do dia</h3>
-                    <p class="m-0 text-base leading-normal text-brand-muted">Registre suas conquistas, metas batidas e situações que você superou. Reconheça sua evolução ao longo dos 45 dias.</p>
+                    <p class="m-0 text-base leading-normal text-brand-muted">Registre suas conquistas, metas batidas e situações que você superou. Reconheça sua evolução ao longo dos 30 dias.</p>
                 </div>
                 <div class="surface-card flex flex-col gap-3 p-7">
                     <span class="font-display text-xl font-extrabold text-brand-gold">03</span>
@@ -332,7 +363,7 @@ const navLinks = [
             <div class="mx-auto flex max-w-[1200px] flex-col gap-12 px-6 py-[clamp(72px,9vw,120px)]">
                 <div class="flex flex-col gap-3.5">
                     <div class="eyebrow">A jornada</div>
-                    <h2 class="display-title m-0 text-[clamp(44px,6vw,80px)]">Do dia 1<br />ao dia 45</h2>
+                    <h2 class="display-title m-0 text-[clamp(44px,6vw,80px)]">Do dia 1<br />ao dia 30</h2>
                 </div>
                 <div class="grid grid-cols-[repeat(auto-fit,minmax(min(100%,160px),1fr))] gap-3">
                     <div
@@ -417,45 +448,49 @@ const navLinks = [
             </div>
         </section>
 
-        <section id="nutri" class="border-t border-brand-line bg-brand-strip">
-            <div class="mx-auto flex max-w-[1200px] flex-col gap-8 px-6 py-[clamp(72px,9vw,120px)]">
-                <div class="flex flex-col gap-3.5">
-                    <div class="eyebrow">Alimentação</div>
-                    <h2 class="display-title m-0 text-[clamp(44px,6vw,80px)]">Cantinho da nutri</h2>
-                    <p class="m-0 max-w-[560px] text-[17px] leading-relaxed text-brand-muted">
-                        Praticidade e equilíbrio, sem terrorismo. O conteúdo de apoio fica com a nutricionista do desafio.
+        <section id="nutri" aria-labelledby="nutri-title" class="border-t border-brand-line bg-brand-strip">
+            <div class="mx-auto flex max-w-[1200px] flex-col gap-9 px-6 py-[clamp(72px,9vw,120px)]">
+                <div class="flex max-w-[760px] flex-col gap-3.5">
+                    <div class="eyebrow">Conteúdo exclusivo para participantes</div>
+                    <h2 id="nutri-title" class="display-title m-0 text-[clamp(44px,6vw,80px)]">Cantinho da nutri</h2>
+                    <p class="m-0 text-[18px] leading-relaxed text-brand-muted-3">
+                        Materiais exclusivos para facilitar sua rotina durante o desafio.
                     </p>
                 </div>
-                <div class="grid grid-cols-[repeat(auto-fit,minmax(min(100%,220px),1fr))] gap-3">
-                    <div
-                        v-for="item in [
-                            {
-                                title: 'Listas de compras',
-                                description: 'Listas práticas para organizar as compras da semana.',
-                            },
-                            {
-                                title: 'Orientações nos check-ins',
-                                description: 'Comentários e sugestões gerais sobre as situações relatadas, respeitando os limites do acompanhamento em grupo.',
-                            },
-                            {
-                                title: 'Produtos do dia a dia',
-                                description: 'Sugestões para escolher opções práticas, ler rótulos e comparar produtos industrializados.',
-                            },
-                            {
-                                title: 'Kit da vida real',
-                                description: 'Soluções para dias corridos, imprevistos e momentos em que cozinhar não é possível.',
-                            },
-                            {
-                                title: 'Refeições práticas',
-                                description: 'Ideias simples para café da manhã, almoço, jantar, lanches e combinações rápidas.',
-                            },
-                        ]"
-                        :key="item.title"
-                        class="surface-card flex flex-col gap-3 p-6"
-                    >
-                        <h3 class="font-display m-0 text-2xl font-extrabold uppercase leading-tight">{{ item.title }}</h3>
-                        <p class="m-0 text-base leading-relaxed text-brand-muted-3">{{ item.description }}</p>
+
+                <div class="flex flex-col gap-4 rounded-[22px] border border-brand-gold/30 bg-brand-gold/5 p-5 sm:flex-row sm:items-start sm:gap-5 sm:p-6">
+                    <div class="flex size-11 shrink-0 items-center justify-center rounded-full bg-brand-gold/10 text-brand-gold">
+                        <CalendarDays class="size-5" aria-hidden="true" />
                     </div>
+                    <div class="flex flex-col gap-2">
+                        <h3 class="m-0 text-lg font-bold text-brand-cream">Liberação na última semana do desafio</h3>
+                        <p class="m-0 max-w-[780px] text-base leading-relaxed text-brand-muted-3">
+                            Os cinco materiais do Cantinho da nutri serão liberados na última semana, com acesso exclusivo para participantes dentro da plataforma.
+                            Conteúdo prático para ajudar você a manter os hábitos e levar sua virada adiante.
+                        </p>
+                        <span class="mt-1 inline-flex items-center gap-2 text-sm font-semibold text-brand-gold">
+                            <LockKeyhole class="size-4" aria-hidden="true" />
+                            Exclusivo para quem participa do Desafio da Virada
+                        </span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 gap-x-6 gap-y-9 sm:grid-cols-2 lg:grid-cols-3">
+                    <article v-for="item in nutriMaterials" :key="item.title" class="flex min-w-0 flex-col gap-4">
+                        <img
+                            :src="item.image"
+                            :alt="item.alt"
+                            width="1536"
+                            height="1024"
+                            loading="lazy"
+                            decoding="async"
+                            class="aspect-[16/10] w-full rounded-[22px] border border-brand-line2 object-cover"
+                        />
+                        <div class="flex flex-col gap-2.5">
+                            <h3 class="font-display m-0 text-[26px] font-extrabold uppercase leading-tight">{{ item.title }}</h3>
+                            <p class="m-0 text-base leading-relaxed text-brand-muted-3">{{ item.description }}</p>
+                        </div>
+                    </article>
                 </div>
             </div>
         </section>
@@ -494,7 +529,7 @@ const navLinks = [
                 <span class="font-script text-[clamp(28px,3.4vw,40px)] leading-none">A gente cresce junto</span>
                 <h2 class="display-title m-0 text-[clamp(72px,13vw,180px)] tracking-[-2px] leading-[0.82]">Quem topa?</h2>
                 <p class="m-0 max-w-[560px] text-[clamp(18px,1.8vw,22px)] font-semibold leading-snug">
-                    Bora ficar 45 dias firme. 6 de novembro a 20 de dezembro — sozinho ou com seus amigos.
+                    Bora ficar 30 dias firme. 9 de novembro a 8 de dezembro — sozinho ou com seus amigos.
                 </p>
                 <div class="flex flex-wrap justify-center gap-3 pt-2">
                     <Link
@@ -512,14 +547,14 @@ const navLinks = [
                 <div class="eyebrow">Mais do que um desafio</div>
                 <h2 class="display-title m-0 text-[clamp(44px,6vw,80px)]">Uma regra de vida.</h2>
                 <p class="m-0 max-w-[480px] text-[19px] leading-relaxed text-brand-muted-3">
-                    A gente quer chegar melhor no verão. Cada um no seu ritmo, respeitando o próprio nível e construindo hábitos que fazem diferença de
+                    A gente quer viver uma virada de hábitos. Cada um no seu ritmo, respeitando o próprio nível e construindo hábitos que fazem diferença de
                     verdade.
                 </p>
                 <p class="m-0 max-w-[480px] text-[19px] leading-relaxed text-brand-muted-3">
-                    São 45 dias para sair da intenção, colocar os planos em prática e descobrir do que a gente é capaz.
+                    São 30 dias para sair da intenção, colocar os planos em prática e descobrir do que a gente é capaz.
                 </p>
                 <p class="m-0 max-w-[480px] text-[19px] leading-relaxed text-brand-muted-3">
-                    Porque o objetivo vai muito além do verão: é levar essa evolução para a vida.
+                    Porque o objetivo vai muito além do desafio: é levar essa evolução para a vida.
                 </p>
             </div>
             <div class="relative flex items-center justify-center">
@@ -529,7 +564,7 @@ const navLinks = [
                 />
                 <img
                     :src="images.logo"
-                    alt="Emblema do Desafio 45 Dias Antes do Verão, com os cinco ícones dos objetivos"
+                    alt="Emblema do Desafio 30 dias · Virada, com os cinco ícones dos objetivos"
                     class="relative block h-auto w-full max-w-[580px]"
                 />
             </div>
@@ -540,12 +575,12 @@ const navLinks = [
                 <img :src="images.logo" alt="" class="size-[52px] object-contain" />
                 <div class="flex flex-col gap-0.5">
                     <span class="font-display text-xl font-extrabold italic uppercase">
-                        Desafio <span class="text-brand-gold">45</span> Dias
+                        Desafio <span class="text-brand-gold">30</span> Dias
                     </span>
-                    <span class="text-sm text-brand-muted-2">Antes do verão · 6 nov — 20 dez</span>
+                    <span class="text-sm text-brand-muted-2">Virada · 9 nov — 8 dez</span>
                 </div>
             </div>
-            <span class="text-sm font-semibold text-brand-muted-2">#Desafio45Dias #AntesDoVerao #AGenteCresceJunto</span>
+            <span class="text-sm font-semibold text-brand-muted-2">#Desafio30Dias #Virada #AGenteCresceJunto</span>
         </footer>
     </div>
 </template>

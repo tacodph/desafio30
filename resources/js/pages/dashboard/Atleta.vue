@@ -26,12 +26,12 @@ const { countdown, milestones } = useChallenge();
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-6 rounded-xl p-4 md:p-6">
             <div class="flex flex-col gap-3">
-                <div class="eyebrow">Desafio 45 Dias</div>
+                <div class="eyebrow">Desafio 30 Dias</div>
                 <h1 class="display-title text-[clamp(36px,5vw,56px)]">
                     A gente <span class="text-brand-gold">cresce junto</span>
                 </h1>
                 <p class="max-w-xl text-brand-muted">
-                    {{ countdown.label }}. Cinco objetivos, de 6 de novembro a 20 de dezembro.
+                    {{ countdown.label }}. Cinco objetivos, de 9 de novembro a 8 de dezembro.
                 </p>
             </div>
 
@@ -116,7 +116,7 @@ const { countdown, milestones } = useChallenge();
                 </Link>
 
                 <div class="surface-card flex items-center justify-center p-4 md:p-6">
-                    <img :src="images.logo" alt="Desafio 45 Dias" class="max-h-28 object-contain md:max-h-40" />
+                    <img :src="images.logo" alt="Desafio 30 Dias" class="max-h-28 object-contain md:max-h-40" />
                 </div>
             </div>
 

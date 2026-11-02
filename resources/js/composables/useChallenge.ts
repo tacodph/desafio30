@@ -13,16 +13,15 @@ export const GOALS = GOAL_DETAILS.map(({ key, color, metric, title, desc, icon }
 }));
 
 const MILES = [
-    { day: 1, date: '6 nov', title: 'Início oficial.', line: 'Foto antes. Declare nível, habilidade e os 3 eventos com álcool.' },
-    { day: 15, date: '20 nov', title: 'Tá ficando real!', line: 'Foto de 15 dias e ajuste das metas.' },
-    { day: 30, date: '5 dez', title: 'Reta final.', line: 'Foto de 30 dias.' },
-    { day: 45, date: '20 dez', title: 'Resultado final.', line: 'Foto depois, teste final e a habilidade no grupo.' },
+    { day: 1, date: '9 nov', title: 'Início oficial.', line: 'Foto antes. Declare nível, habilidade e os 3 eventos com álcool.' },
+    { day: 15, date: '23 nov', title: 'Tá ficando real!', line: 'Foto de 15 dias e ajuste das metas.' },
+    { day: 30, date: '8 dez', title: 'Resultado final.', line: 'Foto depois, teste final e a habilidade no grupo.' },
 ];
 
-export const TOTAL_DAYS = 45;
+export const TOTAL_DAYS = 30;
 
-const START = new Date(2026, 10, 6, 0, 0, 0).getTime();
-const END = new Date(2026, 11, 20, 23, 59, 59).getTime();
+const START = new Date(2026, 10, 9, 0, 0, 0).getTime();
+const END = new Date(2026, 11, 8, 23, 59, 59).getTime();
 
 function pad(value: number): string {
     return String(value).padStart(2, '0');

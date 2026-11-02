@@ -1,11 +1,11 @@
-# Desafio 45 Dias — Antes do Verão
+# Desafio 30 Dias — Virada
 
-![Emblema Desafio 45 Dias](Emblema%20Desafio%2045%20Dias.png)
+![Emblema Desafio 30 Dias](Emblema%20Desafio%2045%20Dias.png)
 
 > **"A gente cresce junto"**
-> 45 dias · 5 objetivos · de **6 de novembro a 20 de dezembro de 2026**
+> 30 dias · 5 objetivos · de **9 de novembro a 8 de dezembro de 2026**
 
-Documento de trabalho do **Desafio 45 Dias**. Ele reúne os objetivos, as regras, o sistema de pontos, o calendário e o que ainda precisa ser decidido.
+Documento de trabalho do **Desafio 30 Dias**. Ele reúne os objetivos, as regras, o sistema de pontos, o calendário e o que ainda precisa ser decidido.
 
 Itens marcados com **(proposta)** são sugestões para preencher lacunas que o PDF deixa em aberto e devem ser confirmados antes do lançamento.
 
@@ -13,7 +13,7 @@ Itens marcados com **(proposta)** são sugestões para preencher lacunas que o P
 
 ## 1. O desafio
 
-O Desafio 45 Dias é um compromisso de 45 dias seguidos, de **sexta, 6 de novembro, a domingo, 20 de dezembro de 2026**. O último dia cai na véspera do início do verão (21 de dezembro), daí o subtítulo **"Antes do verão"**.
+O Desafio 30 Dias é um compromisso de 30 dias seguidos, de **segunda, 9 de novembro, a terça, 8 de dezembro de 2026**. Virada é o convite para transformar a rotina e construir novos hábitos.
 
 São 5 objetivos que cuidam do movimento, da hidratação e do sono, da autonomia na rotina, da alimentação e de pequenas experiências que deixam a vida mais prazerosa.
 
@@ -81,13 +81,13 @@ O objetivo do dia é cumprido quando as duas metas são batidas. Para a pontuaç
 - Preparar marmitas para a semana.
 - Incluir uma sessão de cardio.
 
-**Como cumprir (proposta):** no dia 1, cada participante escolhe **uma habilidade principal** e a define de forma concreta, como "aprender 5 pratos saudáveis" ou "preparar as marmitas da semana sozinho". A prática acontece **pelo menos 3 vezes por semana**, e a evolução é mostrada no grupo no dia 45.
+**Como cumprir (proposta):** no dia 1, cada participante escolhe **uma habilidade principal** e a define de forma concreta, como "aprender 5 pratos saudáveis" ou "preparar as marmitas da semana sozinho". A prática acontece **pelo menos 3 vezes por semana**, e a evolução é mostrada no grupo no dia 30.
 
 **Dicas práticas:**
 
 - Defina bem: não "aprender a cozinhar", mas "cozinhar um prato novo por semana".
 - Falar para o grupo qual habilidade escolheu gera compromisso.
-- Registre o progresso com foto ou vídeo na primeira semana, no dia 15, no dia 30 e no dia 45.
+- Registre o progresso com foto ou vídeo na primeira semana, no dia 15, no dia 30 e no dia 30.
 
 ### 2.4 🥗 Alimentação e organização
 
@@ -112,7 +112,7 @@ O objetivo do dia é cumprido quando as duas metas são batidas. Para a pontuaç
 - **Foto do dia:** o prato de uma das refeições. Simples e funciona.
 - **Apoio:** listas de compras, cardápios e opções práticas no Cantinho exclusivo da nutri (seção 3).
 
-**Meta:** no dia 45, o corpo responde melhor: mais energia, menos inchaço e pele mais bonita.
+**Meta:** no dia 30, o corpo responde melhor: mais energia, menos inchaço e pele mais bonita.
 
 ### 2.5 ⭐ Objetivo Plus (a qualquer momento)
 
@@ -180,7 +180,7 @@ A lógica é **check-in diário, pontuação por cumprimento das metas, bônus p
 | Objetivo Plus realizado (até 2 por semana) | +5 cada |
 | Semana consistente: check-in em pelo menos 6 dos 7 dias | +10 |
 | Metas semanais batidas (Habilidade 3x e alimentação em 6 dos 7 dias) | +10 |
-| Demonstração da Habilidade nova no dia 45 | +15 |
+| Demonstração da Habilidade nova no dia 30 | +15 |
 | Motivar um amigo que estava desanimado (reconhecido pelo grupo) | +5 |
 | Primeira vez acertando algo novo (primeiro prato, primeira marmita da semana…) | +5 |
 
@@ -194,7 +194,7 @@ A lógica é **check-in diário, pontuação por cumprimento das metas, bônus p
 ### 4.4 Ranking
 
 - Ranking semanal publicado todo **domingo**, pela soma de pontos da semana.
-- Ranking geral acumulado ao longo dos 45 dias.
+- Ranking geral acumulado ao longo dos 30 dias.
 - Recompensas finais: 1º lugar escolhe o restaurante da celebração, 2º escolhe o programa depois, 3º escolhe a atividade da celebração.
 
 ---
@@ -216,7 +216,7 @@ Todos os dias, **até as 23h**, cada participante envia no grupo:
 
 **Exemplo de mensagem:**
 
-> Dia 12/45 ✅
+> Dia 12/30 ✅
 > 🏋️ Corrida no parque, 40 min
 > 💧 2,5 L de água, dormi 7h30
 > 💡 Marmitas da semana prontas
@@ -239,27 +239,24 @@ Todos os dias, **até as 23h**, cada participante envia no grupo:
 
 | Data | Dia | Marco |
 |---|---|---|
-| Dom, 1/11 | −5 | Post de anúncio no Instagram |
-| Ter, 3/11 | −3 | Convite no WhatsApp e criação do grupo |
-| Qui, 5/11 | −1 | Cada participante declara nível, habilidade e os 3 eventos com álcool |
-| **Sex, 6/11** | **1** | **Início oficial** e foto "antes" |
-| Dom, 8/11 | 3 | Primeiro ranking (semana parcial: 6 a 8/11) |
-| Sex, 20/11 | 15 | "Tá ficando real!" Foto de 15 dias e ajuste de metas |
-| Sáb, 5/12 | 30 | "Reta final." Foto de 30 dias |
-| **Dom, 20/12** | **45** | **Resultado final**, foto "depois" e demonstração da habilidade |
-| Seg, 21/12 | — | Começa o verão. Celebração do grupo |
+| Qua, 4/11 | −5 | Post de anúncio no Instagram |
+| Sex, 6/11 | −3 | Convite no WhatsApp e criação do grupo |
+| Dom, 8/11 | −1 | Cada participante declara nível, habilidade e os 3 eventos com álcool |
+| **Seg, 9/11** | **1** | **Início oficial** e foto "antes" |
+| Dom, 15/11 | 7 | Primeiro ranking |
+| Seg, 23/11 | 15 | "Tá ficando real!" Foto de 15 dias e ajuste de metas |
+| **Ter, 8/12** | **30** | **Resultado final**, foto "depois" e demonstração da habilidade |
+| Ter, 8/12 | — | Celebração da Virada no grupo |
 
 **Semanas do ranking (segunda a domingo):**
 
 | Semana | Período | Dias |
 |---|---|---|
-| 1 | 6/11 a 8/11 | 1 a 3 (parcial) |
-| 2 | 9/11 a 15/11 | 4 a 10 |
-| 3 | 16/11 a 22/11 | 11 a 17 |
-| 4 | 23/11 a 29/11 | 18 a 24 |
-| 5 | 30/11 a 6/12 | 25 a 31 |
-| 6 | 7/12 a 13/12 | 32 a 38 |
-| 7 | 14/12 a 20/12 | 39 a 45 |
+| 1 | 9/11 a 15/11 | 1 a 7 |
+| 2 | 16/11 a 22/11 | 8 a 14 |
+| 3 | 23/11 a 29/11 | 15 a 21 |
+| 4 | 30/11 a 6/12 | 22 a 28 |
+| 5 | 7/12 a 8/12 | 29 a 30 (parcial) |
 
 ---
 
@@ -269,7 +266,7 @@ Todos os dias, **até as 23h**, cada participante envia no grupo:
 
 > Ô pessoal! 🔥
 >
-> **DESAFIO 45 DIAS — Antes do verão.** De 6 de novembro a 20 de dezembro.
+> **DESAFIO 30 DIAS — Virada.** De 9 de novembro a 8 de dezembro.
 >
 > 5 objetivos:
 > 🏋️ Movimento e treino (45 min como referência, no seu nível)
@@ -284,18 +281,18 @@ Todos os dias, **até as 23h**, cada participante envia no grupo:
 
 ### Descrição do grupo
 
-> Desafio 45 Dias: 6/11 a 20/12 · Antes do verão
+> Desafio 30 Dias: 9/11 a 8/12 · Virada
 > 🏋️ Movimento e treino 💧 Hidratação e sono 💡 Habilidade nova 🥗 Alimentação e organização ⭐ Objetivo Plus
 > Check-in até 23h com foto + checklist. A gente cresce junto!
 
 ### Instagram
 
-- **Bio:** "Desafio 45 Dias · Antes do verão · A gente cresce junto · 6/11 → 20/12"
+- **Bio:** "Desafio 30 Dias · Virada · A gente cresce junto · 9/11 → 8/12"
 - **Segundas:** stories de check-in com os treinos do fim de semana.
 - **Quartas:** reels de dicas (dicas de sono e água, receitas e trocas inteligentes, conteúdo do Cantinho da nutri, ideias de Objetivo Plus).
 - **Domingos:** ranking semanal.
-- **Dias 15, 30 e 45:** posts de virada com antes e depois.
-- **Hashtags:** #Desafio45Dias #AntesDoVerao #AGenteCresceJunto
+- **Dias 15 e 30:** posts de virada com antes e depois.
+- **Hashtags:** #Desafio30Dias #Virada #AGenteCresceJunto
 
 ### Peças visuais
 
@@ -305,14 +302,14 @@ Quatro peças em 1080 x 1080 px, com o emblema e os 5 objetivos: Story de propag
 
 ## 8. Identidade visual
 
-**Emblema:** `Emblema Desafio 45 Dias.png` (nesta pasta). Círculo preto com borda amarela, sol nascendo atrás de uma montanha, chama ao lado de "DESAFIO", "45" em amarelo e "DIAS" em branco, faixa "ANTES DO VERÃO", os 5 ícones dos objetivos e o lema "A gente cresce junto".
+**Emblema:** `Emblema Desafio 30 Dias.png` (nesta pasta). Círculo preto com borda amarela, sol nascendo atrás de uma montanha, chama ao lado de "DESAFIO", "30" em amarelo e "DIAS" em branco, faixa "VIRADA", os 5 ícones dos objetivos e o lema "A gente cresce junto".
 
 **Paleta (aproximada a partir do emblema, conferir com o arquivo original):**
 
 | Uso | Cor | Hex aproximado |
 |---|---|---|
 | Fundo principal | Preto | #111111 |
-| Destaque, sol, "45" | Amarelo-sol | #F5B800 |
+| Destaque, sol, "30" | Amarelo-sol | #F5B800 |
 | Texto | Branco | #FFFFFF |
 | Movimento e treino | Vermelho | #E53935 |
 | Hidratação e sono | Azul | #1E88E5 |
@@ -344,5 +341,5 @@ Pontos que o PDF deixa em aberto. As propostas deste documento servem de ponto d
 ## Anexo: arquivos de origem
 
 - `D:\ProjetosSandro\desafio45firme\documentos\estrutura_inicial_desafio_digital.pdf` — estrutura inicial do desafio digital (versão provisória).
-- `D:\ProjetosSandro\desafio45firme\documentos\Emblema Desafio 45 Dias.png` — emblema novo.
+- `D:\ProjetosSandro\desafio45firme\documentos\Emblema Desafio 30 Dias.png` — emblema novo.
 - `D:\ProjetosSandro\desafio45firme\documentos\Desafio-45-Dias-Planilha.xlsx` — planilha de acompanhamento.

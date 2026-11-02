@@ -16,7 +16,7 @@ defineProps<Props>();
 <template>
     <img
         :src="images.logo"
-        alt="Desafio 45 Dias"
+        alt="Desafio 30 Dias"
         :class="className"
         class="object-contain"
         v-bind="$attrs"

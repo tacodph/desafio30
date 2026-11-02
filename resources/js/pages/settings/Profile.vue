@@ -144,7 +144,7 @@ const paymentValue = (value: number | string) => Number(value).toLocaleString('p
                 </form>
 
                 <section v-if="props.paymentInfo" class="rounded-xl border border-sidebar-border p-4">
-                    <HeadingSmall title="Dados de pagamento" description="Acompanhe o status da inscrição no Desafio 45." />
+                    <HeadingSmall title="Dados de pagamento" description="Acompanhe o status da inscrição no Desafio 30." />
                     <dl class="mt-4 grid gap-4 sm:grid-cols-3">
                         <div>
                             <dt class="text-sm text-muted-foreground">Status</dt>

@@ -66,7 +66,7 @@ class ChallengePaymentTest extends TestCase
             return $request['billingType'] === 'UNDEFINED'
                 && (float) $request['value'] === 79.90
                 && $request['customer'] === 'cus_123'
-                && $request['description'] === 'Inscrição - Desafio 45 Firme'
+                && $request['description'] === 'Inscrição - Desafio 30 Firme'
                 && $request->hasHeader('access_token', 'chave-de-teste');
         });
 

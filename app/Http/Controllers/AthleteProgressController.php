@@ -166,8 +166,8 @@ class AthleteProgressController extends Controller
         }
 
         $data = $request->validate([
-            'days' => 'required|array|max:45',
-            'days.*.day' => 'required|integer|between:1,45|distinct',
+            'days' => 'required|array|max:30',
+            'days.*.day' => 'required|integer|between:1,30|distinct',
             'days.*.checked_in' => 'boolean',
             'days.*.movement' => 'boolean',
             'days.*.water' => 'boolean',
@@ -229,7 +229,7 @@ class AthleteProgressController extends Controller
             return $pending;
         }
 
-        abort_unless($day >= 1 && $day <= 45, 404);
+        abort_unless($day >= 1 && $day <= ChallengeSheet::TOTAL_DAYS, 404);
 
         $data = $request->validate(['photo' => 'required|image|max:5120']);
 
@@ -271,7 +271,7 @@ class AthleteProgressController extends Controller
             return $pending;
         }
 
-        abort_unless($day >= 1 && $day <= 45, 404);
+        abort_unless($day >= 1 && $day <= ChallengeSheet::TOTAL_DAYS, 404);
 
         $data = $request->validate(['photo' => 'required|image|max:5120']);
         $checkin = Checkin::query()->firstOrNew(['user_id' => $request->user()->id, 'day' => $day]);
@@ -308,7 +308,7 @@ class AthleteProgressController extends Controller
     {
         abort_unless(UserRole::from($request->user()->userType->name) === UserRole::Nutricionista, 403);
         abort_unless($athlete->userType->name === UserRole::Atleta->value, 404);
-        abort_unless($day >= 1 && $day <= 45, 404);
+        abort_unless($day >= 1 && $day <= ChallengeSheet::TOTAL_DAYS, 404);
 
         $data = $request->validate(['comment' => 'required|string|max:500']);
         $checkin = Checkin::query()->firstOrNew(['user_id' => $athlete->id, 'day' => $day]);
@@ -327,7 +327,7 @@ class AthleteProgressController extends Controller
         }
 
         $data = $request->validate([
-            'achieved_on' => 'nullable|date|after_or_equal:2026-11-06|before_or_equal:2026-12-20',
+            'achieved_on' => 'nullable|date|after_or_equal:2026-11-09|before_or_equal:2026-12-08',
             'type' => 'required|in:'.implode(',', array_keys(ChallengeSheet::ACHIEVEMENTS)),
             'detail' => 'required|string|max:255',
         ]);

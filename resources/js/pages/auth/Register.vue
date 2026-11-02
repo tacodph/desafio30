@@ -27,7 +27,7 @@ const submit = () => {
 </script>
 
 <template>
-    <AuthBase title="Quero entrar" description="Crie sua conta e comece os 45 dias firmes">
+    <AuthBase title="Quero entrar" description="Crie sua conta e comece os 30 dias firmes">
         <Head title="Criar conta" />
 
         <div v-if="status" class="mb-4 text-center text-sm font-medium text-brand-mente">

@@ -24,7 +24,7 @@ Route::redirect('objetivos/oracao', '/objetivo/luxo');
 Route::redirect('objetivos/corpo', '/objetivos/alimentacao');
 Route::redirect('objetivos/flexoes', '/objetivos/alimentacao');
 
-Route::get('objetivos/alimentacao/compras', [AthleteProgressController::class, 'shopping'])->name('alimentacao.compras');
+Route::get('objetivos/alimentacao/compras', [AthleteProgressController::class, 'shopping'])->middleware('auth')->name('alimentacao.compras');
 
 Route::get('objetivo/luxo', function () {
     return Inertia::render('Objetivos', [

@@ -198,8 +198,8 @@ const openComment = (item: (typeof props.achievements)[number]) => {
     commentForm.clearErrors();
 };
 
-const daysInWeek = (week: number) => (week === 1 ? 3 : 7);
-const needDays = (week: number) => (week === 1 ? 3 : 6);
+const daysInWeek = (week: number) => props.days.filter((day) => day.week === week).length;
+const needDays = (week: number) => Math.min(6, daysInWeek(week));
 const weekClosed = (item: Week) => item.checkins >= needDays(item.week);
 const missingDays = (item: Week) => Math.max(0, needDays(item.week) - item.checkins);
 const weekParts = [

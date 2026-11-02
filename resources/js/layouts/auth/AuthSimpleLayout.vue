@@ -16,7 +16,7 @@ defineProps<{
                     <Link :href="route('home')" class="flex flex-col items-center gap-3 font-medium">
                         <AppLogoIcon class="size-16" />
                         <span class="font-display text-[22px] font-extrabold italic uppercase tracking-wide text-brand-cream">
-                            Desafio <span class="text-brand-gold">45</span> Dias
+                            Desafio <span class="text-brand-gold">30</span> Dias
                         </span>
                         <span class="sr-only">{{ title }}</span>
                     </Link>

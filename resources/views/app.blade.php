@@ -4,7 +4,7 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        <title inertia>{{ config('app.name', 'Desafio 45 Dias') }}</title>
+        <title inertia>{{ config('app.name', 'Desafio 30 Dias') }}</title>
         <link rel="icon" href="/images/logo.png?v=2" type="image/png">
 
         <link rel="preconnect" href="https://fonts.googleapis.com">

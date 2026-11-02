@@ -1,4 +1,4 @@
-# Prompt: Página de pagamento do Desafio 45 Firme (Asaas)
+# Prompt: Página de pagamento do Desafio 30 Firme (Asaas)
 
 > **Como usar:** abra o Claude Code na raiz do projeto (`D:\projetos_herd\desafio45`) e cole tudo o que está abaixo da linha. Antes de codar, ele deve ler o código existente citado na seção 2 e seguir os padrões que já estão lá.
 
@@ -6,13 +6,13 @@
 
 ## 1. Papel
 
-Você é um desenvolvedor sênior de SaaS, especialista em Laravel, Inertia/Vue e integrações de pagamento no Brasil. Vai implementar o fluxo de cobrança da inscrição do **Desafio 45 Firme** usando a **API v3 do Asaas**. Priorize segurança, idempotência e uma experiência simples para quem está pagando.
+Você é um desenvolvedor sênior de SaaS, especialista em Laravel, Inertia/Vue e integrações de pagamento no Brasil. Vai implementar o fluxo de cobrança da inscrição do **Desafio 30 Firme** usando a **API v3 do Asaas**. Priorize segurança, idempotência e uma experiência simples para quem está pagando.
 
 ## 2. Contexto do projeto (já existe, não recriar)
 
 - **Stack:** Laravel 12, PHP 8.2+, Inertia v2, Vue 3 + TypeScript, Tailwind 3, Ziggy, Pest 3. Fila em banco (`QUEUE_CONNECTION`, tabela `jobs` já existe).
 - **Site público:** https://www.desafio45firme.com.br/
-- **Desafio:** 45 dias, de **6/nov/2026 a 20/dez/2026**. Inscrição única de **R$ 79,90** (hoje o valor aparece fixo em `resources/js/pages/Participar.vue`).
+- **Desafio:** 30 dias, de **9/nov/2026 a 8/dez/2026**. Inscrição única de **R$ 79,90** (hoje o valor aparece fixo em `resources/js/pages/Participar.vue`).
 - **Usuários e papéis:** `app/Enums/UserRole.php` (administrador, nutricionista, coach, marketing, atleta) e tabela `user_types`. Quem se inscreve vira **atleta**.
 - **Cadastro:** `app/Http/Controllers/Auth/RegisteredUserController.php` (nome, e-mail, senha) e `GoogleAuthController.php` (login com Google). Os dois criam o usuário como atleta e fazem login.
 - **Fluxo atual:** `Participar.vue` leva a `paymentUrl || route('register')`, onde `paymentUrl` vem de `config('desafio.payment_url')` (env `PAYMENT_URL`). Depois do login, `DashboardController` manda o atleta para `athlete.start.first-day` e `athlete.start.goals`.
@@ -44,7 +44,7 @@ Fluxo:
 - **Não guardar CPF** no banco. Enviar ao Asaas e guardar só o `asaas_customer_id`.
 - **Sem SDK:** cliente HTTP próprio em `app/Services/Asaas/AsaasClient.php`.
 - **Identificação da cobrança:** `externalReference` = UUID interno do registro de pagamento.
-- **Marca:** tudo que a pessoa vê em relação ao pagamento deve usar o nome **Desafio 45 Firme**: título da aba, cabeçalho, textos, descrição da cobrança, e-mails e links. O **cabeçalho** da página de pagamento usa **"Desafio 45 Dias antes do verão"** (mesmo estilo `font-display` e destaque dourado no 45; se o texto ficar longo no mobile, quebrar "antes do verão" em uma segunda linha menor). Já o título da aba, a descrição da cobrança e o domínio dos links seguem como Desafio 45 Firme. Não alterar as demais telas do app nesta tarefa.
+- **Marca:** tudo que a pessoa vê em relação ao pagamento deve usar o nome **Desafio 30 Firme**: título da aba, cabeçalho, textos, descrição da cobrança, e-mails e links. O **cabeçalho** da página de pagamento usa **"Desafio 30 dias · Virada"** (mesmo estilo `font-display` e destaque dourado no 30; se o texto ficar longo no mobile, quebrar "Virada" em uma segunda linha menor). Já o título da aba, a descrição da cobrança e o domínio dos links seguem como Desafio 30 Firme. Não alterar as demais telas do app nesta tarefa.
 - **Links em nome do Desafio:** a pessoa só vê links do nosso domínio (`https://www.desafio45firme.com.br/pagamento`, `/pagamento/pagar`, `/pagamento/retorno`). O endereço da fatura do Asaas (`invoiceUrl`, domínio do Asaas) **não** é exibido nem enviado por nós: o botão "Pagar" aponta para `/pagamento/pagar`, que redireciona (302) para a fatura. O domínio da fatura em si não dá para trocar; o que se personaliza é a aparência (ver seção 5).
 
 ## 5. Integração Asaas (API v3)
@@ -61,15 +61,15 @@ Fluxo:
 **Endpoints usados**
 
 - `POST /customers`: `name`, `email`, `cpfCnpj`, `externalReference` (id do usuário), `notificationDisabled: false`. Guardar o `id` (`cus_...`) em `users.asaas_customer_id` e reaproveitar nas próximas cobranças.
-- `POST /payments`: `customer`, `billingType: "UNDEFINED"`, `value`, `dueDate`, `description` ("Inscrição - Desafio 45 Firme"), `externalReference`, `callback: { successUrl: route('pagamento.retorno'), autoRedirect: true }`. Guardar `id` (`pay_...`), `invoiceUrl`, `status`, `dueDate`.
+- `POST /payments`: `customer`, `billingType: "UNDEFINED"`, `value`, `dueDate`, `description` ("Inscrição - Desafio 30 Firme"), `externalReference`, `callback: { successUrl: route('pagamento.retorno'), autoRedirect: true }`. Guardar `id` (`pay_...`), `invoiceUrl`, `status`, `dueDate`.
 - `GET /payments/{id}`: usado para conferir o status real antes de liberar o acesso e na reconciliação.
 
 > Verifique na documentação oficial (https://docs.asaas.com) os campos exatos e a regra do `callback.successUrl`. Pelo que sei, o domínio de retorno precisa estar cadastrado na conta Asaas. Se der erro, o retorno automático é só conveniência: a tela precisa funcionar sem ele, por polling.
 
 **Marca na fatura do Asaas (configuração manual na conta, não é código)**
 
-- Em *Configurações da conta*, cadastrar o nome comercial/fantasia como **Desafio 45 Firme** e subir a logo e as cores da marca na personalização da fatura/checkout, para a página do Asaas sair com a identidade do desafio.
-- Nome do remetente e textos das notificações ao cliente também em nome do Desafio 45 Firme. Se for usar só os nossos e-mails, desligar as notificações do Asaas por e-mail.
+- Em *Configurações da conta*, cadastrar o nome comercial/fantasia como **Desafio 30 Firme** e subir a logo e as cores da marca na personalização da fatura/checkout, para a página do Asaas sair com a identidade do desafio.
+- Nome do remetente e textos das notificações ao cliente também em nome do Desafio 30 Firme. Se for usar só os nossos e-mails, desligar as notificações do Asaas por e-mail.
 - Cadastrar `desafio45firme.com.br` como domínio de retorno, se a conta exigir.
 - Listar esses itens no passo a passo final (seção 12).
 
@@ -117,11 +117,11 @@ Models: `ChallengePayment` (com `belongsTo User`, escopos `pending()`, `isPaid()
 
 ## 8. Frontend (`resources/js/pages/Pagamento.vue`)
 
-Página no layout de `Participar.vue` (cabeçalho com logo, `max-w-[760px]`, fundo `brand-ink`), com `<Head title="Pagamento | Desafio 45 Firme" />` o cabeçalho "Desafio 45 Dias antes do verão" e o nome Desafio 45 Firme nos textos de apoio. Props: `payment` (status, valor, vencimento; sem `invoiceUrl`), `price`, `needsCpf`.
+Página no layout de `Participar.vue` (cabeçalho com logo, `max-w-[760px]`, fundo `brand-ink`), com `<Head title="Pagamento | Desafio 30 Firme" />` o cabeçalho "Desafio 30 dias · Virada" e o nome Desafio 30 Firme nos textos de apoio. Props: `payment` (status, valor, vencimento; sem `invoiceUrl`), `price`, `needsCpf`.
 
 Estados:
 
-- **Sem cobrança:** título "Falta só o pagamento para entrar no Desafio 45 Firme", resumo do desafio (45 dias, 6 nov a 20 dez), campo de **CPF** com máscara e validação, botão "Gerar pagamento". Texto curto explicando que o CPF é exigido para emitir a cobrança e não fica salvo aqui.
+- **Sem cobrança:** título "Falta só o pagamento para entrar no Desafio 30 Firme", resumo do desafio (30 dias, 9 nov a 8 dez), campo de **CPF** com máscara e validação, botão "Gerar pagamento". Texto curto explicando que o CPF é exigido para emitir a cobrança e não fica salvo aqui.
 - **Pendente:** card dourado com **R$ 79,90**, botão **Pagar R$ 79,90** (abre `route('pagamento.pagar')` em nova aba com `rel="noopener"`; nunca expor o `invoiceUrl` no HTML), texto "Pix, boleto ou cartão" e o vencimento. Enquanto estiver pendente, fazer polling com `router.reload({ only: ['payment'] })` a cada 5 s, parando quando mudar o estado. Link secundário "Já paguei, verificar agora".
 - **Confirmado:** mensagem de sucesso e redirecionamento automático para o dashboard em 3 s.
 - **Vencido ou cancelado:** aviso e botão "Gerar novo pagamento".
@@ -159,7 +159,7 @@ Rode `php artisan test`, `./vendor/bin/pint` e `npm run build` (ou `npx vue-tsc 
 4. Nenhuma ação do usuário cria cobrança duplicada.
 5. Atleta não pago não acessa nenhuma rota do app, exceto pagamento, configurações e logout.
 6. Equipe e usuários antigos continuam acessando normalmente.
-7. O cabeçalho da página mostra "Desafio 45 Dias antes do verão"; título da aba, descrição da cobrança e links exibidos usam o nome Desafio 45 Firme e o domínio `desafio45firme.com.br`; o `invoiceUrl` não aparece no HTML nem em e-mails nossos.
+7. O cabeçalho da página mostra "Desafio 30 dias · Virada"; título da aba, descrição da cobrança e links exibidos usam o nome Desafio 30 Firme e o domínio `desafio45firme.com.br`; o `invoiceUrl` não aparece no HTML nem em e-mails nossos.
 8. Todos os testes passam e o build não tem erros.
 
 ## 12. Como trabalhar
@@ -167,7 +167,7 @@ Rode `php artisan test`, `./vendor/bin/pint` e `npm run build` (ou `npx vue-tsc 
 1. Leia os arquivos da seção 2 e faça um **plano curto** (arquivos que vai criar e alterar) antes de codar.
 2. Implemente nesta ordem: config e migrations → `AsaasClient` e service → controllers, rotas e middleware → webhook e job → front → comando de reconciliação → testes.
 3. Faça commits pequenos e descritivos.
-4. No fim, entregue: resumo do que mudou, **passo a passo para configurar o sandbox** (criar a chave, configurar a marca Desafio 45 Firme na conta Asaas (nome, logo, cores, remetente), cadastrar o webhook em `https://www.desafio45firme.com.br/webhooks/asaas` com os eventos da seção 5 e o token, domínio de retorno) e a lista do que falta para ir à produção (trocar `ASAAS_ENV`, chave de produção, novo webhook).
+4. No fim, entregue: resumo do que mudou, **passo a passo para configurar o sandbox** (criar a chave, configurar a marca Desafio 30 Firme na conta Asaas (nome, logo, cores, remetente), cadastrar o webhook em `https://www.desafio45firme.com.br/webhooks/asaas` com os eventos da seção 5 e o token, domínio de retorno) e a lista do que falta para ir à produção (trocar `ASAAS_ENV`, chave de produção, novo webhook).
 
 ## 13. Fora de escopo (por enquanto)
 
@@ -177,5 +177,5 @@ Parcelamento no cartão, cupom de desconto, assinatura recorrente, emissão de n
 
 - Pegar o CPF na própria tela de pagamento está ok, ou prefere incluir no cadastro?
 - Política de reembolso: o `PAYMENT_REFUNDED` deve mesmo bloquear o acesso na hora?
-- Quantos dias de vencimento para boleto (padrão 3)? A cobrança precisa estar paga antes de 6/nov?
+- Quantos dias de vencimento para boleto (padrão 3)? A cobrança precisa estar paga antes de 9/nov?
 - E-mails do Asaas ao cliente: manter ligados ou usar só os nossos?

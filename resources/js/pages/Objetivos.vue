@@ -27,9 +27,9 @@ const goalHref = (key: GoalKey) => (key === 'plus' ? route('objetivo.luxo') : ro
         <header class="sticky top-0 z-20 border-b border-brand-line bg-brand-ink/88 backdrop-blur-[10px]">
             <div class="mx-auto flex max-w-[1200px] items-center justify-between gap-4 px-6 py-3">
                 <Link :href="route('home')" class="flex items-center gap-2.5 text-brand-cream hover:text-brand-cream">
-                    <img :src="images.logoMark" alt="Desafio 45 Dias" class="size-11 object-contain" />
+                    <img :src="images.logoMark" alt="Desafio 30 Dias" class="size-11 object-contain" />
                     <span class="font-display text-[22px] font-extrabold italic uppercase tracking-wide">
-                        Desafio <span class="text-brand-gold">45</span> Dias
+                        Desafio <span class="text-brand-gold">30</span> Dias
                     </span>
                 </Link>
 
@@ -101,6 +101,7 @@ const goalHref = (key: GoalKey) => (key === 'plus' ? route('objetivo.luxo') : ro
             <div v-if="item.key === 'alimentacao'" class="mx-auto flex max-w-[1200px] flex-wrap gap-2 px-6 pt-8">
                 <span class="rounded-full bg-[#43A047] px-4 py-2 text-sm font-bold text-white">A regra</span>
                 <Link
+                    v-if="$page.props.auth.user"
                     :href="route('alimentacao.compras')"
                     class="rounded-full border border-brand-line3 px-4 py-2 text-sm font-bold text-brand-cream hover:border-brand-cream"
                 >

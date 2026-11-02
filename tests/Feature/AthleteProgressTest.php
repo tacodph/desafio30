@@ -14,6 +14,28 @@ class AthleteProgressTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_challenge_has_thirty_days_and_rejects_day_thirty_one(): void
+    {
+        $athlete = $this->startedAthlete();
+
+        $this->actingAs($athlete)
+            ->get('/atleta/evolucao/dias')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('days', 30)
+                ->has('weeks', 5)
+                ->where('days.0.date', '09/11')
+                ->where('days.6.week', 1)
+                ->where('days.7.week', 2)
+                ->where('days.28.week', 5)
+                ->where('days.29.day', 30)
+                ->where('days.29.date', '08/12'));
+
+        $this->actingAs($athlete)
+            ->put('/atleta/dias', ['days' => [['day' => 31]]])
+            ->assertSessionHasErrors('days.0.day');
+    }
+
     public function test_only_an_athlete_can_fill_the_progress(): void
     {
         $this->actingAs(User::factory()->ofRole(UserRole::Administrador)->create())
@@ -50,7 +72,7 @@ class AthleteProgressTest extends TestCase
         $athlete = $this->startedAthlete();
         $days = [];
 
-        foreach ([1, 2, 3] as $day) {
+        foreach ([1, 2, 3, 4, 5, 6] as $day) {
             $days[] = [
                 'day' => $day,
                 'checked_in' => true,
@@ -70,7 +92,7 @@ class AthleteProgressTest extends TestCase
 
         $this->actingAs($athlete)
             ->post('/atleta/conquistas', [
-                'achieved_on' => '2026-11-06',
+                'achieved_on' => '2026-11-09',
                 'type' => 'first_time',
                 'detail' => 'Primeira prancha',
             ])
@@ -80,14 +102,14 @@ class AthleteProgressTest extends TestCase
             ->get('/atleta/evolucao/dias')
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
-                ->where('weeks.0.daily', 30)
+                ->where('weeks.0.daily', 60)
                 ->where('weeks.0.plus_bonus', 10)
                 ->where('weeks.0.consistency', 10)
                 ->where('weeks.0.goals_bonus', 10)
                 ->where('weeks.0.achievements', 5)
                 ->where('weeks.0.athletes_done', 1)
                 ->where('weeks.0.athletes_total', 1)
-                ->where('total', 65));
+                ->where('total', 95));
     }
 
     public function test_a_conquest_can_be_saved_without_a_date(): void
@@ -233,7 +255,7 @@ class AthleteProgressTest extends TestCase
         $this->actingAs($athlete)
             ->get('/objetivos/alimentacao/compras/nova')
             ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page->component('ComprasForm')->has('weeks', 7)->where('list', null));
+            ->assertInertia(fn (Assert $page) => $page->component('ComprasForm')->has('weeks', 5)->where('list', null));
 
         $this->actingAs($athlete)
             ->post('/objetivos/alimentacao/compras', ['week' => 3, 'items' => ['Patinho']])
@@ -243,7 +265,7 @@ class AthleteProgressTest extends TestCase
 
         $this->actingAs($athlete)
             ->get('/objetivos/alimentacao/compras/nova')
-            ->assertInertia(fn (Assert $page) => $page->has('weeks', 6)->where('weeks.2.week', 4));
+            ->assertInertia(fn (Assert $page) => $page->has('weeks', 4)->where('weeks.2.week', 4));
 
         $this->actingAs($athlete)
             ->post('/objetivos/alimentacao/compras', ['week' => 3, 'items' => ['Lagarto']])
@@ -264,8 +286,7 @@ class AthleteProgressTest extends TestCase
         $athlete = User::factory()->create();
 
         $this->get('/objetivos/alimentacao/compras')
-            ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page->where('canSave', false)->where('lists', []));
+            ->assertRedirect(route('login'));
 
         $this->actingAs($athlete)
             ->put('/objetivos/alimentacao/compras', [

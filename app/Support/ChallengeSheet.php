@@ -13,22 +13,22 @@ use Illuminate\Support\Carbon;
 
 class ChallengeSheet
 {
-    public const START = '2026-11-06';
+    public const START = '2026-11-09';
+
+    public const TOTAL_DAYS = 30;
 
     /** @var array<int, array{0: int, 1: int}> */
     public const WEEKS = [
-        1 => [1, 3],
-        2 => [4, 10],
-        3 => [11, 17],
-        4 => [18, 24],
-        5 => [25, 31],
-        6 => [32, 38],
-        7 => [39, 45],
+        1 => [1, 7],
+        2 => [8, 14],
+        3 => [15, 21],
+        4 => [22, 28],
+        5 => [29, 30],
     ];
 
     /** @var array<string, array{0: string, 1: int}> */
     public const ACHIEVEMENTS = [
-        'skill_demo' => ['Demonstração da habilidade no dia 45', 15],
+        'skill_demo' => ['Demonstração da habilidade no dia 30', 15],
         'motivate' => ['Motivar um amigo desanimado', 5],
         'first_time' => ['Primeira vez acertando algo novo', 5],
         'cantinho' => ['Cantinho da vitória', 0],
@@ -57,14 +57,14 @@ class ChallengeSheet
             }
         }
 
-        return $day < 1 ? 1 : 7;
+        return $day < 1 ? 1 : count(self::WEEKS);
     }
 
     public static function currentWeek(?CarbonInterface $today = null): int
     {
         $day = self::dayOn($today ?? Carbon::today());
 
-        return self::weekOf(max(1, min(45, $day)));
+        return self::weekOf(max(1, min(self::TOTAL_DAYS, $day)));
     }
 
     public static function dayPoints(Checkin $checkin, ?array $scores = null): int
@@ -133,7 +133,7 @@ class ChallengeSheet
         $scores = self::scoreMap();
         $days = [];
 
-        for ($day = 1; $day <= 45; $day++) {
+        for ($day = 1; $day <= self::TOTAL_DAYS; $day++) {
             $date = Carbon::parse(self::dateForDay($day));
             $checkin = $checkins->get($day);
             $days[] = [
@@ -167,7 +167,7 @@ class ChallengeSheet
         }
 
         $profile = $user->athleteProfile;
-        $elapsed = max(0, min(45, self::dayOn(Carbon::today()) - 1));
+        $elapsed = max(0, min(self::TOTAL_DAYS, self::dayOn(Carbon::today()) - 1));
         $missed = 0;
 
         if ($profile?->penalty) {
@@ -182,7 +182,7 @@ class ChallengeSheet
 
         return [
             'currentWeek' => self::currentWeek(),
-            'today' => max(1, min(45, self::dayOn(Carbon::today()))),
+            'today' => max(1, min(self::TOTAL_DAYS, self::dayOn(Carbon::today()))),
             'goals' => DayLog::goals($profile),
             'workoutTypes' => DayLog::WORKOUT_TYPES,
             'weeklySkills' => array_values(array_map(
@@ -255,8 +255,8 @@ class ChallengeSheet
             $achievementPoints = $user->achievements
                 ->filter(fn ($item) => $item->achieved_on->toDateString() >= $fromDate && $item->achieved_on->toDateString() <= $toDate)
                 ->sum(fn ($item) => $scores[$item->type] ?? self::ACHIEVEMENTS[$item->type][1] ?? 0);
-            $consistency = $checkinCount >= ($week === 1 ? 3 : 6) ? (int) ($scores['consistency'] ?? 10) : 0;
-            $goalsBonus = $skill >= ($week === 1 ? 2 : 3) && $strength >= ($week === 1 ? 3 : 6) ? 10 : 0;
+            $consistency = $checkinCount >= min(6, $to - $from + 1) ? (int) ($scores['consistency'] ?? 10) : 0;
+            $goalsBonus = $skill >= min(3, $to - $from + 1) && $strength >= min(6, $to - $from + 1) ? 10 : 0;
             $plusBonus = min(2, $plus) * 5;
 
             $rows[] = [
@@ -293,7 +293,7 @@ class ChallengeSheet
         return $weeks;
     }
 
-    /** Quantos atletas bateram a consistência de cada semana (3 dias na 1, 6 nas outras). */
+    /** Quantos atletas bateram a consistência: 6 dias, limitada à duração da semana. */
     private static function weekCompletions(): array
     {
         $ids = User::query()->where('user_type_id', UserType::idFor(UserRole::Atleta))->pluck('id');
@@ -310,7 +310,7 @@ class ChallengeSheet
             ->groupBy('user_id');
 
         foreach (self::WEEKS as $week => [$from, $to]) {
-            $need = $week === 1 ? 3 : 6;
+            $need = min(6, $to - $from + 1);
             $done[$week] = $byUser->filter(
                 fn ($days) => $days->filter(fn ($row) => $row->day >= $from && $row->day <= $to)->count() >= $need
             )->count();

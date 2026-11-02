@@ -13,12 +13,12 @@ defineProps<{
         <div class="flex flex-col gap-10">
             <div class="flex flex-col gap-5">
                 <img :src="item.icon" alt="" class="size-[88px]" />
-                <div class="text-sm font-bold uppercase tracking-[3px]" :style="{ color: item.color }">{{ item.pillar }}</div>
+                <div v-if="item.pillar && item.key !== 'alimentacao'" class="text-sm font-bold uppercase tracking-[3px]" :style="{ color: item.color }">{{ item.pillar }}</div>
                 <h2 class="display-title m-0 text-[clamp(40px,5vw,72px)]">{{ item.title }}</h2>
-                <p class="font-display text-[clamp(32px,4vw,48px)] font-extrabold leading-none" :style="{ color: item.color }">
+                <p v-if="item.key !== 'alimentacao'" class="font-display text-[clamp(32px,4vw,48px)] font-extrabold leading-none" :style="{ color: item.color }">
                     {{ item.metric }}
                 </p>
-                <p class="m-0 max-w-[640px] text-[17px] leading-relaxed text-brand-muted">{{ item.desc }}</p>
+                <p v-if="item.desc" class="m-0 max-w-[640px] text-[17px] leading-relaxed text-brand-muted">{{ item.desc }}</p>
             </div>
 
             <div class="flex max-w-[900px] flex-col gap-4">
@@ -29,13 +29,13 @@ defineProps<{
                     </ul>
                 </div>
                 <div class="surface-card flex flex-col gap-3 p-7">
-                    <span class="text-[13px] font-bold uppercase tracking-[2px] text-brand-gold">Por que funciona</span>
+                    <span class="text-[13px] font-bold uppercase tracking-[2px] text-brand-gold">Por que funciona?</span>
                     <ul class="m-0 flex list-none flex-col gap-3 p-0">
                         <li v-for="line in item.why" :key="line" class="text-[16px] leading-relaxed text-brand-muted-3">{{ line }}</li>
                     </ul>
                 </div>
-                <div v-if="item.key !== 'habilidade'" class="surface-card flex flex-col gap-3 p-7">
-                    <span class="text-[13px] font-bold uppercase tracking-[2px] text-brand-muted-2">Dicas práticas</span>
+                <div v-if="item.tips.length" class="surface-card flex flex-col gap-3 p-7">
+                    <span class="text-[13px] font-bold uppercase tracking-[2px] text-brand-muted-2">{{ ['hidratacao', 'plus'].includes(item.key) ? 'O que você encontra no desafio!' : ['alimentacao', 'treino', 'habilidade'].includes(item.key) ? 'O que você encontra no desafio' : 'Dicas práticas' }}</span>
                     <ul class="m-0 flex list-none flex-col gap-3 p-0">
                         <li v-for="line in item.tips" :key="line" class="text-[16px] leading-relaxed text-brand-muted-3">{{ line }}</li>
                     </ul>

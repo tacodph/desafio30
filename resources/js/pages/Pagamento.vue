@@ -84,7 +84,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <Head title="Pagamento | Desafio 45 Firme" />
+    <Head title="Pagamento | Desafio 30 Firme" />
 
     <div class="min-h-screen bg-brand-ink text-brand-cream">
         <header class="border-b border-brand-line">
@@ -92,8 +92,8 @@ onBeforeUnmount(() => {
                 <Link :href="route('home')" class="flex items-center gap-2.5 text-brand-cream hover:text-brand-cream">
                     <img :src="images.logoMark" alt="" class="size-11 object-contain" />
                     <span class="flex flex-col font-display font-extrabold uppercase italic leading-none tracking-wide">
-                        <span class="text-[22px]">Desafio <span class="text-brand-gold">45</span> Dias</span>
-                        <span class="text-[13px] text-brand-muted-3">antes do verão</span>
+                        <span class="text-[22px]">Desafio <span class="text-brand-gold">30</span> Dias</span>
+                        <span class="text-[13px] text-brand-muted-3">Virada</span>
                     </span>
                 </Link>
                 <Link :href="route('logout')" method="post" as="button" class="text-sm font-semibold text-brand-muted-3 hover:text-brand-cream">
@@ -108,7 +108,7 @@ onBeforeUnmount(() => {
                 <span class="text-sm font-bold uppercase tracking-[2px]">Pagamento confirmado</span>
                 <p class="display-title m-0 text-[clamp(40px,7vw,64px)] leading-none">Você está dentro!</p>
                 <p class="m-0 max-w-[460px] text-[17px] font-semibold leading-snug">
-                    Recebemos sua inscrição no Desafio 45 Firme. Estamos levando você para o app.
+                    Recebemos sua inscrição no Desafio 30 Firme. Estamos levando você para o app.
                 </p>
                 <Link
                     :href="route('dashboard')"
@@ -120,10 +120,10 @@ onBeforeUnmount(() => {
 
             <template v-else>
                 <div class="flex flex-col gap-4">
-                    <div class="text-sm font-bold uppercase tracking-[3px] text-brand-gold">6 nov → 20 dez 2026</div>
-                    <h1 class="display-title m-0 text-[clamp(40px,7vw,64px)] leading-[0.95]">Falta só o pagamento para entrar no Desafio 45 Firme</h1>
+                    <div class="text-sm font-bold uppercase tracking-[3px] text-brand-gold">9 nov → 8 dez 2026</div>
+                    <h1 class="display-title m-0 text-[clamp(40px,7vw,64px)] leading-[0.95]">Falta só o pagamento para entrar no Desafio 30 Firme</h1>
                     <p class="m-0 text-[18px] leading-relaxed text-brand-muted-3">
-                        Um pagamento para os 45 dias. Você escolhe Pix, boleto ou cartão. Assim que o pagamento for confirmado, o acesso é liberado.
+                        Um pagamento para os 30 dias. Você escolhe Pix, boleto ou cartão. Assim que o pagamento for confirmado, o acesso é liberado.
                     </p>
                 </div>
 
