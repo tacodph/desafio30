@@ -132,7 +132,7 @@ const goalHref = (key: GoalKey) => (key === 'plus' ? route('objetivo.luxo') : ro
 
         <section class="bg-brand-gold text-brand-ink">
             <div class="mx-auto flex max-w-[1200px] flex-col items-start gap-5 px-6 py-16 lg:flex-row lg:items-center lg:justify-between">
-                <h2 class="display-title m-0 text-[clamp(36px,5vw,56px)]">Cinco objetivos.<br />Quarenta e cinco dias.</h2>
+                <h2 class="display-title m-0 text-[clamp(36px,5vw,56px)]">Cinco objetivos.<br />Trinta dias.</h2>
                 <Link
                     :href="`${route('home')}#entrar`"
                     class="rounded-full bg-brand-ink px-8 py-[18px] text-[17px] font-bold text-brand-cream hover:bg-brand-line hover:text-brand-cream"
