@@ -543,7 +543,7 @@ const navLinks = [
                 </p>
                 <div class="flex flex-wrap justify-center gap-3 pt-2">
                     <Link
-                        :href="route('register')"
+                        :href="route('participar')"
                         class="rounded-full bg-brand-ink px-[30px] py-[18px] text-[17px] font-bold text-brand-cream hover:bg-brand-line hover:text-brand-cream"
                     >
                         Participar

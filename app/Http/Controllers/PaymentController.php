@@ -10,6 +10,7 @@ use App\Services\ChallengePaymentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -27,6 +28,19 @@ class PaymentController extends Controller
 
         $latest = $user->payments()->latest('id')->first();
 
+        // O polling precisa consultar o Asaas, não só reler o status do banco.
+        // Um intervalo compartilhado evita consultar a API a cada aba/recarregamento.
+        if (! $user->hasPaidChallenge() && $latest?->asaas_payment_id
+            && in_array($latest->status, [ChallengePayment::PENDING, ChallengePayment::OVERDUE], true)
+            && Cache::add('asaas-page-sync-'.$latest->id, true, 10)) {
+            try {
+                $this->payments->sync($latest);
+            } catch (AsaasException) {
+                // Em caso de falha transitória, mantém a espera para tentar novamente.
+            }
+            $user->refresh();
+            $latest->refresh();
+        }
         return Inertia::render('Pagamento', [
             'price' => config('desafio.price'),
             'needsCpf' => ! $user->asaas_customer_id,

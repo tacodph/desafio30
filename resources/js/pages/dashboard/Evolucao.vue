@@ -9,7 +9,7 @@ import { type DayDetails, type DayGoals } from '@/data/dayLog';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue';
 
 type Day = {
     day: number;
@@ -45,6 +45,7 @@ type Week = {
 };
 
 const props = defineProps<{
+    access: { releaseDate: string; editableDays: number[]; pages: Record<string, boolean>; entryMode: string };
     tab: 'dias' | 'conquistas' | 'resumo' | null;
     currentWeek: number;
     today: number;
@@ -128,6 +129,11 @@ const dias = useForm({
         details: JSON.parse(JSON.stringify(day.details)) as DayDetails,
     })),
 });
+let accessTimer: ReturnType<typeof setInterval> | undefined;
+onMounted(() => {
+    if (props.canEdit) accessTimer = setInterval(() => router.reload({ only: ['access', 'today', 'currentWeek'] }), 60000);
+});
+onBeforeUnmount(() => { if (accessTimer) clearInterval(accessTimer); });
 const conquests = [
     {
         type: 'cantinho',
@@ -261,6 +267,10 @@ const saveComment = () => {
             </div>
 
             <div v-if="tab === 'dias'" class="flex flex-col gap-4">
+                <p v-if="canEdit" role="status" class="surface-card m-0 p-4 text-sm leading-relaxed text-brand-muted">
+                    {{ access.entryMode === 'open' ? 'Lançamentos liberados pela administração para testes.' : access.entryMode === 'closed' ? 'Os lançamentos estão temporariamente bloqueados pela administração.' : 'Cada dia libera seus lançamentos e fotos apenas na data correspondente, de 00h até 23h59, pelo horário de Brasília. Os demais dias ficam disponíveis para consulta.' }}
+                </p>
+                <InputError :message="dias.errors.days" />
                 <div class="flex flex-wrap gap-2">
                     <button
                         v-for="item in weeks"
@@ -328,7 +338,7 @@ const saveComment = () => {
                 </section>
                 <p v-if="needsWeekSkills" class="m-0 text-sm text-brand-muted">Escolha as 3 habilidades da semana para lançar os dias.</p>
                 <DayCard
-                    v-for="item in needsWeekSkills ? [] : visibleDays"
+                    v-for="item in visibleDays"
                     :key="item.entry.day"
                     :entry="item.entry"
                     :date="item.info.date"
@@ -341,7 +351,8 @@ const saveComment = () => {
                     :workout-types="workoutTypes"
                     :week-skills="weeklySkills[item.info.week - 1] ?? []"
                     :default-open="item.entry.day === openDay"
-                    :can-edit="canEdit"
+                    :can-edit="canEdit && !needsWeekSkills && access.editableDays.includes(item.entry.day)"
+                    :locked-reason="canEdit && !access.editableDays.includes(item.entry.day) ? 'Lançamentos indisponíveis para esta data.' : needsWeekSkills ? 'Escolha as habilidades da semana para lançar.' : undefined"
                     :can-comment="canComment"
                     :athlete-id="athleteId"
                     :score-rules="scoreRules"

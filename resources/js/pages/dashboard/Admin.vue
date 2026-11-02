@@ -29,6 +29,7 @@ defineProps<{
             </div>
 
             <div class="flex flex-wrap gap-3">
+                <Link :href="route('admin.challenge-access')" class="surface-card w-fit px-5 py-4 font-display text-lg font-bold uppercase">Liberações do desafio</Link>
                 <Link :href="route('admin.users')" class="surface-card w-fit px-5 py-4 font-display text-lg font-bold uppercase">
                     Ver usuários
                 </Link>

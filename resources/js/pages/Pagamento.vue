@@ -36,12 +36,34 @@ const onCpfInput = (event: Event) => {
 };
 
 const submit = () => {
-    form.post(route('pagamento.store'), { preserveScroll: true });
+    if (form.processing) return;
+
+    // Abre a aba durante o clique para evitar bloqueios de pop-up após a requisição.
+    const checkout = window.open('about:blank', '_blank');
+    if (checkout) {
+        checkout.opener = null;
+        checkout.document.title = 'Preparando pagamento';
+        checkout.document.body.textContent = 'Preparando seu pagamento no Asaas. Aguarde…';
+    }
+
+    form.post(route('pagamento.store'), {
+        preserveScroll: true,
+        onSuccess: () => {
+            if (props.payment.state === 'pendente') {
+                if (checkout && !checkout.closed) checkout.location.replace(route('pagamento.pagar'));
+            } else if (checkout && !checkout.closed) {
+                checkout.close();
+            }
+        },
+        onError: () => { if (checkout && !checkout.closed) checkout.close(); },
+        onCancel: () => { if (checkout && !checkout.closed) checkout.close(); },
+    });
 };
 
 // Enquanto aguarda o pagamento, consulta o servidor (o webhook do Asaas libera o acesso).
 let poll: ReturnType<typeof setInterval> | undefined;
 let redirect: ReturnType<typeof setTimeout> | undefined;
+
 
 const stopPolling = () => {
     if (poll) {
@@ -65,7 +87,6 @@ watch(
         } else {
             stopPolling();
         }
-
         if (state === 'confirmado') {
             redirect = setTimeout(() => router.visit(route('dashboard')), 3000);
         }
@@ -80,11 +101,12 @@ onMounted(() => {
 onBeforeUnmount(() => {
     stopPolling();
     if (redirect) clearTimeout(redirect);
+
 });
 </script>
 
 <template>
-    <Head title="Pagamento | Desafio 30 Firme" />
+    <Head title="Pagamento | Desafio da Virada" />
 
     <div class="min-h-screen bg-brand-ink text-brand-cream">
         <header class="border-b border-brand-line">
@@ -108,7 +130,7 @@ onBeforeUnmount(() => {
                 <span class="text-sm font-bold uppercase tracking-[2px]">Pagamento confirmado</span>
                 <p class="display-title m-0 text-[clamp(40px,7vw,64px)] leading-none">Você está dentro!</p>
                 <p class="m-0 max-w-[460px] text-[17px] font-semibold leading-snug">
-                    Recebemos sua inscrição no Desafio 30 Firme. Estamos levando você para o app.
+                    Recebemos sua inscrição no Desafio da Virada. Estamos levando você para o app.
                 </p>
                 <Link
                     :href="route('dashboard')"
@@ -121,7 +143,7 @@ onBeforeUnmount(() => {
             <template v-else>
                 <div class="flex flex-col gap-4">
                     <div class="text-sm font-bold uppercase tracking-[3px] text-brand-gold">9 nov → 8 dez 2026</div>
-                    <h1 class="display-title m-0 text-[clamp(40px,7vw,64px)] leading-[0.95]">Falta só o pagamento para entrar no Desafio 30 Firme</h1>
+                    <h1 class="display-title m-0 text-[clamp(40px,7vw,64px)] leading-[0.95]">Falta só o pagamento para entrar no Desafio da Virada</h1>
                     <p class="m-0 text-[18px] leading-relaxed text-brand-muted-3">
                         Um pagamento para os 30 dias. Você escolhe Pix, boleto ou cartão. Assim que o pagamento for confirmado, o acesso é liberado.
                     </p>
@@ -140,14 +162,18 @@ onBeforeUnmount(() => {
 
                 <!-- Pendente -->
                 <section v-else-if="payment.state === 'pendente'" class="flex flex-col gap-4 rounded-[28px] bg-brand-gold px-7 py-8 text-brand-ink">
-                    <span class="text-sm font-bold uppercase tracking-[2px]">Inscrição</span>
-                    <p class="display-title m-0 text-[clamp(56px,8vw,80px)] leading-none">{{ priceLabel }}</p>
+                    <h2 class="m-0 text-sm font-bold uppercase tracking-[2px]">SUA INSCRIÇÃO NO DESAFIO DA VIRADA</h2>
+                    <p class="display-title m-0 text-[clamp(48px,8vw,80px)] font-extrabold italic leading-none">{{ priceLabel }}</p>
+                    <p class="m-0 text-[20px] font-bold">Menos de R$ 2,70 por dia!</p>
+                    <p class="m-0 text-[17px] font-bold leading-snug">Pagamento único para participar dos 30 dias.</p>
                     <p class="m-0 max-w-[460px] text-[17px] font-semibold leading-snug">Pix, boleto ou cartão. Vence em {{ payment.dueDate }}.</p>
+                    <p class="m-0 text-sm font-semibold leading-relaxed">O Asaas abre em outra aba. Se a aba não abriu, clique em Pagar. Esta página acompanha a confirmação automaticamente.</p>
                     <div class="mt-2 flex flex-wrap items-center gap-4">
                         <a
                             :href="route('pagamento.pagar')"
                             target="_blank"
                             rel="noopener"
+
                             class="inline-flex w-fit items-center rounded-full bg-brand-ink px-7 py-4 text-[17px] font-bold text-brand-cream hover:bg-brand-line hover:text-brand-cream focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink"
                         >
                             Pagar {{ priceLabel }}
@@ -164,8 +190,10 @@ onBeforeUnmount(() => {
 
                 <!-- Novo / vencido -->
                 <form v-else class="flex flex-col gap-4 rounded-[28px] bg-brand-gold px-7 py-8 text-brand-ink" @submit.prevent="submit">
-                    <span class="text-sm font-bold uppercase tracking-[2px]">Inscrição</span>
-                    <p class="display-title m-0 text-[clamp(56px,8vw,80px)] leading-none">{{ priceLabel }}</p>
+                    <h2 class="m-0 text-sm font-bold uppercase tracking-[2px]">SUA INSCRIÇÃO NO DESAFIO DA VIRADA</h2>
+                    <p class="display-title m-0 text-[clamp(48px,8vw,80px)] font-extrabold italic leading-none">{{ priceLabel }}</p>
+                    <p class="m-0 text-[20px] font-bold">Menos de R$ 2,70 por dia!</p>
+                    <p class="m-0 text-[17px] font-bold leading-snug">Pagamento único para participar dos 30 dias.</p>
                     <p v-if="payment.state === 'vencido'" class="m-0 max-w-[460px] text-[17px] font-semibold leading-snug">
                         Seu pagamento anterior venceu. Gere um novo para continuar.
                     </p>
@@ -194,7 +222,7 @@ onBeforeUnmount(() => {
                         class="mt-2 inline-flex w-fit items-center gap-2 rounded-full bg-brand-ink px-7 py-4 text-[17px] font-bold text-brand-cream hover:bg-brand-line hover:text-brand-cream disabled:opacity-60"
                     >
                         <LoaderCircle v-if="form.processing" class="size-4 animate-spin" aria-hidden="true" />
-                        {{ payment.state === 'vencido' ? 'Gerar novo pagamento' : 'Gerar pagamento' }}
+                        {{ form.processing ? 'Gerando pagamento…' : payment.state === 'vencido' ? 'Gerar novo pagamento' : 'Gerar pagamento' }}
                     </button>
                 </form>
             </template>

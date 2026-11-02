@@ -10,6 +10,7 @@ use App\Models\FoodGroup;
 use App\Models\User;
 use App\Models\UserType;
 use App\Support\ChallengeSheet;
+use App\Support\ChallengeAccess;
 use App\Support\DayLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,6 +22,8 @@ use Inertia\Response;
 
 class AthleteProgressController extends Controller
 {
+    public function __construct(private readonly ChallengeAccess $access) {}
+
     public function firstDay(Request $request): Response
     {
         $this->abortUnlessAthlete($request);
@@ -95,6 +98,13 @@ class AthleteProgressController extends Controller
             return $pending;
         }
 
+        if (! $this->access->pageOpen($tab)) {
+            return Inertia::render('dashboard/EvolutionLocked', [
+                'feature' => ChallengeAccess::FEATURES[$tab],
+                'access' => $this->access->payload(),
+            ]);
+        }
+
         return $this->page($request->user(), true, false, $tab);
     }
 
@@ -142,14 +152,16 @@ class AthleteProgressController extends Controller
             return $pending;
         }
 
+        abort_unless($this->access->pageOpen('dias'), 403, 'A página de dias está bloqueada.');
+
         $data = $request->validate([
-            'week' => 'required|integer|between:1,7',
+            'week' => 'required|integer|between:1,'.count(ChallengeSheet::WEEKS),
             'picks' => 'required|array|size:3',
             'picks.*' => 'required|string|max:180|distinct',
         ]);
 
         $profile = AthleteProfile::query()->firstOrNew(['user_id' => $request->user()->id]);
-        $weeks = array_replace(array_fill(0, 7, []), array_values($profile->weekly_skills ?? []));
+        $weeks = array_replace(array_fill(0, count(ChallengeSheet::WEEKS), []), array_values($profile->weekly_skills ?? []));
         $weeks[$data['week'] - 1] = array_values($data['picks']);
 
         $profile->fill(['weekly_skills' => array_values($weeks)])->save();
@@ -189,6 +201,10 @@ class AthleteProgressController extends Controller
             'days.*.details.manual' => 'nullable|array',
             'days.*.details.manual.*' => 'boolean',
         ]);
+
+        foreach ($data['days'] as $day) {
+            $this->access->ensureDayEditable((int) $day['day']);
+        }
 
         $profile = $request->user()->athleteProfile;
 
@@ -231,6 +247,8 @@ class AthleteProgressController extends Controller
 
         abort_unless($day >= 1 && $day <= ChallengeSheet::TOTAL_DAYS, 404);
 
+        $this->access->ensureDayEditable($day);
+
         $data = $request->validate(['photo' => 'required|image|max:5120']);
 
         $checkin = Checkin::query()->firstOrNew(['user_id' => $request->user()->id, 'day' => $day]);
@@ -253,6 +271,8 @@ class AthleteProgressController extends Controller
             return $pending;
         }
 
+        $this->access->ensureDayEditable($day);
+
         $checkin = Checkin::query()->where(['user_id' => $request->user()->id, 'day' => $day])->first();
 
         if ($checkin?->workout_photo) {
@@ -272,6 +292,8 @@ class AthleteProgressController extends Controller
         }
 
         abort_unless($day >= 1 && $day <= ChallengeSheet::TOTAL_DAYS, 404);
+
+        $this->access->ensureDayEditable($day);
 
         $data = $request->validate(['photo' => 'required|image|max:5120']);
         $checkin = Checkin::query()->firstOrNew(['user_id' => $request->user()->id, 'day' => $day]);
@@ -293,6 +315,8 @@ class AthleteProgressController extends Controller
         if ($pending = $this->pendingStart($request)) {
             return $pending;
         }
+
+        $this->access->ensureDayEditable($day);
 
         $checkin = Checkin::query()->where(['user_id' => $request->user()->id, 'day' => $day])->first();
 
@@ -321,6 +345,7 @@ class AthleteProgressController extends Controller
     public function storeAchievement(Request $request): RedirectResponse
     {
         $this->abortUnlessAthlete($request);
+        abort_unless($this->access->pageOpen('conquistas'), 403, 'A página de conquistas está bloqueada.');
 
         if ($pending = $this->pendingStart($request)) {
             return $pending;
@@ -343,6 +368,7 @@ class AthleteProgressController extends Controller
     public function updateAchievement(Request $request, Achievement $achievement): RedirectResponse
     {
         $this->abortUnlessAthlete($request);
+        abort_unless($this->access->pageOpen('conquistas'), 403, 'A página de conquistas está bloqueada.');
 
         if ($pending = $this->pendingStart($request)) {
             return $pending;
@@ -375,6 +401,7 @@ class AthleteProgressController extends Controller
     public function destroyAchievement(Request $request, Achievement $achievement): RedirectResponse
     {
         $this->abortUnlessAthlete($request);
+        abort_unless($this->access->pageOpen('conquistas'), 403, 'A página de conquistas está bloqueada.');
 
         if ($pending = $this->pendingStart($request)) {
             return $pending;
@@ -390,6 +417,7 @@ class AthleteProgressController extends Controller
     {
         return Inertia::render('dashboard/Evolucao', [
             ...ChallengeSheet::payload($athlete),
+            'access' => $this->access->payload(),
             'tab' => $tab,
             'canEdit' => $canEdit,
             'canComment' => $canComment,

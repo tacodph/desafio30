@@ -14,6 +14,15 @@ class AthleteProgressTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // These tests exercise progress details independently of the calendar gates.
+        foreach (array_keys(\App\Support\ChallengeAccess::FEATURES) as $feature) {
+            \Illuminate\Support\Facades\DB::table('challenge_access_settings')->insert(['feature' => $feature, 'mode' => 'open']);
+        }
+    }
+
     public function test_challenge_has_thirty_days_and_rejects_day_thirty_one(): void
     {
         $athlete = $this->startedAthlete();
@@ -302,7 +311,7 @@ class AthleteProgressTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->where('canSave', true)
                 ->where('lists.0.week', 2)
-                ->where('lists.0.period', '09/11 a 15/11')
+                ->where('lists.0.period', '16/11 a 22/11')
                 ->where('lists.0.items', ['Patinho', 'Ovos de galinha'])
                 ->where('lists.0.extras', ['Queijo da fazenda']));
 

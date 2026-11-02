@@ -31,6 +31,7 @@ class ChallengePaymentTest extends TestCase
     private function fakeAsaas(string $status = 'PENDING'): void
     {
         Http::fake([
+            '*/payments/pay_123' => Http::response(['id' => 'pay_123', 'status' => $status], 200),
             '*/customers' => Http::response(['id' => 'cus_123'], 200),
             '*/payments' => Http::response([
                 'id' => 'pay_123',
@@ -66,7 +67,7 @@ class ChallengePaymentTest extends TestCase
             return $request['billingType'] === 'UNDEFINED'
                 && (float) $request['value'] === 79.90
                 && $request['customer'] === 'cus_123'
-                && $request['description'] === 'Inscrição - Desafio 30 Firme'
+                && $request['description'] === 'Inscrição - Desafio da Virada'
                 && $request->hasHeader('access_token', 'chave-de-teste');
         });
 
@@ -76,6 +77,19 @@ class ChallengePaymentTest extends TestCase
         $this->assertSame('pay_123', $payment->asaas_payment_id);
         $this->assertSame('79.90', $payment->value);
         $this->assertSame('cus_123', $user->fresh()->asaas_customer_id);
+    }
+
+    public function test_inertia_submission_keeps_the_original_tab_on_the_waiting_page(): void
+    {
+        $this->fakeAsaas();
+        $user = User::factory()->unpaid()->create();
+
+        $this->actingAs($user)
+            ->withHeader('X-Inertia', 'true')
+            ->post(route('pagamento.store'), ['cpf' => self::VALID_CPF])
+            ->assertRedirect(route('pagamento.show', absolute: false));
+
+        $this->assertSame(1, ChallengePayment::query()->count());
     }
 
     public function test_second_access_and_double_click_do_not_create_another_charge(): void
@@ -197,6 +211,55 @@ class ChallengePaymentTest extends TestCase
 
         $this->assertTrue($user->fresh()->hasPaidChallenge());
         $this->assertSame('PIX', ChallengePayment::query()->first()->billing_type);
+    }
+
+    public function test_polling_confirms_sandbox_payments_without_a_webhook(): void
+    {
+        foreach (['CONFIRMED', 'RECEIVED'] as $status) {
+            Http::fake(['*/payments/pay_'.$status => Http::response(['id' => 'pay_'.$status, 'status' => $status], 200)]);
+            $user = User::factory()->unpaid()->create();
+            ChallengePayment::create([
+                'user_id' => $user->id, 'asaas_payment_id' => 'pay_'.$status,
+                'status' => 'PENDING', 'value' => 79.90, 'due_date' => today()->addDays(2),
+            ]);
+            $this->actingAs($user)->get(route('pagamento.show'))->assertInertia(
+                fn (\Inertia\Testing\AssertableInertia $page) => $page->where('payment.state', 'confirmado')
+            );
+            $this->assertTrue($user->fresh()->hasPaidChallenge());
+        }
+    }
+
+    public function test_polling_limits_api_calls_and_keeps_unpaid_invoices_pending(): void
+    {
+        Http::fake(['*/payments/pay_wait' => Http::response(['id' => 'pay_wait', 'status' => 'PENDING'], 200)]);
+        $user = User::factory()->unpaid()->create();
+        ChallengePayment::create([
+            'user_id' => $user->id, 'asaas_payment_id' => 'pay_wait',
+            'status' => 'PENDING', 'value' => 79.90, 'due_date' => today()->addDays(2),
+        ]);
+        $this->actingAs($user)->get(route('pagamento.show'))->assertInertia(
+            fn (\Inertia\Testing\AssertableInertia $page) => $page->where('payment.state', 'pendente')
+        );
+        $this->get(route('pagamento.show'))->assertOk();
+        Http::assertSentCount(1);
+        $this->travel(11)->seconds();
+        $this->get(route('pagamento.show'))->assertOk();
+        Http::assertSentCount(2);
+        $this->assertFalse($user->fresh()->hasPaidChallenge());
+    }
+
+    public function test_api_failure_during_polling_never_confirms_payment(): void
+    {
+        Http::fake(['*/payments/pay_wait' => Http::response([], 503)]);
+        $user = User::factory()->unpaid()->create();
+        ChallengePayment::create([
+            'user_id' => $user->id, 'asaas_payment_id' => 'pay_wait',
+            'status' => 'PENDING', 'value' => 79.90, 'due_date' => today()->addDays(2),
+        ]);
+        $this->actingAs($user)->get(route('pagamento.show'))->assertInertia(
+            fn (\Inertia\Testing\AssertableInertia $page) => $page->where('payment.state', 'pendente')
+        );
+        $this->assertFalse($user->fresh()->hasPaidChallenge());
     }
 
     public function test_reconcile_command_confirms_pending_payments(): void

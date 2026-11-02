@@ -43,8 +43,8 @@ class ChallengeSheet
 
     public static function dayOn(CarbonInterface $date): int
     {
-        $start = Carbon::parse(self::START)->startOfDay()->getTimestamp();
-        $stamp = $date->copy()->startOfDay()->getTimestamp();
+        $start = Carbon::parse(self::START, ChallengeAccess::TIMEZONE)->startOfDay()->getTimestamp();
+        $stamp = $date->copy()->setTimezone(ChallengeAccess::TIMEZONE)->startOfDay()->getTimestamp();
 
         return (int) (($stamp - $start) / 86400) + 1;
     }
@@ -62,7 +62,7 @@ class ChallengeSheet
 
     public static function currentWeek(?CarbonInterface $today = null): int
     {
-        $day = self::dayOn($today ?? Carbon::today());
+        $day = self::dayOn($today ?? Carbon::today(ChallengeAccess::TIMEZONE));
 
         return self::weekOf(max(1, min(self::TOTAL_DAYS, $day)));
     }
@@ -167,7 +167,7 @@ class ChallengeSheet
         }
 
         $profile = $user->athleteProfile;
-        $elapsed = max(0, min(self::TOTAL_DAYS, self::dayOn(Carbon::today()) - 1));
+        $elapsed = max(0, min(self::TOTAL_DAYS, self::dayOn(Carbon::today(ChallengeAccess::TIMEZONE)) - 1));
         $missed = 0;
 
         if ($profile?->penalty) {
@@ -182,7 +182,7 @@ class ChallengeSheet
 
         return [
             'currentWeek' => self::currentWeek(),
-            'today' => max(1, min(self::TOTAL_DAYS, self::dayOn(Carbon::today()))),
+            'today' => max(1, min(self::TOTAL_DAYS, self::dayOn(Carbon::today(ChallengeAccess::TIMEZONE)))),
             'goals' => DayLog::goals($profile),
             'workoutTypes' => DayLog::WORKOUT_TYPES,
             'weeklySkills' => array_values(array_map(

@@ -75,7 +75,7 @@ class ChallengePaymentService
                 'billingType' => 'UNDEFINED',
                 'value' => (float) config('desafio.price'),
                 'dueDate' => $payment->due_date->format('Y-m-d'),
-                'description' => 'Inscrição - Desafio 30 Firme',
+                'description' => 'Inscrição - Desafio da Virada',
                 'externalReference' => $payment->uuid,
             ];
 

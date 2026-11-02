@@ -28,6 +28,7 @@ const props = withDefaults(
         weekSkills: string[];
         defaultOpen?: boolean;
         canEdit?: boolean;
+        lockedReason?: string;
         scoreRules?: Record<string, number>;
         canComment?: boolean;
         athleteId?: number | null;
@@ -39,6 +40,7 @@ const open = ref(props.defaultOpen ?? false);
 
 // Dia já salvo fica travado até clicar em "Editar"; cada dia tem o seu próprio salvar.
 const editing = ref(props.canEdit && !props.saved);
+watch(() => props.canEdit, (allowed) => { editing.value = allowed && !props.saved; });
 const saving = ref(false);
 const saveError = ref('');
 
@@ -340,8 +342,9 @@ const chipClass = (active: boolean) =>
             </span>
         </button>
 
+        <p v-if="lockedReason" class="m-0 text-xs text-brand-muted">{{ lockedReason }}</p>
         <div v-show="open" class="grid gap-3">
-            <div class="grid min-w-0 gap-3" :class="editing ? '' : 'pointer-events-none opacity-80'">
+            <fieldset :disabled="!canEdit || !editing" class="m-0 grid min-w-0 gap-3 border-0 p-0" :class="editing ? '' : 'pointer-events-none opacity-80'">
             <p class="m-0 px-1 text-xs text-brand-muted">Água, sono e alimentação já vêm com a meta. Inclua o treino do dia para salvar. Habilidade você preenche. Ajuste o que foi diferente.</p>
 
             <!-- Treino -->
@@ -499,7 +502,7 @@ const chipClass = (active: boolean) =>
             </section>
 
             <input v-model="entry.notes.day" maxlength="255" placeholder="Observação do dia (opcional)" :class="fieldClass" />
-            </div>
+            </fieldset>
 
             <section v-if="canComment" class="grid gap-2 rounded-xl border border-brand-line2 px-3 py-3">
                 <p class="m-0 text-sm font-semibold text-brand-cream">Avaliação da refeição</p>

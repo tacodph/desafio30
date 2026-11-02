@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AthleteProgressController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ChallengeAccessController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\WebhookController;
 use App\Models\Skill;
@@ -64,6 +65,8 @@ Route::middleware(['auth', 'verified', 'challenge.paid'])->group(function () {
 
         return Inertia::render('Objetivo', ['goal' => $goal, 'skillCatalog' => Skill::catalog()]);
     })->name('meus-objetivos.show');
+    Route::get('admin/liberacoes', [ChallengeAccessController::class, 'show'])->name('admin.challenge-access');
+    Route::put('admin/liberacoes', [ChallengeAccessController::class, 'update'])->middleware('throttle:6,1')->name('admin.challenge-access.update');
     Route::get('admin/usuarios', [DashboardController::class, 'users'])->name('admin.users');
     Route::get('admin/pagamentos', [DashboardController::class, 'payments'])->name('admin.payments');
     Route::get('admin/usuarios/novo', [DashboardController::class, 'createUser'])->name('admin.users.create');

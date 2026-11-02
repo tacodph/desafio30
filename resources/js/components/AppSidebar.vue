@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
-import { type NavGroupItem, type NavItem, type SharedData } from '@/types';
+import { type NavGroupItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { Apple, ClipboardCheck, Droplets, Dumbbell, Flag, Flame, LayoutGrid, Lightbulb, Salad, Settings, Star, Trophy, Users } from 'lucide-vue-next';
+import { Apple, ClipboardCheck, Droplets, Dumbbell, Flag, LayoutGrid, Lightbulb, Salad, Settings, Star, Trophy, Users } from 'lucide-vue-next';
 import { computed } from 'vue';
 import AppLogo from './AppLogo.vue';
 
@@ -35,6 +34,7 @@ const mainNavItems = computed<NavGroupItem[]>(() => {
             { title: 'Alimentos', href: '/admin/alimentos', icon: Apple },
             { title: 'Objetivos', href: '/meus-objetivos/alimentacao', icon: Salad },
             { title: 'Pontuação', href: '/pontuacao', icon: Trophy },
+            { title: 'Liberações do desafio', href: '/admin/liberacoes', icon: Settings },
             { title: 'Configurações', href: '/settings/profile', icon: Settings },
         ];
     }
@@ -92,13 +92,6 @@ const mainNavItems = computed<NavGroupItem[]>(() => {
     return items;
 });
 
-const footerNavItems: NavItem[] = [
-    {
-        title: 'Instagram',
-        href: 'https://www.instagram.com/desafio60.firme/',
-        icon: Flame,
-    },
-];
 </script>
 
 <template>
@@ -120,7 +113,6 @@ const footerNavItems: NavItem[] = [
         </SidebarContent>
 
         <SidebarFooter>
-            <NavFooter :items="footerNavItems" />
             <NavUser />
         </SidebarFooter>
     </Sidebar>
