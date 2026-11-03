@@ -18,7 +18,7 @@ interface Props {
     status?: string;
     className?: string;
     paymentInfo: {
-        status: 'novo' | 'pendente' | 'vencido' | 'confirmado' | 'reembolsado';
+        status: 'novo' | 'pendente' | 'vencido' | 'confirmado' | 'reembolsado' | 'cortesia';
         value: number | string;
         dueDate: string | null;
     } | null;
@@ -59,6 +59,7 @@ const submit = () => {
 
 const paymentStatus = (status: NonNullable<Props['paymentInfo']>['status']) =>
     ({
+        cortesia: 'Cortesia — participação sem cobrança',
         novo: 'Pagamento ainda não iniciado',
         pendente: 'Aguardando pagamento',
         vencido: 'Pagamento vencido',
@@ -156,11 +157,11 @@ const paymentValue = (value: number | string) => Number(value).toLocaleString('p
                         </div>
                         <div>
                             <dt class="text-sm text-muted-foreground">Vencimento</dt>
-                            <dd class="font-semibold">{{ props.paymentInfo.dueDate ?? 'Ainda não definido' }}</dd>
+                            <dd class="font-semibold">{{ props.paymentInfo.status === 'cortesia' ? 'Não se aplica' : props.paymentInfo.dueDate ?? 'Ainda não definido' }}</dd>
                         </div>
                     </dl>
                     <Link
-                        v-if="props.paymentInfo.status !== 'confirmado'"
+                        v-if="!['confirmado', 'cortesia'].includes(props.paymentInfo.status)"
                         :href="route('pagamento.show')"
                         class="mt-4 inline-flex text-sm font-semibold text-primary underline underline-offset-4"
                     >

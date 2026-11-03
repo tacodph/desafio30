@@ -16,16 +16,27 @@ class ChallengeAccess
         'conquistas' => 'Página de conquistas',
         'resumo' => 'Página de resumo',
         'entries' => 'Lançamentos e fotos dos dias',
+        'shopping' => 'Monte seu Cardápio',
     ];
 
     private ?array $settings = null;
 
+    private ?\Illuminate\Http\Request $settingsRequest = null;
+
     public function modes(): array
     {
+        // Um controller reutilizado não deve manter liberações de outra requisição.
+        $currentRequest = request();
+        if ($this->settingsRequest !== $currentRequest) {
+            $this->settingsRequest = $currentRequest;
+            $this->settings = null;
+        }
+
         return $this->settings ??= array_replace(
             array_fill_keys(array_keys(self::FEATURES), 'calendar'),
             Schema::hasTable('challenge_access_settings')
-                ? DB::table('challenge_access_settings')->pluck('mode', 'feature')->all()
+                ? DB::table('challenge_access_settings')->pluck('mode', 'feature')
+                    ->map(fn ($mode) => in_array($mode, ['calendar', 'closed'], true) ? $mode : 'calendar')->all()
                 : [],
         );
     }
@@ -38,7 +49,6 @@ class ChallengeAccess
     public function pageOpen(string $feature): bool
     {
         return match ($this->modes()[$feature] ?? 'closed') {
-            'open' => true,
             'calendar' => Carbon::now(self::TIMEZONE)->gte($this->releaseDate()),
             default => false,
         };
@@ -51,7 +61,6 @@ class ChallengeAccess
         }
 
         return match ($this->modes()['entries']) {
-            'open' => true,
             'calendar' => Carbon::parse(ChallengeSheet::dateForDay($day), self::TIMEZONE)
                 ->isSameDay(Carbon::now(self::TIMEZONE)),
             default => false,
@@ -72,7 +81,7 @@ class ChallengeAccess
         return [
             'releaseDate' => $this->releaseDate()->format('d/m/Y'),
             'timezone' => self::TIMEZONE,
-            'pages' => collect(['dias', 'conquistas', 'resumo'])
+            'pages' => collect(['dias', 'conquistas', 'resumo', 'shopping'])
                 ->mapWithKeys(fn (string $key) => [$key => $this->pageOpen($key)])->all(),
             'editableDays' => array_values(array_filter(
                 range(1, ChallengeSheet::TOTAL_DAYS), fn (int $day) => $this->dayEditable($day),

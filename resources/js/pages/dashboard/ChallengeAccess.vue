@@ -4,9 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm } from '@inertiajs/vue3';
 
-type Mode = 'calendar' | 'open' | 'closed';
+type Mode = 'calendar' | 'closed';
 const props = defineProps<{
     features: Record<string, string>;
     modes: Record<string, Mode>;
@@ -35,7 +35,15 @@ const restore = () => {
                 <div class="eyebrow">Administração · {{ environment }}</div>
                 <h1 class="display-title text-[clamp(36px,5vw,56px)]">Liberações do desafio</h1>
                 <p class="m-0 leading-relaxed text-brand-muted">No calendário normal, as páginas abrem em {{ releaseDate }}. Cada dia aceita lançamentos e fotos somente na sua própria data, de 00h até 23h59, pelo horário de Brasília.</p>
-                <p class="m-0 text-sm text-brand-muted">As mudanças valem para todos os atletas deste ambiente. Para testar um dia fora da data, libere a página de dias e os lançamentos. Selecione “Seguir calendário” para restaurar as regras normais.</p>
+                <p class="m-0 text-sm text-brand-muted">Estes controles seguem o calendário ou bloqueiam o acesso dos atletas. Para manutenção fora da data, use a visualização administrativa: ela é exclusiva do seu perfil e não libera o acesso de outros usuários.</p>
+            </div>
+            <div class="surface-card flex flex-col gap-3 p-5">
+                <h2 class="m-0 text-lg font-bold">Visualização exclusiva do administrador</h2>
+                <p class="m-0 text-sm leading-relaxed text-brand-muted">Consulte as páginas em qualquer data. Esta visualização não permite lançamentos nem muda as liberações dos atletas.</p>
+                <div class="flex flex-wrap gap-3">
+                    <Link :href="route('athlete.progress.tab', 'dias')" class="rounded-full bg-brand-gold px-5 py-3 text-sm font-bold text-brand-ink">Visualizar evolução</Link>
+                    <Link :href="route('alimentacao.compras')" class="rounded-full border border-brand-line2 px-5 py-3 text-sm font-bold">Visualizar cardápio</Link>
+                </div>
             </div>
             <p v-if="!ready" role="alert" class="surface-card p-4 text-brand-gold">Os controles precisam da atualização do banco de dados. Execute php artisan migrate no servidor antes de salvar.</p>
             <p v-if="saved" role="status" class="surface-card p-4 text-brand-gold">Liberações atualizadas com sucesso.</p>
@@ -44,10 +52,8 @@ const restore = () => {
                     <Label :for="String(key)">{{ label }}</Label>
                     <select :id="String(key)" v-model="form.modes[key]" :disabled="!ready || form.processing" class="h-11 rounded-xl border border-brand-line2 bg-brand-card2 px-3 text-brand-cream [color-scheme:dark]">
                         <option value="calendar">Seguir calendário</option>
-                        <option value="open">Liberar para testes</option>
                         <option value="closed">Bloquear</option>
                     </select>
-                    <p v-if="form.modes[key] === 'open'" class="m-0 text-sm text-brand-gold">{{ key === 'entries' ? 'Todos os 30 dias poderão receber lançamentos, se a página de dias estiver liberada.' : 'Página disponível antes da data prevista.' }}</p>
                     <InputError :message="form.errors[('modes.' + key) as keyof typeof form.errors]" />
                 </div>
                 <div class="grid max-w-sm gap-2 border-t border-brand-line2 pt-5">

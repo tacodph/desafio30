@@ -70,6 +70,7 @@ Route::middleware(['auth', 'verified', 'challenge.paid'])->group(function () {
     Route::get('admin/usuarios', [DashboardController::class, 'users'])->name('admin.users');
     Route::get('admin/pagamentos', [DashboardController::class, 'payments'])->name('admin.payments');
     Route::get('admin/usuarios/novo', [DashboardController::class, 'createUser'])->name('admin.users.create');
+    Route::patch('admin/usuarios/{athlete}/cortesia', [DashboardController::class, 'updateCourtesy'])->name('admin.users.courtesy');
     Route::post('admin/usuarios', [DashboardController::class, 'storeUser'])->name('admin.users.store');
     Route::get('admin/alimentos', [DashboardController::class, 'foods'])->name('admin.foods');
     Route::post('admin/alimentos', [DashboardController::class, 'storeFood'])->name('admin.foods.store');

@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, useForm } from '@inertiajs/vue3';
+import { computed, watch } from 'vue';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Administração', href: '/dashboard' },
@@ -13,7 +14,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Cadastro', href: '/admin/usuarios/novo' },
 ];
 
-defineProps<{
+const props = defineProps<{
     types: { id: number; name: string }[];
 }>();
 
@@ -23,7 +24,11 @@ const form = useForm({
     password: '',
     password_confirmation: '',
     user_type_id: '',
+    courtesy: false,
 });
+
+const isAthlete = computed(() => props.types.find((type) => type.id === Number(form.user_type_id))?.name === 'atleta');
+watch(isAthlete, (athlete) => { if (!athlete) form.courtesy = false; });
 
 const submit = () => {
     form.post(route('admin.users.store'), {
@@ -64,6 +69,14 @@ const submit = () => {
                         <option v-for="type in types" :key="type.id" :value="type.id">{{ type.name }}</option>
                     </select>
                     <InputError :message="form.errors.user_type_id" />
+                </div>
+
+                <div v-if="isAthlete" class="grid gap-2 rounded-xl border border-brand-line2 p-4">
+                    <label class="flex cursor-pointer items-start gap-3">
+                        <input v-model="form.courtesy" type="checkbox" class="mt-1 size-5 shrink-0 accent-brand-gold" />
+                        <span><span class="block font-semibold">Atleta cortesia</span><span class="mt-1 block text-sm leading-relaxed text-brand-muted">Libera a participação sem pagamento no Asaas. A inscrição ficará identificada como cortesia.</span></span>
+                    </label>
+                    <InputError :message="form.errors.courtesy" />
                 </div>
 
                 <div class="grid gap-2">

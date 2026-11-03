@@ -108,7 +108,7 @@ class GoogleAuthController extends Controller
 
         $request->session()->regenerate();
 
-        if ($user->isAthlete() && ! $user->hasPaidChallenge()) {
+        if ($user->isAthlete() && ! $user->hasChallengeAccess()) {
             return to_route('pagamento.show');
         }
 

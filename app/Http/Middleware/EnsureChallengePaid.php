@@ -15,7 +15,7 @@ class EnsureChallengePaid
     {
         $user = $request->user();
 
-        if ($user && $user->isAthlete() && ! $user->hasPaidChallenge()) {
+        if ($user && $user->isAthlete() && ! $user->hasChallengeAccess()) {
             return redirect()->route('pagamento.show');
         }
 

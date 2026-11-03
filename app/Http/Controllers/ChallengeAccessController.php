@@ -41,7 +41,7 @@ class ChallengeAccessController extends Controller
         $this->authorizeAdmin($request);
         $rules = ['password' => ['required', 'current_password:web'], 'modes' => ['required', 'array:'.implode(',', array_keys(ChallengeAccess::FEATURES))]];
         foreach (array_keys(ChallengeAccess::FEATURES) as $key) {
-            $rules['modes.'.$key] = ['required', 'in:calendar,open,closed'];
+            $rules['modes.'.$key] = ['required', 'in:calendar,closed'];
         }
         $data = $request->validate($rules, [
             'password.current_password' => 'A senha do administrador está incorreta.',

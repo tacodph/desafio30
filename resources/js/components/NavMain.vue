@@ -3,7 +3,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { SidebarGroup, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem } from '@/components/ui/sidebar';
 import { type NavGroupItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { ChevronRight } from 'lucide-vue-next';
+import { ChevronRight, LockKeyhole } from 'lucide-vue-next';
 
 withDefaults(
     defineProps<{
@@ -38,7 +38,11 @@ const hasActiveChild = (item: NavGroupItem) => item.children?.some((child) => is
                         <CollapsibleContent>
                             <SidebarMenuSub>
                                 <SidebarMenuSubItem v-for="child in item.children" :key="child.href">
-                                    <SidebarMenuSubButton as-child :is-active="isCurrent(child.href)">
+                                    <SidebarMenuSubButton v-if="child.disabled" as="button" type="button" disabled aria-disabled="true" title="Acesso ainda não liberado" class="opacity-50">
+                                        <span>{{ child.title }}</span>
+                                        <LockKeyhole class="ml-auto size-3.5" aria-hidden="true" />
+                                    </SidebarMenuSubButton>
+                                    <SidebarMenuSubButton v-else as-child :is-active="isCurrent(child.href)">
                                         <Link :href="child.href">
                                             <span>{{ child.title }}</span>
                                         </Link>

@@ -1,36 +1,27 @@
-# Liberações do desafio
+# Liberações e visualização administrativa
 
-O painel em /admin/liberacoes permite a um usuário do tipo administrador controlar as páginas Dias, Conquistas e Resumo e os lançamentos/fotos dos dias.
+As regras dos atletas ficam em Administração > Liberações do desafio. As opções são Seguir calendário e Bloquear. Salvar exige a senha da conta de administrador.
 
-## Regras padrão
+O antigo modo Liberar para testes foi removido. Valores antigos open no banco são interpretados como Seguir calendário; não liberam atletas antes da data nem lançamentos em outros dias.
 
-- As páginas ficam disponíveis a partir de 08/11/2026 às 00h, no fuso America/Sao_Paulo.
-- Os 30 dias ficam visíveis na página Dias. Somente o dia correspondente à data atual aceita lançamentos ou alterações de fotos.
-- Dia 1: 09/11/2026. Dia 30: 08/12/2026. A janela diária vai de 00h até 23h59, pelo horário de Brasília.
-- A proteção também vale nas rotas do servidor, inclusive no envio e na exclusão de fotos. Uma requisição com um lote que inclui um dia bloqueado não grava nenhum lançamento.
-- A seleção prévia das habilidades semanais continua disponível com a página Dias aberta, inclusive na véspera.
-- O acesso da nutricionista à consulta dos atletas não é bloqueado pelo calendário.
+## Atletas
 
-## Controles
+As páginas de Evolução e Monte seu Cardápio ficam disponíveis a partir de 08/11/2026, pelo horário de Brasília. Antes da liberação, os submenus permanecem visíveis com cadeado e sem navegação. Tentativas de acessar Evolução diretamente voltam ao painel. O primeiro preenchimento das metas também retorna ao painel.
 
-- Seguir calendário: aplica as regras de data acima.
-- Liberar para testes: abre a página antes da data ou permite lançar em todos os dias, conforme o controle escolhido.
-- Bloquear: suspende a página ou os lançamentos, mesmo dentro da data.
+Os lançamentos e as fotos ficam disponíveis somente na data correspondente a cada dia: de 09/11/2026 até 08/12/2026. O controle Bloquear pode suspender páginas ou lançamentos; não existe opção para liberar todos os dias globalmente.
 
-Para testar dias fora do calendário, libere tanto Página de dias quanto Lançamentos e fotos dos dias. Uma página de dias bloqueada continua impedindo os lançamentos mesmo se o controle de lançamentos estiver liberado.
+## Administrador
 
-As mudanças são globais para os atletas no ambiente conectado e persistem no banco. O ambiente aparece no cabeçalho do painel. Cada salvamento exige a senha da conta de administrador conectada. O tipo de usuário também é conferido no servidor; a senha de um atleta não permite administrar as liberações.
+Com seu login de administrador, use Evolução (visualizar), os submenus Dias, Conquistas e Resumo, ou Monte seu Cardápio (visualizar). Também há atalhos em Liberações do desafio.
 
-O botão Restaurar calendário no formulário preenche as opções com Seguir calendário; confirme a senha e salve para aplicar.
+O administrador pode acessar essas páginas em qualquer data, sem se cadastrar como atleta, preencher metas ou pagar inscrição. A prévia é somente para consulta, mostra um aviso e não permite salvar lançamentos, fotos, conquistas ou listas de um atleta. Ela não altera liberações, dados ou pontuação de outros usuários.
+
+O calendário continua obrigatório para atletas. Outros perfis não recebem a permissão de prévia administrativa.
 
 ## Instalação
 
-Execute a nova migração em cada ambiente:
+A tabela de controles foi criada por:
 
     php artisan migrate --path=database/migrations/2026_11_02_000000_create_challenge_access_settings_table.php --force
 
-Antes da migração, as regras automáticas funcionam com o calendário padrão e o painel informa que o banco precisa ser atualizado para salvar opções.
-
-## Validação
-
-Tests/Feature/ChallengeAccessTest.php cobre a véspera, a data de cada dia, o fuso de Brasília, o fim do desafio, os bloqueios de gravação e fotos, as opções de teste e a autorização com senha de administrador.
+Esta mudança de visualização administrativa não exige uma tabela nova. Publique os arquivos PHP, Vue e public/build atualizados.

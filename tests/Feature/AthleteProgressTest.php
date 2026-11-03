@@ -17,10 +17,12 @@ class AthleteProgressTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        // These tests exercise progress details independently of the calendar gates.
-        foreach (array_keys(\App\Support\ChallengeAccess::FEATURES) as $feature) {
-            \Illuminate\Support\Facades\DB::table('challenge_access_settings')->insert(['feature' => $feature, 'mode' => 'open']);
-        }
+        // Calendar restrictions have their own feature suite; isolate progress calculations here.
+        $this->app->bind(\App\Support\ChallengeAccess::class, fn () => new class extends \App\Support\ChallengeAccess
+        {
+            public function pageOpen(string $feature): bool { return true; }
+            public function dayEditable(int $day): bool { return $day >= 1 && $day <= 30; }
+        });
     }
 
     public function test_challenge_has_thirty_days_and_rejects_day_thirty_one(): void
@@ -49,7 +51,8 @@ class AthleteProgressTest extends TestCase
     {
         $this->actingAs(User::factory()->ofRole(UserRole::Administrador)->create())
             ->get('/atleta/evolucao/dias')
-            ->assertForbidden();
+            ->assertOk()->assertInertia(fn (Assert $page) => $page->where('canEdit', false)->where('adminPreview', true));
+        $this->put('/atleta/dias', ['days' => [['day' => 1]]])->assertForbidden();
 
         $athlete = $this->startedAthlete();
 
@@ -248,7 +251,7 @@ class AthleteProgressTest extends TestCase
 
         $this->actingAs($athlete)->get('/dashboard')->assertRedirect('/atleta/ponto-de-partida/metas');
 
-        $this->actingAs($athlete)->put('/atleta/metas', ['movement_level' => 'iniciante', 'water_liters' => 2.5])->assertRedirect('/atleta/evolucao/dias');
+        $this->actingAs($athlete)->put('/atleta/metas', ['movement_level' => 'iniciante', 'water_liters' => 2.5])->assertRedirect('/dashboard');
         $this->actingAs($athlete)->get('/dashboard')->assertOk();
         $this->assertNotNull($athlete->fresh()->athleteProfile->goals_set_at);
 

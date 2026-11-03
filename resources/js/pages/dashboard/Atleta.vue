@@ -25,6 +25,7 @@ const { countdown, milestones } = useChallenge();
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-6 rounded-xl p-4 md:p-6">
+            <p v-if="$page.props.accessNotice" role="status" class="surface-card m-0 p-4 text-sm text-brand-muted">{{ $page.props.accessNotice }}</p>
             <div class="flex flex-col gap-3">
                 <div class="eyebrow">Desafio 30 Dias</div>
                 <h1 class="display-title text-[clamp(36px,5vw,56px)]">
@@ -65,7 +66,7 @@ const { countdown, milestones } = useChallenge();
                     <p class="m-0 mt-2 max-w-2xl text-sm text-brand-muted">Praticidade e equilíbrio, sem terrorismo.</p>
                 </div>
                 <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
-                    <Link :href="route('alimentacao.compras')" class="surface-card min-w-0 p-4 sm:p-5">
+                    <Link v-if="$page.props.evolutionAccess?.pages.shopping" :href="route('alimentacao.compras')" class="surface-card min-w-0 p-4 sm:p-5">
                         <h3 class="font-display m-0 text-lg font-extrabold uppercase leading-tight sm:text-xl">Listas de compras</h3>
                     </Link>
                     <div v-for="item in ['Cardápios da semana', 'Kit da vida real', 'Comer sem tudo ou nada']" :key="item" class="surface-card min-w-0 p-4 sm:p-5">

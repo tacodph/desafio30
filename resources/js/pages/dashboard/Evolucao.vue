@@ -58,6 +58,7 @@ const props = defineProps<{
     achievements: { id: number; achieved_on: string; type: string; label: string; points: number; detail: string; emotion: string; comment: string; nutritionist: string }[];
     types: { type: string; label: string; points: number }[];
     total: number;
+    adminPreview?: boolean;
     canEdit: boolean;
     canComment: boolean;
     athleteId: number | null;
@@ -75,7 +76,8 @@ const tabs: [Tab, string][] = [
 ];
 
 // O atleta navega por páginas (/atleta/evolucao/{aba}); a nutricionista alterna as abas na mesma tela.
-const localTab = ref<Tab>('dias');
+const localTab = ref<Tab>(props.tab ?? 'dias');
+watch(() => props.tab, (value) => { if (props.adminPreview && value) localTab.value = value; });
 const tab = computed<Tab>(() => (props.canEdit ? (props.tab ?? 'dias') : localTab.value));
 
 const breadcrumbs = computed<BreadcrumbItem[]>(() => [
@@ -235,6 +237,7 @@ const saveComment = () => {
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-6 p-4 md:p-6">
+            <p v-if="adminPreview" role="status" class="surface-card m-0 border-brand-gold/40 p-4 text-sm leading-relaxed text-brand-gold">Visualização administrativa, somente para consulta. Você pode revisar as páginas fora da data, sem liberar atletas nem registrar dados reais.</p>
             <div class="flex flex-wrap items-end justify-between gap-4">
                 <div>
                     <div class="eyebrow">{{ canComment ? nutriName : 'Meu desafio' }}</div>
@@ -247,15 +250,16 @@ const saveComment = () => {
             <div class="flex flex-wrap gap-2">
                 <template v-for="item in tabs" :key="item[0]">
                     <Link
-                        v-if="canEdit"
+                        v-if="canEdit && access.pages[item[0]]"
                         :href="route('athlete.progress.tab', item[0])"
-                        class="rounded-full px-4 py-2 text-sm font-bold"
+                        class="rounded-full px-4 py-2 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-40"
                         :class="tab === item[0] ? 'bg-brand-gold text-brand-ink' : 'border border-brand-line2 text-brand-muted'"
                     >
                         {{ item[1] }}
                     </Link>
                     <button
                         v-else
+                        :disabled="canEdit && !access.pages[item[0]]"
                         type="button"
                         class="rounded-full px-4 py-2 text-sm font-bold"
                         :class="tab === item[0] ? 'bg-brand-gold text-brand-ink' : 'border border-brand-line2 text-brand-muted'"
@@ -268,7 +272,7 @@ const saveComment = () => {
 
             <div v-if="tab === 'dias'" class="flex flex-col gap-4">
                 <p v-if="canEdit" role="status" class="surface-card m-0 p-4 text-sm leading-relaxed text-brand-muted">
-                    {{ access.entryMode === 'open' ? 'Lançamentos liberados pela administração para testes.' : access.entryMode === 'closed' ? 'Os lançamentos estão temporariamente bloqueados pela administração.' : 'Cada dia libera seus lançamentos e fotos apenas na data correspondente, de 00h até 23h59, pelo horário de Brasília. Os demais dias ficam disponíveis para consulta.' }}
+                    {{ access.entryMode === 'closed' ? 'Os lançamentos estão temporariamente bloqueados pela administração.' : 'Cada dia libera seus lançamentos e fotos apenas na data correspondente, de 00h até 23h59, pelo horário de Brasília. Os demais dias ficam disponíveis para consulta.' }}
                 </p>
                 <InputError :message="dias.errors.days" />
                 <div class="flex flex-wrap gap-2">

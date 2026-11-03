@@ -101,7 +101,7 @@ const goalHref = (key: GoalKey) => (key === 'plus' ? route('objetivo.luxo') : ro
             <div v-if="item.key === 'alimentacao'" class="mx-auto flex max-w-[1200px] flex-wrap gap-2 px-6 pt-8">
                 <span class="rounded-full bg-[#43A047] px-4 py-2 text-sm font-bold text-white">A regra</span>
                 <Link
-                    v-if="$page.props.auth.user"
+                    v-if="$page.props.auth.user && ($page.props.auth.user.user_type?.name !== 'atleta' || $page.props.evolutionAccess?.pages.shopping)"
                     :href="route('alimentacao.compras')"
                     class="rounded-full border border-brand-line3 px-4 py-2 text-sm font-bold text-brand-cream hover:border-brand-cream"
                 >

@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use Illuminate\Foundation\Inspiring;
+use App\Support\ChallengeAccess;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -40,6 +41,24 @@ class HandleInertiaRequests extends Middleware
 
         return array_merge(parent::share($request), [
             ...parent::share($request),
+            'evolutionAccess' => function () use ($request) {
+                if ($request->user()?->userType?->name === 'administrador') {
+                    return ['releaseDate' => (new ChallengeAccess)->releaseDate()->format('d/m/Y'),
+                        'pages' => array_fill_keys(['dias', 'conquistas', 'resumo', 'shopping'], true)];
+                }
+                if (! $request->user()?->isAthlete()) {
+                    return null;
+                }
+                $access = new ChallengeAccess;
+
+                return [
+                    'releaseDate' => $access->releaseDate()->format('d/m/Y'),
+                    'pages' => collect(['dias', 'conquistas', 'resumo', 'shopping'])->mapWithKeys(
+                        fn (string $tab) => [$tab => $access->pageOpen($tab)],
+                    )->all(),
+                ];
+            },
+            'accessNotice' => fn () => $request->session()->get('access_notice'),
             'name' => config('app.name'),
             'quote' => ['message' => trim($message), 'author' => trim($author)],
             'auth' => [

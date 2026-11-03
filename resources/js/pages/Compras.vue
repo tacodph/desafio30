@@ -9,6 +9,7 @@ const props = defineProps<{
     weeks: { week: number; period: string }[];
     lists: { week: number; period: string; items: string[]; extras: string[] }[];
     canSave: boolean;
+    adminPreview?: boolean;
     catalog: { title: string; groups: { title: string; items: string[]; notes: string[] }[] }[];
 }>();
 
@@ -57,6 +58,7 @@ const summaries = computed(() =>
         </header>
 
         <main class="mx-auto flex max-w-[900px] flex-col gap-8 px-6 py-10">
+            <p v-if="adminPreview" role="status" class="rounded-xl border border-brand-gold/40 p-4 text-sm text-brand-gold">Visualização administrativa, somente para consulta. O calendário e os bloqueios dos atletas continuam valendo.</p>
             <div>
                 <div class="text-sm font-bold uppercase tracking-[3px] text-[#43A047]">Alimentação e organização</div>
                 <h1 class="mt-2 text-3xl font-black">Lista de Compras Inteligente</h1>

@@ -26,6 +26,10 @@ class PaymentController extends Controller
             return to_route('dashboard');
         }
 
+        if ($user->isCourtesy()) {
+            return to_route('dashboard');
+        }
+
         $latest = $user->payments()->latest('id')->first();
 
         // O polling precisa consultar o Asaas, não só reler o status do banco.
@@ -58,8 +62,8 @@ class PaymentController extends Controller
 
         abort_unless($user->isAthlete(), 403);
 
-        if ($user->hasPaidChallenge()) {
-            return to_route('pagamento.show');
+        if ($user->hasChallengeAccess()) {
+            return to_route('dashboard');
         }
 
         $data = $request->validate([
@@ -78,6 +82,10 @@ class PaymentController extends Controller
     /** Leva para a fatura do Asaas. O botão "Pagar" aponta para cá, então o link visível é do nosso domínio. */
     public function pay(Request $request): RedirectResponse
     {
+        if ($request->user()->hasChallengeAccess()) {
+            return to_route('dashboard');
+        }
+
         $payment = $request->user()->payments()->pending()->whereNotNull('invoice_url')->latest('id')->first();
 
         if (! $payment) {
@@ -91,6 +99,9 @@ class PaymentController extends Controller
     public function callback(Request $request): RedirectResponse
     {
         $user = $request->user();
+        if ($user->isCourtesy()) {
+            return to_route('dashboard');
+        }
         $payment = $user->payments()->latest('id')->first();
 
         if ($payment) {

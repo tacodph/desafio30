@@ -14,7 +14,7 @@ export interface NavItem {
     href: string;
     icon?: LucideIcon;
     isActive?: boolean;
-    children?: { title: string; href: string }[];
+    children?: { title: string; href: string; disabled?: boolean }[];
 }
 
 export interface NavGroupItem extends Omit<NavItem, 'href'> {
@@ -22,6 +22,7 @@ export interface NavGroupItem extends Omit<NavItem, 'href'> {
 }
 
 export interface SharedData {
+    evolutionAccess?: { releaseDate: string; pages: Record<string, boolean> } | null;
     name: string;
     quote: { message: string; author: string };
     auth: Auth;

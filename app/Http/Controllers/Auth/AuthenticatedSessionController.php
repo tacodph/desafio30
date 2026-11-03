@@ -35,7 +35,7 @@ class AuthenticatedSessionController extends Controller
 
         $user = $request->user();
 
-        if ($user->isAthlete() && ! $user->hasPaidChallenge()) {
+        if ($user->isAthlete() && ! $user->hasChallengeAccess()) {
             return to_route('pagamento.show');
         }
 

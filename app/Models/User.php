@@ -54,6 +54,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'challenge_paid_at' => 'datetime',
+            'challenge_courtesy_at' => 'datetime',
             'password' => 'hashed',
         ];
     }
@@ -81,6 +82,16 @@ class User extends Authenticatable
     public function hasPaidChallenge(): bool
     {
         return $this->challenge_paid_at !== null;
+    }
+
+    public function isCourtesy(): bool
+    {
+        return $this->challenge_courtesy_at !== null;
+    }
+
+    public function hasChallengeAccess(): bool
+    {
+        return $this->hasPaidChallenge() || $this->isCourtesy();
     }
 
     public function checkins(): HasMany

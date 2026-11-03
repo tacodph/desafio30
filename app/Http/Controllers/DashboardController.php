@@ -13,6 +13,8 @@ use App\Support\ChallengeSheet;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -100,7 +102,7 @@ class DashboardController extends Controller
         $this->abortUnless($request, UserRole::Administrador);
 
         return Inertia::render('dashboard/Users', [
-            'users' => User::query()->with('userType:id,name')->orderBy('name')->get(['id', 'name', 'email', 'user_type_id']),
+            'users' => User::query()->with('userType:id,name')->orderBy('name')->get(['id', 'name', 'email', 'user_type_id', 'challenge_paid_at', 'challenge_courtesy_at']),
         ]);
     }
 
@@ -122,16 +124,41 @@ class DashboardController extends Controller
             'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
             'password' => ['required', 'confirmed', Password::defaults()],
             'user_type_id' => 'required|integer|exists:user_types,id',
+            'courtesy' => 'sometimes|boolean',
         ]);
 
-        $user = User::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => $data['password'],
-            'user_type_id' => $data['user_type_id'],
-        ]);
-        // Conta criada pela administração é cortesia: não passa pela cobrança.
-        $user->forceFill(['email_verified_at' => now(), 'challenge_paid_at' => now()])->save();
+        $courtesy = $request->boolean('courtesy');
+        if ($courtesy && (int) $data['user_type_id'] !== UserType::idFor(UserRole::Atleta)) {
+            throw ValidationException::withMessages(['courtesy' => 'A cortesia é exclusiva para atletas.']);
+        }
+
+        DB::transaction(function () use ($data, $courtesy, $request) {
+            $user = User::create([
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'password' => $data['password'],
+                'user_type_id' => $data['user_type_id'],
+            ]);
+            $user->forceFill([
+                'email_verified_at' => now(),
+                'challenge_courtesy_at' => $courtesy ? now() : null,
+                'challenge_courtesy_by' => $courtesy ? $request->user()->id : null,
+            ])->save();
+        });
+
+        return to_route('admin.users');
+    }
+
+    public function updateCourtesy(Request $request, User $athlete): RedirectResponse
+    {
+        $this->abortUnless($request, UserRole::Administrador);
+        abort_unless($athlete->isAthlete(), 403);
+        $data = $request->validate(['courtesy' => 'required|boolean']);
+        $grant = (bool) $data['courtesy'];
+        $athlete->forceFill([
+            'challenge_courtesy_at' => $grant ? ($athlete->challenge_courtesy_at ?? now()) : null,
+            'challenge_courtesy_by' => $grant ? ($athlete->challenge_courtesy_by ?? $request->user()->id) : null,
+        ])->save();
 
         return to_route('admin.users');
     }

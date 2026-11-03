@@ -92,6 +92,10 @@ class AthleteProgressController extends Controller
     }
     public function show(Request $request, string $tab): Response|RedirectResponse
     {
+        if ($request->user()->userType?->name === UserRole::Administrador->value) {
+            return $this->page($request->user(), false, false, $tab, true);
+        }
+
         $this->abortUnlessAthlete($request);
 
         if ($pending = $this->pendingStart($request)) {
@@ -99,10 +103,7 @@ class AthleteProgressController extends Controller
         }
 
         if (! $this->access->pageOpen($tab)) {
-            return Inertia::render('dashboard/EvolutionLocked', [
-                'feature' => ChallengeAccess::FEATURES[$tab],
-                'access' => $this->access->payload(),
-            ]);
+            return to_route('dashboard')->with('access_notice', 'Esta página será liberada a partir de '.$this->access->releaseDate()->format('d/m/Y').', conforme as liberações da administração.');
         }
 
         return $this->page($request->user(), true, false, $tab);
@@ -141,7 +142,7 @@ class AthleteProgressController extends Controller
 
         $profile->fill([...$data, 'goals_set_at' => $profile->goals_set_at ?? now()])->save();
 
-        return $firstTime ? to_route('athlete.progress.tab', 'dias') : to_route('athlete.start.goals');
+        return $firstTime ? to_route('dashboard') : to_route('athlete.start.goals');
     }
 
     public function updateSkills(Request $request): RedirectResponse
@@ -413,16 +414,20 @@ class AthleteProgressController extends Controller
         return to_route('athlete.progress.tab', 'conquistas');
     }
 
-    private function page(User $athlete, bool $canEdit, bool $canComment, ?string $tab = null): Response
+    private function page(User $athlete, bool $canEdit, bool $canComment, ?string $tab = null, bool $adminPreview = false): Response
     {
         return Inertia::render('dashboard/Evolucao', [
             ...ChallengeSheet::payload($athlete),
-            'access' => $this->access->payload(),
+            'access' => $adminPreview ? array_replace($this->access->payload(), [
+                'pages' => array_fill_keys(['dias', 'conquistas', 'resumo', 'shopping'], true),
+                'editableDays' => [], 'entryMode' => 'closed',
+            ]) : $this->access->payload(),
+            'adminPreview' => $adminPreview,
             'tab' => $tab,
             'canEdit' => $canEdit,
             'canComment' => $canComment,
             'athleteId' => $canComment ? $athlete->id : null,
-            'athleteName' => $canComment ? $athlete->name : null,
+            'athleteName' => $adminPreview ? 'Visualização do atleta' : ($canComment ? $athlete->name : null),
             'nutritionistName' => User::query()
                 ->where('user_type_id', UserType::idFor(UserRole::Nutricionista))
                 ->orderBy('name')
@@ -432,10 +437,18 @@ class AthleteProgressController extends Controller
 
     public function shopping(Request $request): Response
     {
+        if ($request->user()->isAthlete() && ! $this->access->pageOpen('shopping')) {
+            return Inertia::render('dashboard/EvolutionLocked', [
+                'feature' => 'Monte seu Cardápio',
+                'access' => $this->access->payload(),
+            ]);
+        }
+
         $user = $request->user();
         $canSave = $user && UserRole::tryFrom($user->userType->name) === UserRole::Atleta;
 
         return Inertia::render('Compras', [
+            'adminPreview' => $user->userType?->name === UserRole::Administrador->value,
             'weeks' => $this->shoppingWeeks(),
             'lists' => $canSave ? $this->shoppingLists($user) : [],
             'canSave' => $canSave,
@@ -446,6 +459,14 @@ class AthleteProgressController extends Controller
     public function createShopping(Request $request): Response|RedirectResponse
     {
         $this->abortUnlessAthlete($request);
+
+        if ($request->user()->isAthlete() && ! $this->access->pageOpen('shopping')) {
+            return Inertia::render('dashboard/EvolutionLocked', [
+                'feature' => 'Monte seu Cardápio',
+                'access' => $this->access->payload(),
+            ]);
+        }
+
 
         $used = collect($this->shoppingLists($request->user()))->pluck('week');
         $free = $this->shoppingWeeks()->reject(fn (array $week) => $used->contains($week['week']))->values();
@@ -465,6 +486,14 @@ class AthleteProgressController extends Controller
     public function editShopping(Request $request, int $week): Response
     {
         $this->abortUnlessAthlete($request);
+
+        if ($request->user()->isAthlete() && ! $this->access->pageOpen('shopping')) {
+            return Inertia::render('dashboard/EvolutionLocked', [
+                'feature' => 'Monte seu Cardápio',
+                'access' => $this->access->payload(),
+            ]);
+        }
+
 
         $list = collect($this->shoppingLists($request->user()))->firstWhere('week', $week);
         abort_if($list === null, 404);
@@ -490,6 +519,7 @@ class AthleteProgressController extends Controller
     private function saveShopping(Request $request, bool $new): RedirectResponse
     {
         $this->abortUnlessAthlete($request);
+        abort_unless($this->access->pageOpen('shopping'), 403, 'Monte seu Cardápio ainda não está disponível.');
 
         $data = $request->validate([
             'week' => 'required|integer|between:1,7',

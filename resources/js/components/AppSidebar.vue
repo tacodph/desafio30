@@ -25,6 +25,16 @@ const menuLabel = computed(() => {
 
 const objective = (goal: string) => ({ title: 'Objetivo', href: `/meus-objetivos/${goal}` });
 
+const evolutionChildren = computed(() => {
+    const allowed = page.props.evolutionAccess?.pages ?? {};
+    return [
+        { title: 'Dias', href: '/atleta/evolucao/dias', feature: 'dias' },
+        { title: 'Conquistas', href: '/atleta/evolucao/conquistas', feature: 'conquistas' },
+        { title: 'Resumo', href: '/atleta/evolucao/resumo', feature: 'resumo' },
+        { title: 'Pontuação', href: '/pontuacao', feature: 'dias' },
+    ].map((item) => ({ ...item, disabled: !allowed[item.feature] }));
+});
+
 const mainNavItems = computed<NavGroupItem[]>(() => {
     if (role.value === 'administrador') {
         return [
@@ -33,6 +43,8 @@ const mainNavItems = computed<NavGroupItem[]>(() => {
             { title: 'Pagamentos', href: '/admin/pagamentos', icon: ClipboardCheck },
             { title: 'Alimentos', href: '/admin/alimentos', icon: Apple },
             { title: 'Objetivos', href: '/meus-objetivos/alimentacao', icon: Salad },
+            { title: 'Evolução (visualizar)', icon: ClipboardCheck, children: evolutionChildren.value },
+            { title: 'Monte seu Cardápio (visualizar)', href: '/objetivos/alimentacao/compras', icon: Salad },
             { title: 'Pontuação', href: '/pontuacao', icon: Trophy },
             { title: 'Liberações do desafio', href: '/admin/liberacoes', icon: Settings },
             { title: 'Configurações', href: '/settings/profile', icon: Settings },
@@ -53,14 +65,9 @@ const mainNavItems = computed<NavGroupItem[]>(() => {
             {
                 title: 'Evolução',
                 icon: ClipboardCheck,
-                children: [
-                    { title: 'Dias', href: '/atleta/evolucao/dias' },
-                    { title: 'Conquistas', href: '/atleta/evolucao/conquistas' },
-                    { title: 'Resumo', href: '/atleta/evolucao/resumo' },
-                    { title: 'Pontuação', href: '/pontuacao' },
-                ],
+                children: evolutionChildren.value,
             },
-            { title: 'Alimentação', icon: Salad, children: [objective('alimentacao'), { title: 'Monte seu Cardápio', href: '/objetivos/alimentacao/compras' }] },
+            { title: 'Alimentação', icon: Salad, children: [objective('alimentacao'), { title: 'Monte seu Cardápio', href: '/objetivos/alimentacao/compras', disabled: !page.props.evolutionAccess?.pages.shopping }] },
             { title: 'Treino', icon: Dumbbell, children: [objective('treino')] },
             { title: 'Hidratação', icon: Droplets, children: [objective('hidratacao')] },
             { title: 'Habilidade', icon: Lightbulb, children: [objective('habilidade')] },
