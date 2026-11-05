@@ -22,6 +22,7 @@ class ChallengeAccessTest extends TestCase
     private function athlete(): User
     {
         $user = User::factory()->create();
+        $user->forceFill(['welcome_acknowledged_at' => now()])->save();
         AthleteProfile::create(['user_id' => $user->id, 'welcomed_at' => now(), 'goals_set_at' => now()]);
 
         return $user;
@@ -93,6 +94,7 @@ class ChallengeAccessTest extends TestCase
     {
         $this->travelTo(Carbon::parse('2026-11-03 12:00:00', ChallengeAccess::TIMEZONE));
         $user = User::factory()->create();
+        $user->forceFill(['welcome_acknowledged_at' => now()])->save();
         AthleteProfile::create(['user_id' => $user->id, 'welcomed_at' => now()]);
         $this->actingAs($user)->put('/atleta/metas', ['movement_level' => 'iniciante', 'water_liters' => 2.5])
             ->assertRedirect('/dashboard');

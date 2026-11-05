@@ -54,6 +54,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'challenge_paid_at' => 'datetime',
+            'welcome_acknowledged_at' => 'datetime',
             'challenge_courtesy_at' => 'datetime',
             'password' => 'hashed',
         ];

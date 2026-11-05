@@ -24,9 +24,34 @@ class AthleteProgressController extends Controller
 {
     public function __construct(private readonly ChallengeAccess $access) {}
 
-    public function firstDay(Request $request): Response
+    public function welcome(Request $request): Response|RedirectResponse
     {
         $this->abortUnlessAthlete($request);
+
+        return $request->user()->welcome_acknowledged_at
+            ? to_route('dashboard')
+            : Inertia::render('dashboard/BoasVindas');
+    }
+
+    public function acknowledgeWelcome(Request $request): RedirectResponse
+    {
+        $this->abortUnlessAthlete($request);
+
+        User::query()
+            ->whereKey($request->user()->id)
+            ->whereNull('welcome_acknowledged_at')
+            ->update(['welcome_acknowledged_at' => now()]);
+
+        return to_route('dashboard');
+    }
+
+    public function firstDay(Request $request): Response|RedirectResponse
+    {
+        $this->abortUnlessAthlete($request);
+
+        if (! $request->user()->welcome_acknowledged_at) {
+            return to_route('athlete.welcome');
+        }
 
         $profile = $request->user()->athleteProfile;
 
@@ -45,6 +70,10 @@ class AthleteProgressController extends Controller
     public function storeFirstDay(Request $request): RedirectResponse
     {
         $this->abortUnlessAthlete($request);
+
+        if (! $request->user()->welcome_acknowledged_at) {
+            return to_route('athlete.welcome');
+        }
 
         $data = $request->validate([
             'weight' => 'nullable|numeric|between:30,300',

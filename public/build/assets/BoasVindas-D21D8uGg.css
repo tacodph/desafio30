@@ -1,0 +1,1 @@
+.confetti-piece[data-v-f0b9086c]{position:absolute;top:-1rem;width:.5rem;height:.75rem;animation:confetti-fall-f0b9086c linear forwards}@keyframes confetti-fall-f0b9086c{to{transform:translate(var(--drift),calc(100vh + 2rem)) rotate(720deg);opacity:0}}

@@ -230,7 +230,14 @@ class AthleteProgressTest extends TestCase
         Storage::fake('public');
         $athlete = User::factory()->create();
 
-        $this->actingAs($athlete)->get('/dashboard')->assertRedirect('/atleta/ponto-de-partida/primeiro-dia');
+        $this->actingAs($athlete)->get('/dashboard')->assertRedirect('/atleta/boas-vindas');
+        $this->get('/atleta/ponto-de-partida/primeiro-dia')->assertRedirect('/atleta/boas-vindas');
+        $this->get('/atleta/boas-vindas')->assertInertia(fn (Assert $page) => $page->component('dashboard/BoasVindas'));
+        $this->post('/atleta/boas-vindas')->assertRedirect('/dashboard');
+        $this->actingAs($athlete->refresh());
+        $this->assertNotNull($athlete->fresh()->welcome_acknowledged_at);
+        $this->get('/atleta/boas-vindas')->assertRedirect('/dashboard');
+        $this->get('/dashboard')->assertRedirect('/atleta/ponto-de-partida/primeiro-dia');
 
         $this->actingAs($athlete)
             ->post('/atleta/ponto-de-partida/primeiro-dia', [

@@ -35,6 +35,10 @@ class DashboardController extends Controller
         }
 
         if ($role === UserRole::Atleta) {
+            if (! $request->user()->welcome_acknowledged_at) {
+                return to_route('athlete.welcome');
+            }
+
             $user = $request->user();
             $user->load(['checkins', 'achievements', 'athleteProfile']);
 

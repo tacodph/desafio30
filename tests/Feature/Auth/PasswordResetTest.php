@@ -27,7 +27,17 @@ class PasswordResetTest extends TestCase
 
         $this->post('/forgot-password', ['email' => $user->email]);
 
-        Notification::assertSentTo($user, ResetPassword::class);
+        Notification::assertSentTo($user, ResetPassword::class, function (ResetPassword $notification) use ($user) {
+            $message = $notification->toMail($user);
+
+            $this->assertSame('Redefinição de senha', $message->subject);
+            $this->assertSame('Redefinir senha', $message->actionText);
+            $html = (string) $message->render();
+            $this->assertStringContainsString('Olá!', $html);
+            $this->assertStringContainsString('Se o botão', $html);
+
+            return true;
+        });
     }
 
     public function test_reset_password_screen_can_be_rendered()

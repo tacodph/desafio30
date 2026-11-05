@@ -30,7 +30,10 @@ class CourtesyAthleteTest extends TestCase
         $this->assertTrue($athlete->hasChallengeAccess());
         $this->assertSame($admin->id, $athlete->challenge_courtesy_by);
         $this->assertDatabaseCount('challenge_payments', 0);
-        $this->actingAs($athlete)->get('/atleta/ponto-de-partida/primeiro-dia')->assertOk();
+        $this->actingAs($athlete)->get('/atleta/ponto-de-partida/primeiro-dia')->assertRedirect('/atleta/boas-vindas');
+        $this->post('/atleta/boas-vindas')->assertRedirect('/dashboard');
+        $this->actingAs($athlete->refresh());
+        $this->get('/atleta/ponto-de-partida/primeiro-dia')->assertOk();
         foreach (['/pagamento', '/pagamento/pagar', '/pagamento/retorno'] as $path) {
             $this->get($path)->assertRedirect(route('dashboard', absolute: false));
         }

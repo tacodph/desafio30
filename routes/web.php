@@ -82,7 +82,8 @@ Route::middleware(['auth', 'verified', 'challenge.paid'])->group(function () {
     Route::post('atleta/ponto-de-partida/primeiro-dia', [AthleteProgressController::class, 'storeFirstDay'])->name('athlete.start.first-day.store');
     Route::get('atleta/ponto-de-partida/como-tirar-medidas', fn () => Inertia::render('dashboard/ComoTirarMedidas'))->name('athlete.start.measures-guide');
     Route::get('atleta/ponto-de-partida/metas', [AthleteProgressController::class, 'goals'])->name('athlete.start.goals');
-    Route::redirect('atleta/boas-vindas', '/atleta/ponto-de-partida/primeiro-dia');
+    Route::get('atleta/boas-vindas', [AthleteProgressController::class, 'welcome'])->name('athlete.welcome');
+    Route::post('atleta/boas-vindas', [AthleteProgressController::class, 'acknowledgeWelcome'])->name('athlete.welcome.acknowledge');
     Route::redirect('atleta/evolucao/metas', '/atleta/ponto-de-partida/metas');
     Route::redirect('atleta/evolucao', '/atleta/evolucao/dias')->name('athlete.progress');
     Route::get('atleta/evolucao/{tab}', [AthleteProgressController::class, 'show'])

@@ -82,8 +82,11 @@ class DashboardTest extends TestCase
         $athlete = User::factory()->create();
         AthleteProfile::query()->create(['user_id' => $athlete->id, 'welcomed_at' => now(), 'goals_set_at' => now()]);
 
-        $this->actingAs($athlete)
-            ->get('/dashboard')
+        $this->actingAs($athlete)->get('/dashboard')->assertRedirect('/atleta/boas-vindas');
+        $this->post('/atleta/boas-vindas')->assertRedirect('/dashboard');
+        $this->actingAs($athlete->refresh());
+
+        $this->get('/dashboard')
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page->component('dashboard/Atleta'));
 
