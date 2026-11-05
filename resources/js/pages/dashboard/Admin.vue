@@ -1,11 +1,15 @@
 <script setup lang="ts">
+import PaymentOverview, { type DailyPayment, type PaymentOverviewItem } from '@/components/PaymentOverview.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/vue3';
+import { Banknote, LockKeyholeOpen, Users, Utensils } from 'lucide-vue-next';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Administração', href: '/dashboard' }];
 
 defineProps<{
+    dailyPayments: DailyPayment[] | null;
+    paymentOverview: PaymentOverviewItem[];
     counts: { id: number; name: string; users_count: number }[];
 }>();
 </script>
@@ -29,17 +33,24 @@ defineProps<{
             </div>
 
             <div class="flex flex-wrap gap-3">
-                <Link :href="route('admin.challenge-access')" class="surface-card w-fit px-5 py-4 font-display text-lg font-bold uppercase">Liberações do desafio</Link>
-                <Link :href="route('admin.users')" class="surface-card w-fit px-5 py-4 font-display text-lg font-bold uppercase">
+                <Link :href="route('admin.challenge-access')" class="surface-card inline-flex w-fit items-center gap-2 px-5 py-4 font-display text-lg font-bold uppercase">
+                    <LockKeyholeOpen class="size-5 shrink-0" aria-hidden="true" />
+                    Liberações do desafio
+                </Link>
+                <Link :href="route('admin.users')" class="surface-card inline-flex w-fit items-center gap-2 px-5 py-4 font-display text-lg font-bold uppercase">
+                    <Users class="size-5 shrink-0" aria-hidden="true" />
                     Ver usuários
                 </Link>
-                <Link :href="route('admin.payments')" class="surface-card w-fit px-5 py-4 font-display text-lg font-bold uppercase">
+                <Link :href="route('admin.payments')" class="surface-card inline-flex w-fit items-center gap-2 px-5 py-4 font-display text-lg font-bold uppercase">
+                    <Banknote class="size-5 shrink-0" aria-hidden="true" />
                     Solicitações de pagamento
                 </Link>
-                <Link :href="route('admin.foods')" class="surface-card w-fit px-5 py-4 font-display text-lg font-bold uppercase">
+                <Link :href="route('admin.foods')" class="surface-card inline-flex w-fit items-center gap-2 px-5 py-4 font-display text-lg font-bold uppercase">
+                    <Utensils class="size-5 shrink-0" aria-hidden="true" />
                     Alimentos
                 </Link>
             </div>
+            <PaymentOverview :items="paymentOverview" :daily-payments="dailyPayments" />
         </div>
     </AppLayout>
 </template>

@@ -8,6 +8,7 @@ use App\Models\ChallengePayment;
 use App\Models\User;
 use App\Models\UserType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
@@ -107,6 +108,42 @@ class DashboardTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page->component('dashboard/Equipe'));
     }
 
+    public function test_payment_overview_counts_charges_and_unique_customers_for_authorized_staff(): void
+    {
+        $athlete = User::factory()->create();
+        $today = today('America/Sao_Paulo');
+
+        foreach ([ChallengePayment::RECEIVED, ChallengePayment::RECEIVED, ChallengePayment::PENDING] as $index => $status) {
+            ChallengePayment::create([
+                'user_id' => $athlete->id,
+                'status' => $status,
+                'value' => 79.90,
+                'due_date' => $today->copy()->subDay(),
+                'confirmed_at' => $today->copy()->addMinutes($index === 0 ? 30 : -1)->utc(),
+            ]);
+        }
+
+        foreach ([UserRole::Administrador, UserRole::Nutricionista] as $role) {
+            $this->actingAs(User::factory()->ofRole($role)->create())
+                ->get('/dashboard')
+                ->assertOk()
+                ->assertInertia(fn (Assert $page) => $page
+                    ->has('dailyPayments', 1)
+                    ->where('dailyPayments.0.athlete', $athlete->name)
+                    ->where('dailyPayments.0.time', '00:30')
+                    ->where('dailyPayments.0.amount', 79.9)
+                    ->has('paymentOverview', 4)
+                    ->where('paymentOverview.0', ['status' => 'RECEIVED', 'quantity' => 2, 'customers' => 1, 'amount' => 159.8])
+                    ->where('paymentOverview.2.quantity', 0)
+                    ->where('paymentOverview.3', ['status' => 'OVERDUE', 'quantity' => 1, 'customers' => 1, 'amount' => 79.9]));
+        }
+
+        $this->actingAs(User::factory()->ofRole(UserRole::Coach)->create())
+            ->get('/dashboard')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->where('paymentOverview', null)->where('dailyPayments', null));
+    }
+
     public function test_only_the_admin_can_open_the_user_list(): void
     {
         $this->actingAs(User::factory()->ofRole(UserRole::Administrador)->create())
@@ -125,6 +162,16 @@ class DashboardTest extends TestCase
 
     public function test_admin_and_nutritionist_can_view_payment_requests_but_other_roles_cannot(): void
     {
+        config([
+            'services.asaas.base_url' => 'https://asaas.example/v3',
+            'services.asaas.api_key' => 'test-key',
+        ]);
+        Http::fake([
+            'https://asaas.example/v3/finance/balance' => Http::sequence()
+                ->push(['balance' => 0])
+                ->pushStatus(503),
+        ]);
+
         $athlete = User::factory()->unpaid()->create(['name' => 'Atleta Pagante']);
         ChallengePayment::create([
             'user_id' => $athlete->id,
@@ -137,17 +184,48 @@ class DashboardTest extends TestCase
         ]);
 
         foreach ([UserRole::Administrador, UserRole::Nutricionista] as $role) {
-            $this->actingAs(User::factory()->ofRole($role)->create())
-                ->get(route('admin.payments'))
-                ->assertOk()
+            $response = $this->actingAs(User::factory()->ofRole($role)->create())
+                ->get(route('admin.payments'));
+
+            $response->assertOk()
                 ->assertInertia(fn (Assert $page) => $page
                     ->component('dashboard/Payments')
                     ->where('payments.data.0.athlete', 'Atleta Pagante')
                     ->where('payments.data.0.asaasPaymentId', 'pay_dashboard_test')
                     ->where('payments.data.0.status', ChallengePayment::PENDING)
                     ->where('payments.data.0.billingType', 'PIX')
+                    ->where('statusSummary.0.category', ChallengePayment::PENDING)
+                    ->where('statusSummary.0.quantity', 1)
+                    ->where('statusSummary.0.amount', 79.9)
+                    ->where('billingTypeSummary.0.category', 'PIX')
+                    ->where('billingTypeSummary.0.quantity', 1)
+                    ->where('billingTypeSummary.0.amount', 79.9)
+                    ->where('canViewBalance', $role === UserRole::Administrador)
                     ->missing('payments.data.0.invoice_url'));
+
+            $headers = [
+                'X-Inertia' => 'true',
+                'X-Inertia-Version' => $response->viewData('page')['version'],
+                'X-Inertia-Partial-Component' => 'dashboard/Payments',
+                'X-Inertia-Partial-Data' => 'accountBalance',
+            ];
+
+            if ($role === UserRole::Administrador) {
+                $this->get(route('admin.payments'), $headers)
+                    ->assertOk()
+                    ->assertJsonPath('props.accountBalance', 0);
+
+                $this->get(route('admin.payments'), $headers)
+                    ->assertOk()
+                    ->assertJsonPath('props.accountBalance', null);
+            } else {
+                $this->get(route('admin.payments'), $headers)
+                    ->assertOk()
+                    ->assertJsonPath('props.accountBalance', null);
+            }
         }
+
+        Http::assertSentCount(2);
 
         $this->actingAs(User::factory()->ofRole(UserRole::Coach)->create())
             ->get(route('admin.payments'))
@@ -156,6 +234,17 @@ class DashboardTest extends TestCase
         $this->actingAs(User::factory()->create())
             ->get(route('admin.payments'))
             ->assertForbidden();
+    }
+
+    public function test_payment_summary_includes_pix_even_without_pix_payments(): void
+    {
+        $this->actingAs(User::factory()->ofRole(UserRole::Nutricionista)->create())
+            ->get(route('admin.payments'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('billingTypeSummary.0.category', 'PIX')
+                ->where('billingTypeSummary.0.quantity', 0)
+                ->where('billingTypeSummary.0.amount', 0));
     }
 
     public function test_admin_can_register_a_user_of_any_type(): void

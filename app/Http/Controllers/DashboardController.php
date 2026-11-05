@@ -9,6 +9,8 @@ use App\Models\FoodGroup;
 use App\Models\ScoreRule;
 use App\Models\User;
 use App\Models\UserType;
+use App\Services\Asaas\AsaasClient;
+use App\Services\Asaas\AsaasException;
 use App\Support\ChallengeSheet;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -26,6 +28,8 @@ class DashboardController extends Controller
 
         if ($role === UserRole::Administrador) {
             return Inertia::render('dashboard/Admin', [
+                'paymentOverview' => fn () => $this->paymentOverview(),
+                'dailyPayments' => fn () => $this->dailyPayments(),
                 'counts' => UserType::query()->withCount('users')->orderBy('id')->get(),
             ]);
         }
@@ -58,16 +62,87 @@ class DashboardController extends Controller
 
         return Inertia::render('dashboard/Equipe', [
             'athleteCount' => User::query()->where('user_type_id', UserType::idFor(UserRole::Atleta))->count(),
-            'canViewPayments' => $role === UserRole::Nutricionista,
+            'paymentOverview' => $role === UserRole::Nutricionista ? fn () => $this->paymentOverview() : null,
+            'dailyPayments' => $role === UserRole::Nutricionista ? fn () => $this->dailyPayments() : null,
         ]);
     }
 
-    public function payments(Request $request): Response
+    private function dailyPayments(): array
+    {
+        $today = today('America/Sao_Paulo');
+        $timezone = config('app.timezone');
+
+        return ChallengePayment::query()
+            ->whereIn('status', ChallengePayment::PAID_STATUSES)
+            ->where('confirmed_at', '>=', $today->copy()->setTimezone($timezone))
+            ->where('confirmed_at', '<', $today->copy()->addDay()->setTimezone($timezone))
+            ->with('user:id,name')
+            ->orderByDesc('confirmed_at')
+            ->orderByDesc('id')
+            ->get(['id', 'user_id', 'value', 'confirmed_at'])
+            ->map(fn (ChallengePayment $payment) => [
+                'id' => $payment->id,
+                'athlete' => $payment->user?->name,
+                'amount' => (float) $payment->value,
+                'time' => $payment->confirmed_at->copy()->setTimezone('America/Sao_Paulo')->format('H:i'),
+            ])
+            ->all();
+    }
+
+    private function paymentOverview(): array
+    {
+        $statuses = [
+            ChallengePayment::RECEIVED,
+            ChallengePayment::CONFIRMED,
+            ChallengePayment::PENDING,
+            ChallengePayment::OVERDUE,
+        ];
+
+        $charges = ChallengePayment::query()
+            ->whereIn('status', [...$statuses, 'RECEIVED_IN_CASH'])
+            ->select('user_id', 'value')
+            ->selectRaw(
+                'CASE WHEN status = ? AND due_date < ? THEN ? WHEN status = ? THEN ? ELSE status END AS category',
+                [ChallengePayment::PENDING, today('America/Sao_Paulo')->toDateString(), ChallengePayment::OVERDUE, 'RECEIVED_IN_CASH', ChallengePayment::RECEIVED],
+            );
+
+        $totals = DB::query()->fromSub($charges, 'charges')
+            ->selectRaw('category, COUNT(*) AS quantity, COUNT(DISTINCT user_id) AS customers, SUM(value) AS amount')
+            ->groupBy('category')
+            ->get()
+            ->keyBy('category');
+
+        return array_map(function (string $status) use ($totals) {
+            $total = $totals->get($status);
+
+            return [
+                'status' => $status,
+                'quantity' => (int) ($total->quantity ?? 0),
+                'customers' => (int) ($total->customers ?? 0),
+                'amount' => (float) ($total->amount ?? 0),
+            ];
+        }, $statuses);
+    }
+
+    public function payments(Request $request, AsaasClient $asaas): Response
     {
         $role = $this->role($request);
         abort_unless(in_array($role, [UserRole::Administrador, UserRole::Nutricionista], true), 403);
 
+        $canViewBalance = $role === UserRole::Administrador;
+        $today = today('America/Sao_Paulo')->toDateString();
+
         return Inertia::render('dashboard/Payments', [
+            'statusSummary' => fn () => $this->paymentSummary('status'),
+            'billingTypeSummary' => fn () => $this->paymentSummary('billing_type'),
+            'canViewBalance' => $canViewBalance,
+            'accountBalance' => $canViewBalance ? Inertia::defer(function () use ($asaas) {
+                try {
+                    return $asaas->getBalance();
+                } catch (AsaasException) {
+                    return null;
+                }
+            }) : null,
             'payments' => ChallengePayment::query()
                 ->with('user:id,name,email')
                 ->latest('id')
@@ -88,6 +163,7 @@ class DashboardController extends Controller
                     'email' => $payment->user?->email,
                     'asaasPaymentId' => $payment->asaas_payment_id,
                     'status' => $payment->status,
+                    'isPastDue' => $payment->due_date !== null && $payment->due_date->toDateString() < $today,
                     'billingType' => $payment->billing_type,
                     'value' => $payment->value,
                     'dueDate' => $payment->due_date?->format('d/m/Y'),
@@ -95,6 +171,30 @@ class DashboardController extends Controller
                     'createdAt' => $payment->created_at?->format('d/m/Y H:i'),
                 ]),
         ]);
+    }
+
+    private function paymentSummary(string $column): array
+    {
+        $group = $column === 'billing_type' ? "COALESCE(billing_type, 'UNDEFINED')" : 'status';
+
+        $summary = ChallengePayment::query()
+            ->selectRaw("$group AS category, COUNT(*) AS quantity, SUM(value) AS amount")
+            ->groupByRaw($group)
+            ->orderBy('category')
+            ->get()
+            ->map(fn ($row) => [
+                'category' => $row->category,
+                'quantity' => (int) $row->quantity,
+                'amount' => (float) $row->amount,
+            ]);
+
+        $alwaysVisible = $column === 'status' ? ChallengePayment::PENDING : 'PIX';
+
+        if (! $summary->contains('category', $alwaysVisible)) {
+            $summary->prepend(['category' => $alwaysVisible, 'quantity' => 0, 'amount' => 0]);
+        }
+
+        return $summary->all();
     }
 
     public function users(Request $request): Response

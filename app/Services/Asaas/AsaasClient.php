@@ -30,6 +30,13 @@ class AsaasClient
         return $this->send('GET', '/payments/'.$id);
     }
 
+    public function getBalance(): ?float
+    {
+        $balance = $this->send('GET', '/finance/balance')['balance'] ?? null;
+
+        return is_numeric($balance) ? (float) $balance : null;
+    }
+
     /** @param array<string, mixed> $data */
     private function send(string $method, string $path, array $data = []): array
     {

@@ -76,6 +76,7 @@ class ChallengePaymentTest extends TestCase
         $payment = ChallengePayment::query()->firstOrFail();
         $this->assertSame('pay_123', $payment->asaas_payment_id);
         $this->assertSame('79.90', $payment->value);
+        $this->assertSame('UNDEFINED', $payment->billing_type);
         $this->assertSame('cus_123', $user->fresh()->asaas_customer_id);
     }
 

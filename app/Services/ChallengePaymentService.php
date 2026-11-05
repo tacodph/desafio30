@@ -97,6 +97,7 @@ class ChallengePaymentService
         $payment->update([
             'asaas_payment_id' => $response['id'],
             'invoice_url' => $response['invoiceUrl'] ?? null,
+            'billing_type' => $response['billingType'] ?? $payload['billingType'],
             'status' => $response['status'] ?? ChallengePayment::PENDING,
         ]);
 

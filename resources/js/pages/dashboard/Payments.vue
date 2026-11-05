@@ -2,6 +2,7 @@
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/vue3';
+import { CircleAlert, CircleCheck, Clock, CreditCard } from 'lucide-vue-next';
 
 type PaymentRecord = {
     id: number;
@@ -9,6 +10,7 @@ type PaymentRecord = {
     email: string | null;
     asaasPaymentId: string | null;
     status: string;
+    isPastDue: boolean;
     billingType: string | null;
     value: string;
     dueDate: string | null;
@@ -22,7 +24,17 @@ type PaginationLink = {
     active: boolean;
 };
 
+type PaymentSummary = {
+    category: string;
+    quantity: number;
+    amount: number;
+};
+
 defineProps<{
+    statusSummary: PaymentSummary[];
+    billingTypeSummary: PaymentSummary[];
+    canViewBalance: boolean;
+    accountBalance?: number | null;
     payments: {
         data: PaymentRecord[];
         links: PaginationLink[];
@@ -47,13 +59,29 @@ const statusLabel = (status: string) =>
         DELETED: 'Excluído',
     })[status] ?? status;
 
+const paymentIndicator = (payment: PaymentRecord) => {
+    if (['RECEIVED', 'CONFIRMED', 'RECEIVED_IN_CASH'].includes(payment.status)) {
+        return payment.billingType === 'CREDIT_CARD'
+            ? { icon: CreditCard, color: 'text-blue-600 dark:text-blue-400', label: 'Recebido em cartão' }
+            : { icon: CircleCheck, color: 'text-green-700 dark:text-green-400', label: 'Pagamento recebido' };
+    }
+
+    if (['REFUNDED', 'DELETED'].includes(payment.status)) return null;
+
+    if (payment.status === 'OVERDUE' || payment.isPastDue) {
+        return { icon: CircleAlert, color: 'text-red-600 dark:text-red-400', label: 'Fora do prazo' };
+    }
+
+    return payment.dueDate ? { icon: Clock, color: 'text-orange-700 dark:text-orange-400', label: 'Dentro do prazo' } : null;
+};
+
 const billingTypeLabel = (billingType: string | null) =>
     ({
         PIX: 'Pix',
         BOLETO: 'Boleto',
         CREDIT_CARD: 'Cartão',
-        UNDEFINED: 'A definir',
-    })[billingType ?? ''] ?? billingType ?? '—';
+        UNDEFINED: 'A definir no Asaas',
+    })[billingType ?? 'UNDEFINED'] ?? billingType;
 
 const linkLabel = (label: string) => {
     if (label.includes('Previous')) return 'Anterior';
@@ -61,7 +89,7 @@ const linkLabel = (label: string) => {
     return label;
 };
 
-const money = (value: string) => Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const money = (value: string | number) => Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 </script>
 
 <template>
@@ -74,6 +102,41 @@ const money = (value: string) => Number(value).toLocaleString('pt-BR', { style: 
                 <h1 class="display-title text-[clamp(36px,5vw,56px)]">Solicitações de pagamento</h1>
                 <p class="max-w-xl text-brand-muted">Cobranças de inscrição registradas para os atletas do desafio.</p>
             </div>
+
+            <div class="grid items-start gap-4 md:grid-cols-2">
+                <section
+                    v-for="summary in [
+                        { id: 'status-summary', title: 'Por status de pagamento', items: statusSummary ?? [], label: statusLabel },
+                        { id: 'billing-summary', title: 'Por forma de pagamento', items: billingTypeSummary ?? [], label: billingTypeLabel },
+                    ]"
+                    :key="summary.id"
+                    :aria-labelledby="summary.id"
+                    class="surface-card space-y-3 p-5"
+                >
+                    <h2 :id="summary.id" class="text-lg font-semibold">{{ summary.title }}</h2>
+                    <p v-if="!summary.items.length" class="text-sm text-brand-muted">Nenhuma cobrança registrada.</p>
+                    <dl v-else class="grid grid-cols-[repeat(auto-fit,minmax(min(100%,7rem),1fr))] gap-2">
+                        <div v-for="item in summary.items" :key="item.category" class="min-w-0 rounded-lg border border-brand-line px-2.5 py-2">
+                            <dt class="break-words text-xs font-semibold">{{ summary.label(item.category) }}</dt>
+                            <dd class="mt-1 text-sm font-bold">{{ money(item.amount) }}</dd>
+                            <dd class="text-xs text-brand-muted">
+                                {{ item.quantity }} {{ item.quantity === 1 ? 'cobrança' : 'cobranças' }}
+                            </dd>
+                        </div>
+                    </dl>
+                </section>
+            </div>
+
+            <section
+                v-if="canViewBalance"
+                class="surface-card flex w-fit flex-wrap items-baseline gap-x-3 gap-y-1 px-4 py-2 text-sm"
+                aria-labelledby="account-balance"
+            >
+                <h2 id="account-balance" class="font-medium text-brand-muted">Saldo disponível na conta Asaas</h2>
+                <p class="m-0 font-bold" role="status">
+                    {{ accountBalance === undefined ? 'Consultando…' : accountBalance === null ? 'Saldo indisponível' : money(accountBalance) }}
+                </p>
+            </section>
 
             <div class="surface-card overflow-x-auto">
                 <table class="w-full min-w-[900px] text-left text-sm">
@@ -95,7 +158,17 @@ const money = (value: string) => Number(value).toLocaleString('pt-BR', { style: 
                                 <div class="text-brand-muted">{{ payment.email ?? '—' }}</div>
                             </td>
                             <td class="px-5 py-4 font-mono text-xs text-brand-muted">{{ payment.asaasPaymentId ?? '—' }}</td>
-                            <td class="px-5 py-4">{{ statusLabel(payment.status) }}</td>
+                            <td class="px-5 py-4">
+                                <div class="flex items-center gap-2">
+                                    <template v-for="indicator in [paymentIndicator(payment)]" :key="payment.id">
+                                        <span v-if="indicator" class="inline-flex shrink-0" :title="indicator.label">
+                                            <component :is="indicator.icon" class="size-4" :class="indicator.color" aria-hidden="true" />
+                                            <span class="sr-only">{{ indicator.label }} </span>
+                                        </span>
+                                    </template>
+                                    {{ statusLabel(payment.status) }}
+                                </div>
+                            </td>
                             <td class="px-5 py-4">{{ billingTypeLabel(payment.billingType) }}</td>
                             <td class="px-5 py-4 font-semibold">{{ money(payment.value) }}</td>
                             <td class="px-5 py-4">{{ payment.dueDate ?? '—' }}</td>

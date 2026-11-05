@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import PaymentOverview, { type DailyPayment, type PaymentOverviewItem } from '@/components/PaymentOverview.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/vue3';
@@ -7,7 +8,8 @@ const breadcrumbs: BreadcrumbItem[] = [{ title: 'Equipe', href: '/dashboard' }];
 
 defineProps<{
     athleteCount: number;
-    canViewPayments: boolean;
+    dailyPayments: DailyPayment[] | null;
+    paymentOverview: PaymentOverviewItem[] | null;
 }>();
 </script>
 
@@ -30,9 +32,7 @@ defineProps<{
             <Link :href="route('equipe.athletes')" class="surface-card w-fit px-5 py-4 font-display text-lg font-bold uppercase">
                 Ver atletas
             </Link>
-            <Link v-if="canViewPayments" :href="route('admin.payments')" class="surface-card w-fit px-5 py-4 font-display text-lg font-bold uppercase">
-                Solicitações de pagamento
-            </Link>
+            <PaymentOverview v-if="paymentOverview" :items="paymentOverview" :daily-payments="dailyPayments" />
         </div>
     </AppLayout>
 </template>
