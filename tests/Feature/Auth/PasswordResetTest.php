@@ -5,6 +5,7 @@ namespace Tests\Feature\Auth;
 use App\Models\User;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
@@ -21,23 +22,24 @@ class PasswordResetTest extends TestCase
 
     public function test_reset_password_link_can_be_requested()
     {
-        Notification::fake();
+        app()->setLocale('en');
+        config(['mail.default' => 'array']);
 
         $user = User::factory()->create();
 
-        $this->post('/forgot-password', ['email' => $user->email]);
+        $this->post('/forgot-password', ['email' => $user->email])
+            ->assertSessionHas('status', 'Se houver uma conta com esse e-mail, enviaremos um link para redefinir a senha.');
 
-        Notification::assertSentTo($user, ResetPassword::class, function (ResetPassword $notification) use ($user) {
-            $message = $notification->toMail($user);
+        $transport = Mail::mailer('array')->getSymfonyTransport();
+        $this->assertCount(1, $transport->messages());
+        $message = $transport->messages()->first()->getOriginalMessage();
 
-            $this->assertSame('Redefinição de senha', $message->subject);
-            $this->assertSame('Redefinir senha', $message->actionText);
-            $html = (string) $message->render();
-            $this->assertStringContainsString('Olá!', $html);
-            $this->assertStringContainsString('Se o botão', $html);
-
-            return true;
-        });
+        $this->assertSame('Redefinição de senha', $message->getSubject());
+        $html = $message->getHtmlBody();
+        $this->assertStringContainsString('Olá!', $html);
+        $this->assertStringContainsString('Redefinir senha', $html);
+        $this->assertStringContainsString('Atenciosamente,', $html);
+        $this->assertStringContainsString('Se o botão', $html);
     }
 
     public function test_reset_password_screen_can_be_rendered()
