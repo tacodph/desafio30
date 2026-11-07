@@ -29,9 +29,10 @@ const hasActiveChild = (item: NavGroupItem) => item.children?.some((child) => is
                 <Collapsible v-if="item.children?.length" as-child :default-open="hasActiveChild(item)" class="group/collapsible">
                     <SidebarMenuItem>
                         <CollapsibleTrigger as-child>
-                            <SidebarMenuButton :is-active="hasActiveChild(item)">
+                            <SidebarMenuButton :is-active="hasActiveChild(item)" :class="{ 'opacity-50': item.disabled }">
                                 <component v-if="item.icon" :is="item.icon" />
                                 <span>{{ item.title }}</span>
+                                <LockKeyhole v-if="item.disabled" class="size-3.5" aria-hidden="true" />
                                 <ChevronRight class="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                             </SidebarMenuButton>
                         </CollapsibleTrigger>
@@ -54,7 +55,12 @@ const hasActiveChild = (item: NavGroupItem) => item.children?.some((child) => is
                 </Collapsible>
 
                 <SidebarMenuItem v-else>
-                    <SidebarMenuButton as-child :is-active="item.href === page.url">
+                    <SidebarMenuButton v-if="item.disabled" as="button" type="button" disabled aria-disabled="true" title="Acesso ainda não liberado" class="opacity-50">
+                        <component v-if="item.icon" :is="item.icon" />
+                        <span>{{ item.title }}</span>
+                        <LockKeyhole class="ml-auto size-3.5" aria-hidden="true" />
+                    </SidebarMenuButton>
+                    <SidebarMenuButton v-else as-child :is-active="item.href === page.url">
                         <Link :href="item.href ?? '#'">
                             <component v-if="item.icon" :is="item.icon" />
                             <span>{{ item.title }}</span>

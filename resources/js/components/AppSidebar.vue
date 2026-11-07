@@ -76,9 +76,11 @@ const mainNavItems = computed<NavGroupItem[]>(() => {
             },
             { title: 'Alimentação', icon: Salad, children: [
                 { title: 'Lista de compras inteligente', href: '/objetivos/alimentacao/compras', disabled: !page.props.evolutionAccess?.pages.shopping },
-                { title: 'Monte seu prato', href: '/alimentacao/monte-seu-prato' },
+                { title: 'Monte seu prato', href: '/alimentacao/monte-seu-prato', disabled: !page.props.evolutionAccess?.pages.alimentacao },
             ] },
-            { title: 'Cantinho da Nutri', href: '/cantinho-da-nutri', icon: BookOpen },
+            { title: 'Cantinho da Nutri', icon: BookOpen, children: [
+                { title: 'Materiais e orientações', href: '/cantinho-da-nutri', disabled: !page.props.evolutionAccess?.pages.nutri },
+            ] },
             { title: 'Treino', icon: Dumbbell, children: [objective('treino')] },
             { title: 'Hidratação', icon: Droplets, children: [objective('hidratacao')] },
             { title: 'Habilidade', icon: Lightbulb, children: [objective('habilidade')] },

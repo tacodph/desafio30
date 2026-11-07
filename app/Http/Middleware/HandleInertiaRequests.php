@@ -44,7 +44,7 @@ class HandleInertiaRequests extends Middleware
             'evolutionAccess' => function () use ($request) {
                 if ($request->user()?->userType?->name === 'administrador') {
                     return ['releaseDate' => (new ChallengeAccess)->releaseDate()->format('d/m/Y'),
-                        'pages' => array_fill_keys(['dias', 'conquistas', 'resumo', 'shopping'], true)];
+                        'pages' => array_fill_keys(ChallengeAccess::PAGE_FEATURES, true)];
                 }
                 if (! $request->user()?->isAthlete()) {
                     return null;
@@ -53,7 +53,7 @@ class HandleInertiaRequests extends Middleware
 
                 return [
                     'releaseDate' => $access->releaseDate()->format('d/m/Y'),
-                    'pages' => collect(['dias', 'conquistas', 'resumo', 'shopping'])->mapWithKeys(
+                    'pages' => collect(ChallengeAccess::PAGE_FEATURES)->mapWithKeys(
                         fn (string $tab) => [$tab => $access->pageOpen($tab)],
                     )->all(),
                 ];

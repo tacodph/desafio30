@@ -58,9 +58,9 @@ Route::post('webhooks/asaas', WebhookController::class)->name('webhooks.asaas');
 
 Route::middleware(['auth', 'verified', 'challenge.paid'])->group(function () {
     Route::get('dashboard', DashboardController::class)->name('dashboard');
-    Route::get('cantinho-da-nutri', fn () => Inertia::render('ComoCombinarAlimentos'))->name('nutri.index');
+    Route::get('cantinho-da-nutri', fn () => Inertia::render('ComoCombinarAlimentos'))->middleware('challenge.feature:nutri')->name('nutri.index');
     Route::redirect('alimentacao/como-combinar', '/cantinho-da-nutri')->name('alimentacao.combinacoes');
-    Route::get('alimentacao/monte-seu-prato', fn () => Inertia::render('MonteSeuPrato'))->name('alimentacao.prato');
+    Route::get('alimentacao/monte-seu-prato', fn () => Inertia::render('MonteSeuPrato'))->middleware('challenge.feature:alimentacao')->name('alimentacao.prato');
     Route::get('pontuacao', [DashboardController::class, 'scoring'])->name('pontuacao');
     Route::put('pontuacao', [DashboardController::class, 'updateScoring'])->name('pontuacao.update');
     Route::get('meus-objetivos/{goal}', function (string $goal) {

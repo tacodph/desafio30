@@ -18,8 +18,12 @@ class ChallengeAccess
         'conquistas' => 'Página de conquistas',
         'resumo' => 'Página de resumo',
         'entries' => 'Lançamentos e fotos dos dias',
-        'shopping' => 'Monte seu Cardápio',
+        'alimentacao' => 'Alimentação',
+        'shopping' => 'Lista de compras inteligente',
+        'nutri' => 'Cantinho da Nutri',
     ];
+
+    public const PAGE_FEATURES = ['dias', 'conquistas', 'resumo', 'shopping', 'alimentacao', 'nutri'];
 
     private ?array $settings = null;
 
@@ -50,6 +54,10 @@ class ChallengeAccess
 
     public function pageOpen(string $feature): bool
     {
+        if ($feature === 'shopping' && ! $this->pageOpen('alimentacao')) {
+            return false;
+        }
+
         return match ($this->modes()[$feature] ?? 'closed') {
             'calendar' => Carbon::now(self::TIMEZONE)->gte($this->releaseDate())
                 || (bool) request()->user()?->challenge_early_access,
@@ -86,7 +94,7 @@ class ChallengeAccess
         return [
             'releaseDate' => $this->releaseDate()->format('d/m/Y'),
             'timezone' => self::TIMEZONE,
-            'pages' => collect(['dias', 'conquistas', 'resumo', 'shopping'])
+            'pages' => collect(self::PAGE_FEATURES)
                 ->mapWithKeys(fn (string $key) => [$key => $this->pageOpen($key)])->all(),
             'editableDays' => array_values(array_filter(
                 range(1, ChallengeSheet::TOTAL_DAYS), fn (int $day) => $this->dayEditable($day),

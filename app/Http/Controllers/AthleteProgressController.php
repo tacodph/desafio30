@@ -602,7 +602,7 @@ class AthleteProgressController extends Controller
         return Inertia::render('dashboard/Evolucao', [
             ...ChallengeSheet::payload($athlete),
             'access' => $adminPreview ? array_replace($this->access->payload(), [
-                'pages' => array_fill_keys(['dias', 'conquistas', 'resumo', 'shopping'], true),
+                'pages' => array_fill_keys(ChallengeAccess::PAGE_FEATURES, true),
                 'editableDays' => [], 'entryMode' => 'closed',
             ]) : $this->access->payload(),
             'adminPreview' => $adminPreview,
