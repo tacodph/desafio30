@@ -42,7 +42,7 @@ const medidas = [
 const fotos = [
     { nome: 'Frente', imagem: '/images/medidas/foto-frente.webp', texto: 'De frente, braços estendidos para a frente, paralelos ao chão.' },
     { nome: 'Lado', imagem: '/images/medidas/foto-lado.webp', texto: 'De lado, braços estendidos para a frente, paralelos ao chão.' },
-    { nome: 'Costas', imagem: '/images/medidas/foto-costas.webp', texto: 'De costas, braços estendidos para a frente, paralelos ao chão.' },
+    { nome: 'Costas', imagem: '/images/medidas/foto-costas.jpg', texto: 'De costas, com os braços relaxados ao lado do corpo.' },
 ];
 </script>
 
@@ -104,11 +104,6 @@ const fotos = [
                         </figure>
                     </div>
                 </div>
-
-                <p class="m-0 rounded-xl border border-brand-line2 bg-brand-strip p-3 text-sm text-brand-muted-3">
-                    <strong class="text-brand-gold">Importante:</strong> se tiver dúvidas sobre os pontos corretos de medição, peça orientação à sua
-                    nutricionista. A padronização é essencial para comparar os resultados ao longo do tempo.
-                </p>
             </section>
         </div>
     </AppLayout>

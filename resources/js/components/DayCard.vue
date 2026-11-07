@@ -21,7 +21,7 @@ const props = withDefaults(
         weekday: string;
         goals: DayGoals;
         photo?: string | null;
-        mealPhoto?: string | null;
+        mealPhotos?: { id: string; url: string }[];
         mealComment?: string | null;
         saved: boolean;
         workoutTypes: string[];
@@ -35,6 +35,8 @@ const props = withDefaults(
     }>(),
     { canEdit: true, canComment: false },
 );
+
+const weekdayLabels: Record<string, string> = { dom: 'domingo', seg: 'segunda', ter: 'terça', qua: 'quarta', qui: 'quinta', sex: 'sexta', sáb: 'sábado' };
 
 const open = ref(props.defaultOpen ?? false);
 
@@ -250,34 +252,45 @@ watch(
     },
 );
 
-const sendMealPhoto = (event: Event) => {
+const sendMealPhotos = async (event: Event) => {
     const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
+    const files = Array.from(input.files ?? []);
+    input.value = '';
+    if (!files.length || mealUploading.value) return;
 
-    if (!file) {
+    mealError.value = '';
+    if (files.some((file) => file.size > 5 * 1024 * 1024)) {
+        mealError.value = 'Cada foto deve ter até 5 MB.';
         return;
     }
 
-    mealError.value = '';
-    router.post(
-        route('athlete.days.meal.store', props.entry.day),
-        { photo: file },
-        {
-            forceFormData: true,
-            preserveState: true,
-            preserveScroll: true,
-            onStart: () => (mealUploading.value = true),
-            onError: (errors) => (mealError.value = Object.values(errors)[0] ?? 'Não foi possível enviar a foto.'),
-            onFinish: () => {
-                mealUploading.value = false;
-                input.value = '';
-            },
-        },
-    );
+    mealUploading.value = true;
+    try {
+        for (const [index, file] of files.entries()) {
+            // Envia em sequência para evitar o limite de tamanho de uma requisição.
+            const uploaded = await new Promise<boolean>((resolve) => {
+                let succeeded = false;
+                router.post(route('athlete.days.meal.store', props.entry.day), { photo: file }, {
+                    forceFormData: true,
+                    preserveState: true,
+                    preserveScroll: true,
+                    onSuccess: () => { succeeded = true; },
+                    onError: (errors) => {
+                        mealError.value = `Foto ${index + 1} de ${files.length}: ${errors.photo ?? 'não foi possível enviar.'}`;
+                    },
+                    onFinish: () => resolve(succeeded),
+                });
+            });
+
+            if (!uploaded) break;
+        }
+    } finally {
+        mealUploading.value = false;
+    }
 };
 
-const removeMealPhoto = () =>
-    router.delete(route('athlete.days.meal.destroy', props.entry.day), { preserveState: true, preserveScroll: true });
+const removeMealPhoto = (photo: string) =>
+    router.delete(route('athlete.days.meal.destroy', { day: props.entry.day, photo }), { preserveState: true, preserveScroll: true });
 
 const saveMealNote = () => {
     if (!props.athleteId) {
@@ -302,7 +315,7 @@ const addWater = (ml: number) => {
 const foodChips = [
     ['no_alcohol', 'Sem álcool'],
     ['no_fast_food', 'Sem fast food'],
-    ['no_sweet', 'Sem doce industrializado'],
+    ['no_sweet', 'Sem açúcar'],
 ] as const;
 
 const pickSkill = (idea: string) => {
@@ -325,14 +338,14 @@ const chipClass = (active: boolean) =>
             <span class="flex min-w-0 flex-col gap-2">
                 <span class="font-display text-xl font-extrabold uppercase">
                     Dia {{ entry.day }}
-                    <span class="text-sm font-semibold text-brand-muted">{{ weekday }} {{ date }}</span>
+                    <span class="text-sm font-semibold text-brand-muted">· {{ weekdayLabels[weekday] ?? weekday }}, {{ date }}</span>
                 </span>
                 <span class="flex items-center gap-2.5">
+                    <Lightbulb class="size-4" :class="done.skill ? 'text-brand-gold' : 'text-brand-line3'" />
                     <Dumbbell class="size-4" :class="done.movement ? 'text-brand-gold' : 'text-brand-line3'" />
                     <Droplets class="size-4" :class="done.water ? 'text-brand-gold' : 'text-brand-line3'" />
                     <Moon class="size-4" :class="done.sleep ? 'text-brand-gold' : 'text-brand-line3'" />
                     <Salad class="size-4" :class="done.strength ? 'text-brand-gold' : 'text-brand-line3'" />
-                    <Lightbulb class="size-4" :class="done.skill ? 'text-brand-gold' : 'text-brand-line3'" />
                     <Star class="size-4" :class="entry.plus_count > 0 ? 'text-brand-gold' : 'text-brand-line3'" />
                 </span>
             </span>
@@ -344,8 +357,31 @@ const chipClass = (active: boolean) =>
 
         <p v-if="lockedReason" class="m-0 text-xs text-brand-muted">{{ lockedReason }}</p>
         <div v-show="open" class="grid gap-3">
+            <slot name="before-check-in" />
             <fieldset :disabled="!canEdit || !editing" class="m-0 grid min-w-0 gap-3 border-0 p-0" :class="editing ? '' : 'pointer-events-none opacity-80'">
-            <p class="m-0 px-1 text-xs text-brand-muted">Água, sono e alimentação já vêm com a meta. Inclua o treino do dia para salvar. Habilidade você preenche. Ajuste o que foi diferente.</p>
+            <!-- Habilidade -->
+            <section class="grid gap-3 rounded-xl border px-3 py-3" :class="[canEdit ? 'pointer-events-auto' : '', done.skill ? 'border-brand-gold bg-brand-gold/10' : 'border-brand-line2']">
+                <div class="flex items-center justify-between gap-3 text-sm font-semibold">
+                    <span class="flex items-center gap-2"><Lightbulb class="size-4 text-brand-gold" /> Habilidade</span>
+                    <span :class="done.skill ? 'text-brand-gold' : 'text-brand-muted'">{{ done.skill ? 'Praticada' : 'Ainda não' }}</span>
+                </div>
+                <div class="grid gap-1.5">
+                    <button
+                        v-for="skill in weekSkills"
+                        :key="skill"
+                        type="button"
+                        class="rounded-lg border px-3 py-2.5 text-left text-sm leading-snug"
+                        :class="entry.details.skill === skill ? 'border-brand-gold bg-brand-gold text-brand-ink' : 'border-brand-line3 text-brand-cream'"
+                        @click="pickSkill(skill)"
+                    >
+                        {{ skill }}
+                    </button>
+                </div>
+                <label v-if="!entry.details.skill" class="flex min-h-9 items-center gap-2.5 text-xs text-brand-muted">
+                    <input v-model="entry.details.manual.skill" type="checkbox" class="size-5 shrink-0 accent-brand-gold" />
+                    Meta atingida
+                </label>
+            </section>
 
             <!-- Treino -->
             <section class="grid gap-3 rounded-xl border px-3 py-3" :class="done.movement ? 'border-brand-gold bg-brand-gold/10' : 'border-brand-line2'">
@@ -452,44 +488,26 @@ const chipClass = (active: boolean) =>
                     <input :checked="entry.details.manual.strength" type="checkbox" class="size-5 shrink-0 accent-brand-gold" @change="toggleGoal('strength', ($event.target as HTMLInputElement).checked)" />
                     Meta atingida
                 </label>
-                <p class="m-0 text-xs text-brand-muted">Foto da refeição, se quiser. A nutri vê no seu acompanhamento e pode deixar um elogio.</p>
-                <button v-if="canEdit" type="button" class="flex min-h-9 w-fit items-center gap-1.5 text-sm font-semibold text-brand-gold disabled:opacity-60" :disabled="mealUploading" @click="mealInput?.click()">
-                    <Camera class="size-4" /> {{ mealUploading ? 'Enviando...' : mealPhoto ? 'Trocar foto da refeição' : 'Adicionar foto da refeição' }}
-                </button>
-                <input ref="mealInput" type="file" accept="image/*" class="hidden" @change="sendMealPhoto" />
-                <div v-if="mealPhoto" class="relative w-fit">
-                    <img :src="mealPhoto" alt="Foto da refeição" class="max-h-48 max-w-full rounded-lg border border-brand-line2 object-cover" />
-                    <button v-if="canEdit" type="button" class="absolute right-1.5 top-1.5 rounded-full bg-brand-ink/80 p-1.5 text-brand-cream" aria-label="Remover foto da refeição" @click="removeMealPhoto"><X class="size-4" /></button>
+                <div v-if="canEdit" class="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <button type="button" class="flex min-h-9 w-fit items-center gap-1.5 text-sm font-semibold text-brand-gold disabled:opacity-60" :disabled="mealUploading" @click="mealInput?.click()">
+                        <Camera class="size-4" /> {{ mealUploading ? 'Enviando fotos…' : 'Adicionar fotos da refeição' }}
+                    </button>
+                    <p class="m-0 text-xs text-brand-muted">Você pode tirar as fotos do seu celular e subir todas de uma vez quando finalizar o seu dia.</p>
                 </div>
-                <p v-else-if="canComment" class="m-0 text-xs text-brand-muted">Ainda sem foto da refeição neste dia.</p>
+                <input ref="mealInput" type="file" accept="image/*" multiple class="hidden" @change="sendMealPhotos" />
+                <div v-if="mealPhotos?.length" class="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    <div v-for="(photo, index) in mealPhotos" :key="photo.id" class="relative">
+                        <img :src="photo.url" :alt="'Foto da refeição ' + (index + 1)" loading="lazy" class="aspect-square w-full rounded-lg border border-brand-line2 object-cover" />
+                        <button v-if="canEdit" type="button" class="absolute right-1.5 top-1.5 rounded-full bg-brand-ink/80 p-1.5 text-brand-cream disabled:opacity-60" :disabled="mealUploading" :aria-label="'Remover foto da refeição ' + (index + 1)" @click="removeMealPhoto(photo.id)">
+                            <X class="size-4" />
+                        </button>
+                    </div>
+                </div>
+                <p v-else-if="canComment" class="m-0 text-xs text-brand-muted">Ainda sem fotos da refeição neste dia.</p>
                 <p v-if="mealError" class="m-0 text-xs text-red-400">{{ mealError }}</p>
                 <p v-if="mealComment && !canComment" class="m-0 text-sm leading-relaxed text-brand-muted">
                     <span class="font-semibold text-brand-cream">Nutri · </span>{{ mealComment }}
                 </p>
-            </section>
-
-            <!-- Habilidade -->
-            <section class="grid gap-3 rounded-xl border px-3 py-3" :class="[canEdit ? 'pointer-events-auto' : '', done.skill ? 'border-brand-gold bg-brand-gold/10' : 'border-brand-line2']">
-                <div class="flex items-center justify-between gap-3 text-sm font-semibold">
-                    <span class="flex items-center gap-2"><Lightbulb class="size-4 text-brand-gold" /> Habilidade</span>
-                    <span :class="done.skill ? 'text-brand-gold' : 'text-brand-muted'">{{ done.skill ? 'Praticada' : 'Ainda não' }}</span>
-                </div>
-                <div class="grid gap-1.5">
-                    <button
-                        v-for="skill in weekSkills"
-                        :key="skill"
-                        type="button"
-                        class="rounded-lg border px-3 py-2.5 text-left text-sm leading-snug"
-                        :class="entry.details.skill === skill ? 'border-brand-gold bg-brand-gold text-brand-ink' : 'border-brand-line3 text-brand-cream'"
-                        @click="pickSkill(skill)"
-                    >
-                        {{ skill }}
-                    </button>
-                </div>
-                <label v-if="!entry.details.skill" class="flex min-h-9 items-center gap-2.5 text-xs text-brand-muted">
-                    <input v-model="entry.details.manual.skill" type="checkbox" class="size-5 shrink-0 accent-brand-gold" />
-                    Meta atingida
-                </label>
             </section>
 
             <!-- Refeição luxo -->

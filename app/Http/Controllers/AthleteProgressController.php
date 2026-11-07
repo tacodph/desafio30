@@ -15,13 +15,19 @@ use App\Support\DayLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
+use RuntimeException;
+use Throwable;
 
 class AthleteProgressController extends Controller
 {
+    private const START_PHOTOS = ['photo_front' => 'foto de frente', 'photo_side' => 'foto de lado', 'photo_back' => 'foto de costas'];
+
     public function __construct(private readonly ChallengeAccess $access) {}
 
     public function welcome(Request $request): Response|RedirectResponse
@@ -63,6 +69,7 @@ class AthleteProgressController extends Controller
                 'abdomen' => $profile?->abdomen ?? '',
                 'hip' => $profile?->hip ?? '',
                 'photo' => $profile?->photo ? '/storage/'.$profile->photo : null,
+                'startPhotos' => array_map(fn (string $path) => Storage::disk('public')->url($path), $profile?->start_photos ?? []),
             ],
         ]);
     }
@@ -75,31 +82,65 @@ class AthleteProgressController extends Controller
             return to_route('athlete.welcome');
         }
 
-        $data = $request->validate([
-            'weight' => 'nullable|numeric|between:30,300',
-            'waist' => 'nullable|numeric|between:40,200',
-            'abdomen' => 'nullable|numeric|between:40,200',
-            'hip' => 'nullable|numeric|between:40,200',
-            'photo' => 'nullable|image|max:5120',
-        ]);
+        $disk = Storage::disk('public');
+        $newPhotos = [];
+        $replacedPhotos = [];
 
-        $profile = AthleteProfile::query()->firstOrNew(['user_id' => $request->user()->id]);
+        try {
+            $profile = DB::transaction(function () use ($request, $disk, &$newPhotos, &$replacedPhotos) {
+                $userId = $request->user()->id;
+                User::query()->lockForUpdate()->findOrFail($userId);
+                $profile = AthleteProfile::query()->firstOrNew(['user_id' => $userId]);
+                $photos = $profile->start_photos ?? [];
+                $rules = [
+                    'weight' => 'nullable|numeric|between:30,300',
+                    'waist' => 'nullable|numeric|between:40,200',
+                    'abdomen' => 'nullable|numeric|between:40,200',
+                    'hip' => 'nullable|numeric|between:40,200',
+                ];
 
-        if ($request->hasFile('photo')) {
-            if ($profile->photo) {
-                Storage::disk('public')->delete($profile->photo);
-            }
+                foreach (self::START_PHOTOS as $key => $label) {
+                    $rules[$key] = [Rule::requiredIf(empty($photos[$key])), 'nullable', 'image', 'max:5120'];
+                }
 
-            $profile->photo = $request->file('photo')->store('baselines', 'public');
+                $data = $request->validate($rules, [], self::START_PHOTOS);
+
+                foreach (array_keys(self::START_PHOTOS) as $key) {
+                    if (! isset($data[$key])) {
+                        continue;
+                    }
+
+                    $path = $disk->putFile('baselines', $data[$key]);
+                    if ($path === false) {
+                        throw new RuntimeException('Não foi possível salvar a foto.');
+                    }
+
+                    $newPhotos[] = $path;
+                    if (isset($photos[$key])) {
+                        $replacedPhotos[] = $photos[$key];
+                    }
+                    $photos[$key] = $path;
+                }
+
+                $profile->fill([
+                    'weight' => $data['weight'] ?? null,
+                    'waist' => $data['waist'] ?? null,
+                    'abdomen' => $data['abdomen'] ?? null,
+                    'hip' => $data['hip'] ?? null,
+                    'welcomed_at' => $profile->welcomed_at ?? now(),
+                ]);
+                $profile->start_photos = $photos;
+                $profile->save();
+
+                return $profile;
+            });
+        } catch (Throwable $error) {
+            $disk->delete($newPhotos);
+
+            throw $error;
         }
 
-        $profile->fill([
-            'weight' => $data['weight'] ?? null,
-            'waist' => $data['waist'] ?? null,
-            'abdomen' => $data['abdomen'] ?? null,
-            'hip' => $data['hip'] ?? null,
-            'welcomed_at' => $profile->welcomed_at ?? now(),
-        ])->save();
+        $disk->delete($replacedPhotos);
 
         // No primeiro acesso, o segundo passo é preencher as metas.
         return $profile->goals_set_at ? to_route('athlete.start.first-day') : to_route('athlete.start.goals');
@@ -186,8 +227,8 @@ class AthleteProgressController extends Controller
 
         $data = $request->validate([
             'week' => 'required|integer|between:1,'.count(ChallengeSheet::WEEKS),
-            'picks' => 'required|array|size:3',
-            'picks.*' => 'required|string|max:180|distinct',
+            'picks' => 'required|array|size:1',
+            'picks.*' => 'required|string|max:180',
         ]);
 
         $profile = AthleteProfile::query()->firstOrNew(['user_id' => $request->user()->id]);
@@ -326,19 +367,31 @@ class AthleteProgressController extends Controller
         $this->access->ensureDayEditable($day);
 
         $data = $request->validate(['photo' => 'required|image|max:5120']);
-        $checkin = Checkin::query()->firstOrNew(['user_id' => $request->user()->id, 'day' => $day]);
+        $disk = Storage::disk('public');
+        $path = $disk->putFile('meals', $data['photo']);
 
-        if ($checkin->meal_photo) {
-            Storage::disk('public')->delete($checkin->meal_photo);
+        if ($path === false) {
+            throw ValidationException::withMessages(['photo' => 'Não foi possível salvar a foto da refeição.']);
         }
 
-        $checkin->meal_photo = $data['photo']->store('meals', 'public');
-        $checkin->save();
+        try {
+            DB::transaction(function () use ($request, $day, $path) {
+                $userId = $request->user()->id;
+                User::query()->lockForUpdate()->findOrFail($userId);
+                $checkin = Checkin::query()->firstOrNew(['user_id' => $userId, 'day' => $day]);
+                $checkin->meal_photos = [...($checkin->meal_photos ?? []), $path];
+                $checkin->save();
+            });
+        } catch (Throwable $error) {
+            $disk->delete($path);
+
+            throw $error;
+        }
 
         return back();
     }
 
-    public function destroyMealPhoto(Request $request, int $day): RedirectResponse
+    public function destroyMealPhoto(Request $request, int $day, ?string $photo = null): RedirectResponse
     {
         $this->abortUnlessAthlete($request);
 
@@ -348,11 +401,38 @@ class AthleteProgressController extends Controller
 
         $this->access->ensureDayEditable($day);
 
-        $checkin = Checkin::query()->where(['user_id' => $request->user()->id, 'day' => $day])->first();
+        $removed = DB::transaction(function () use ($request, $day, $photo) {
+            $userId = $request->user()->id;
+            User::query()->lockForUpdate()->findOrFail($userId);
+            $checkin = Checkin::query()->where(['user_id' => $userId, 'day' => $day])->first();
 
-        if ($checkin?->meal_photo) {
-            Storage::disk('public')->delete($checkin->meal_photo);
-            $checkin->update(['meal_photo' => null]);
+            if (! $checkin) {
+                return null;
+            }
+
+            if ($checkin->meal_photo && ($photo === null || basename($checkin->meal_photo) === $photo)) {
+                $path = $checkin->meal_photo;
+                $checkin->update(['meal_photo' => null]);
+
+                return $path;
+            }
+
+            $photos = $checkin->meal_photos ?? [];
+            foreach ($photos as $index => $path) {
+                if (basename($path) === $photo) {
+                    unset($photos[$index]);
+                    $checkin->meal_photos = array_values($photos);
+                    $checkin->save();
+
+                    return $path;
+                }
+            }
+
+            return null;
+        });
+
+        if ($removed) {
+            Storage::disk('public')->delete($removed);
         }
 
         return back();

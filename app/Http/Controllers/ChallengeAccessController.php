@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Enums\UserRole;
+use App\Models\User;
+use App\Models\UserType;
 use App\Support\ChallengeAccess;
 use App\Support\ChallengeSheet;
 use Illuminate\Http\RedirectResponse;
@@ -26,6 +28,11 @@ class ChallengeAccessController extends Controller
 
         return Inertia::render('dashboard/ChallengeAccess', [
             'features' => ChallengeAccess::FEATURES,
+            'athletes' => Schema::hasColumn('users', 'challenge_early_access')
+                ? User::query()->where('user_type_id', UserType::idFor(UserRole::Atleta))
+                    ->orderBy('name')->orderBy('id')->get(['id', 'name', 'email', 'challenge_early_access'])
+                : [],
+            'athleteSaved' => (bool) $request->session()->get('athlete_access_saved', false),
             'modes' => $access->modes(),
             'releaseDate' => $access->releaseDate()->format('d/m/Y'),
             'startDate' => ChallengeSheet::dateForDay(1),
@@ -36,12 +43,30 @@ class ChallengeAccessController extends Controller
         ]);
     }
 
+    public function updateAthlete(Request $request): RedirectResponse
+    {
+        $this->authorizeAdmin($request);
+
+        $data = $request->validateWithBag('athleteAccess', [
+            'athlete_id' => ['required', 'integer'],
+            'enabled' => ['required', 'boolean'],
+            'password' => ['required', 'current_password:web'],
+        ]);
+
+        $athlete = User::query()
+            ->where('user_type_id', UserType::idFor(UserRole::Atleta))
+            ->findOrFail($data['athlete_id']);
+        $athlete->forceFill(['challenge_early_access' => $data['enabled']])->save();
+
+        return to_route('admin.challenge-access')->with('athlete_access_saved', true);
+    }
+
     public function update(Request $request): RedirectResponse
     {
         $this->authorizeAdmin($request);
         $rules = ['password' => ['required', 'current_password:web'], 'modes' => ['required', 'array:'.implode(',', array_keys(ChallengeAccess::FEATURES))]];
         foreach (array_keys(ChallengeAccess::FEATURES) as $key) {
-            $rules['modes.'.$key] = ['required', 'in:calendar,closed'];
+            $rules['modes.'.$key] = ['required', 'in:'.implode(',', ChallengeAccess::MODES)];
         }
         $data = $request->validate($rules, [
             'password.current_password' => 'A senha do administrador está incorreta.',

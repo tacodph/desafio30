@@ -78,7 +78,18 @@ const save = () => metas.put(route('athlete.goals.update'));
                         <Label for="sleep_goal">Meta de sono</Label>
                         <Input id="sleep_goal" v-model="metas.sleep_goal" placeholder="7h por noite ou deitar às 23h" />
                     </div>
-                    <p class="text-sm text-brand-muted">Sem fast food e doce, exceto nas refeições luxo. Duas refeições luxo por semana: uma refeição inteira cada.</p>
+                    <p class="text-sm text-brand-muted">
+                        Aqui você decide se haverá penalidade solidária no seu desafio.
+                    </p>
+                    <details class="text-sm">
+                        <summary class="w-fit cursor-pointer font-semibold text-brand-gold underline">Clique aqui para entender essa opção</summary>
+                        <div class="mt-2 space-y-2 rounded-xl border border-brand-line2 p-4 text-brand-muted">
+                            <h3 class="font-bold text-brand-cream">Penalidade solidária</h3>
+                            <p>É um compromisso opcional que você pode assumir no início do desafio.</p>
+                            <p>Se escolher participar, reserve <strong>R$ 10,00 por dia sem check-in</strong>. Ao final do desafio, você pode usar o valor acumulado para uma doação ou uma comemoração.</p>
+                            <p>Por exemplo, 3 dias sem check-in somam R$ 30,00.</p>
+                        </div>
+                    </details>
                     <label class="flex items-center gap-3 text-sm">
                         <input v-model="metas.penalty" type="checkbox" class="size-4 accent-brand-gold" />
                         Penalidade solidária: R$ 10 por dia sem check-in

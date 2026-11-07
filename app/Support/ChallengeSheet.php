@@ -151,7 +151,10 @@ class ChallengeSheet
                 'details' => self::detailsFor($checkin),
                 'saved' => self::hasEntry($checkin),
                 'workout_photo' => $checkin?->workout_photo ? '/storage/'.$checkin->workout_photo : null,
-                'meal_photo' => $checkin?->meal_photo ? '/storage/'.$checkin->meal_photo : null,
+                'meal_photos' => array_map(fn (string $path) => [
+                    'id' => basename($path),
+                    'url' => '/storage/'.$path,
+                ], $checkin?->mealPhotoPaths() ?? []),
                 'meal_comment' => $checkin?->meal_comment ?? '',
                 'notes' => array_merge([
                     'movement' => '',
@@ -186,7 +189,7 @@ class ChallengeSheet
             'goals' => DayLog::goals($profile),
             'workoutTypes' => DayLog::WORKOUT_TYPES,
             'weeklySkills' => array_values(array_map(
-                fn ($picks) => array_values(array_filter((array) $picks)),
+                fn ($picks) => array_slice(array_values(array_filter((array) $picks)), 0, 1),
                 $profile?->weekly_skills ?? [],
             )),
             'skillCatalog' => Skill::catalog(),

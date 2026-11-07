@@ -19,15 +19,22 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: editing ? 'Editar lista' : 'Nova lista', href: '#' },
 ];
 
+const shortPeriod = (period: string) => period.replace(/^(\d{2})\/(\d{2}) a (\d{2})\/\2$/, (_, from, _month, to) => Number(from) + ' a ' + Number(to));
+
 const isBlank = (item: string) => item.includes('____');
 const itemId = (section: string, group: string, index: number) => `${section}|${group}|${index}`;
 
 const selected = new Set(props.list?.items ?? []);
+const knownItems = new Set(props.catalog.flatMap((section) => section.groups.flatMap((group) => group.items)));
+const savedItems = [...selected].filter((item) => !knownItems.has(item));
+const catalog = savedItems.length
+    ? [...props.catalog, { title: 'Itens salvos anteriormente', groups: [{ title: '', items: savedItems, notes: [] }] }]
+    : props.catalog;
 const checked = ref<Record<string, boolean>>({});
 const extras = ref<Record<string, string>>({});
 let blank = 0;
 
-props.catalog.forEach((section) => {
+catalog.forEach((section) => {
     section.groups.forEach((group) => {
         group.items.forEach((item, index) => {
             const id = itemId(section.title, group.title, index);
@@ -50,7 +57,7 @@ const form = useForm({
 const save = () => {
     const items = new Set<string>();
 
-    props.catalog.forEach((section) => {
+    catalog.forEach((section) => {
         section.groups.forEach((group) => {
             group.items.forEach((item, index) => {
                 if (!isBlank(item) && checked.value[itemId(section.title, group.title, index)]) {
@@ -61,7 +68,7 @@ const save = () => {
     });
 
     form.items = [...items];
-    form.extras = Object.values(extras.value).map((item) => item.trim()).filter(Boolean);
+    form.extras = [...Object.values(extras.value), ...(props.list?.extras.slice(blank) ?? [])].map((item) => item.trim()).filter(Boolean);
 
     if (editing) {
         form.put(route('alimentacao.compras.update'));
@@ -78,21 +85,21 @@ const save = () => {
         <form class="mx-auto flex w-full max-w-[1100px] flex-col gap-8 p-4 md:p-6" @submit.prevent="save">
             <div>
                 <div class="text-sm font-bold uppercase tracking-[3px] text-[#43A047]">Lista de compras</div>
-                <h1 class="mt-2 text-3xl font-black">{{ editing ? 'Editar lista' : 'Nova lista' }}</h1>
-                <p class="mt-2 text-sm text-brand-cream/70">Marque só o que pretende comprar nessa semana.</p>
+                <h1 class="mt-2 text-3xl font-black">Vamos às compras?</h1>
+                <p class="mt-2 text-sm text-brand-cream/70">Marque apenas o que pretende comprar essa semana.</p>
             </div>
 
             <div class="surface-card flex flex-col gap-3 p-4 sm:p-6">
-                <label class="text-sm font-bold uppercase tracking-[2px] text-[#43A047]" for="semana">Semana desta lista</label>
-                <p v-if="editing" class="m-0 text-lg font-black">Semana {{ week }} · {{ weeks[0].period }}</p>
+                <p v-if="editing" class="m-0 text-lg font-black">Semana {{ week }}, {{ shortPeriod(weeks[0].period) }}</p>
                 <select
                     v-else
                     id="semana"
+                    aria-label="Semana"
                     v-model.number="form.week"
                     class="h-11 rounded-xl border border-brand-line2 bg-brand-card2 px-3 text-brand-cream [color-scheme:dark]"
                 >
                     <option v-for="item in weeks" :key="item.week" :value="item.week" class="bg-brand-card2 text-brand-cream">
-                        Semana {{ item.week }} · {{ item.period }}
+                        Semana {{ item.week }}, {{ shortPeriod(item.period) }}
                     </option>
                 </select>
                 <p v-if="form.errors.week" class="m-0 text-sm text-red-300">{{ form.errors.week }}</p>
@@ -130,7 +137,7 @@ const save = () => {
 
             <div class="sticky bottom-0 z-10 -mx-4 -mb-4 flex flex-wrap gap-3 border-t border-brand-line bg-background/95 px-4 py-3 backdrop-blur md:static md:mx-0 md:mb-0 md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none">
                 <button type="submit" class="rounded-full bg-[#43A047] px-5 py-3 text-sm font-bold text-white disabled:opacity-60" :disabled="form.processing">
-                    Salvar lista
+                    Gerar lista de compras
                 </button>
                 <Link :href="route('alimentacao.compras')" class="rounded-full border border-brand-line3 px-5 py-3 text-sm font-bold">Cancelar</Link>
             </div>

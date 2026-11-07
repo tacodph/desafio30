@@ -11,6 +11,8 @@ class ChallengeAccess
 {
     public const TIMEZONE = 'America/Sao_Paulo';
 
+    public const MODES = ['calendar', 'manual', 'closed'];
+
     public const FEATURES = [
         'dias' => 'Página de dias',
         'conquistas' => 'Página de conquistas',
@@ -36,7 +38,7 @@ class ChallengeAccess
             array_fill_keys(array_keys(self::FEATURES), 'calendar'),
             Schema::hasTable('challenge_access_settings')
                 ? DB::table('challenge_access_settings')->pluck('mode', 'feature')
-                    ->map(fn ($mode) => in_array($mode, ['calendar', 'closed'], true) ? $mode : 'calendar')->all()
+                    ->map(fn ($mode) => in_array($mode, self::MODES, true) ? $mode : 'calendar')->all()
                 : [],
         );
     }
@@ -49,7 +51,9 @@ class ChallengeAccess
     public function pageOpen(string $feature): bool
     {
         return match ($this->modes()[$feature] ?? 'closed') {
-            'calendar' => Carbon::now(self::TIMEZONE)->gte($this->releaseDate()),
+            'calendar' => Carbon::now(self::TIMEZONE)->gte($this->releaseDate())
+                || (bool) request()->user()?->challenge_early_access,
+            'manual' => true,
             default => false,
         };
     }
@@ -63,6 +67,7 @@ class ChallengeAccess
         return match ($this->modes()['entries']) {
             'calendar' => Carbon::parse(ChallengeSheet::dateForDay($day), self::TIMEZONE)
                 ->isSameDay(Carbon::now(self::TIMEZONE)),
+            'manual' => true,
             default => false,
         };
     }

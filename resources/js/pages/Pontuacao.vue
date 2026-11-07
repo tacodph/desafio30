@@ -3,14 +3,12 @@ import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, useForm } from '@inertiajs/vue3';
-import { computed } from 'vue';
 
 type Rule = { id: number; key: string; group: string; label: string; points: number };
 
 const props = defineProps<{
     daily: Rule[];
     bonus: Rule[];
-    dailyMax: number;
     canEdit: boolean;
 }>();
 
@@ -24,10 +22,6 @@ const form = useForm({
     bonus: props.bonus,
 });
 
-const dailyMax = computed(() =>
-    (props.canEdit ? form.daily : props.daily).reduce((sum, item) => sum + Number(item.points || 0), 0),
-);
-
 const save = () => form.put(route('pontuacao.update'), { preserveScroll: true });
 
 const fieldClass = 'h-11 rounded-xl border border-brand-line2 bg-brand-card2 px-3 font-normal text-brand-cream';
@@ -38,11 +32,7 @@ const fieldClass = 'h-11 rounded-xl border border-brand-line2 bg-brand-card2 px-
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <form class="flex h-full flex-1 flex-col gap-6 p-4 md:p-6" @submit.prevent="canEdit ? save() : undefined">
-            <div>
-                <div class="eyebrow">Como pontua</div>
-                <h1 class="display-title text-[clamp(36px,5vw,56px)]">Até {{ dailyMax }} pontos por dia</h1>
-                <p class="m-0 mt-2 max-w-xl text-brand-muted">O dia só deixa de pontuar se não for registrado. Sem punição. Amanhã conta de novo.</p>
-            </div>
+            <h1 class="display-title text-[clamp(36px,5vw,56px)] text-brand-gold">Confira sua pontuação no desafio.</h1>
 
             <section class="surface-card grid gap-4 p-5 sm:p-6">
                 <h2 class="font-display m-0 text-2xl font-extrabold uppercase">Pontuação diária</h2>

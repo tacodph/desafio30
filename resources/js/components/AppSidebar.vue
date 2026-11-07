@@ -4,7 +4,7 @@ import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavGroupItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { Apple, ClipboardCheck, Droplets, Dumbbell, Flag, LayoutGrid, Lightbulb, Salad, Settings, Star, Trophy, Users } from 'lucide-vue-next';
+import { Apple, ClipboardCheck, Droplets, Dumbbell, Flag, LayoutGrid, Lightbulb, PartyPopper, Salad, Settings, Star, Trophy, Users, Mail } from 'lucide-vue-next';
 import { computed } from 'vue';
 import AppLogo from './AppLogo.vue';
 
@@ -23,7 +23,7 @@ const menuLabel = computed(() => {
     return 'Equipe';
 });
 
-const objective = (goal: string) => ({ title: 'Objetivo', href: `/meus-objetivos/${goal}` });
+const objective = (goal: string) => ({ title: 'Lembre as regras', href: `/meus-objetivos/${goal}` });
 
 const evolutionChildren = computed(() => {
     const allowed = page.props.evolutionAccess?.pages ?? {};
@@ -41,11 +41,13 @@ const mainNavItems = computed<NavGroupItem[]>(() => {
             { title: 'Painel', href: '/dashboard', icon: LayoutGrid },
             { title: 'Usuários', href: '/admin/usuarios', icon: Users },
             { title: 'Pagamentos', href: '/admin/pagamentos', icon: ClipboardCheck },
+            { title: 'Lembretes de pagamento', href: '/admin/pagamentos/lembretes', icon: Mail },
             { title: 'Alimentos', href: '/admin/alimentos', icon: Apple },
             { title: 'Objetivos', href: '/meus-objetivos/alimentacao', icon: Salad },
             { title: 'Evolução (visualizar)', icon: ClipboardCheck, children: evolutionChildren.value },
             { title: 'Monte seu Cardápio (visualizar)', href: '/objetivos/alimentacao/compras', icon: Salad },
             { title: 'Pontuação', href: '/pontuacao', icon: Trophy },
+            { title: 'Mensagem de boas-vindas', href: '/admin/boas-vindas', icon: PartyPopper },
             { title: 'Liberações do desafio', href: '/admin/liberacoes', icon: Settings },
             { title: 'Configurações', href: '/settings/profile', icon: Settings },
         ];
@@ -67,7 +69,7 @@ const mainNavItems = computed<NavGroupItem[]>(() => {
                 icon: ClipboardCheck,
                 children: evolutionChildren.value,
             },
-            { title: 'Alimentação', icon: Salad, children: [objective('alimentacao'), { title: 'Monte seu Cardápio', href: '/objetivos/alimentacao/compras', disabled: !page.props.evolutionAccess?.pages.shopping }] },
+            { title: 'Alimentação', icon: Salad, children: [{ title: 'Lista de compras inteligente', href: '/objetivos/alimentacao/compras', disabled: !page.props.evolutionAccess?.pages.shopping }] },
             { title: 'Treino', icon: Dumbbell, children: [objective('treino')] },
             { title: 'Hidratação', icon: Droplets, children: [objective('hidratacao')] },
             { title: 'Habilidade', icon: Lightbulb, children: [objective('habilidade')] },

@@ -47,6 +47,7 @@ class AthleteProfile extends Model
             'abdomen' => 'decimal:1',
             'hip' => 'decimal:1',
             'welcomed_at' => 'datetime',
+            'start_photos' => 'array',
             'goals_set_at' => 'datetime',
         ];
     }

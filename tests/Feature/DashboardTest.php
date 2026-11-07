@@ -147,6 +147,20 @@ class DashboardTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page->where('paymentOverview', null)->where('dailyPayments', null));
     }
 
+    public function test_only_admin_can_preview_the_athlete_welcome_message(): void
+    {
+        $this->actingAs(User::factory()->ofRole(UserRole::Administrador)->create())
+            ->get(route('admin.welcome.preview'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->component('dashboard/BoasVindas')->where('adminPreview', true));
+
+        foreach ([UserRole::Atleta, UserRole::Nutricionista] as $role) {
+            $this->actingAs(User::factory()->ofRole($role)->create())
+                ->get(route('admin.welcome.preview'))
+                ->assertForbidden();
+        }
+    }
+
     public function test_only_the_admin_can_open_the_user_list(): void
     {
         $this->actingAs(User::factory()->ofRole(UserRole::Administrador)->create())
@@ -237,6 +251,41 @@ class DashboardTest extends TestCase
         $this->actingAs(User::factory()->create())
             ->get(route('admin.payments'))
             ->assertForbidden();
+    }
+
+    public function test_payment_filters_combine_status_billing_type_and_due_date(): void
+    {
+        $athlete = User::factory()->create();
+
+        foreach ([
+            ['PENDING', null, '2026-11-08'],
+            ['PENDING', 'UNDEFINED', '2026-11-09'],
+            ['PENDING', 'PIX', '2026-11-08'],
+            ['RECEIVED', null, '2026-11-08'],
+            ['PENDING', null, '2026-11-10'],
+        ] as [$status, $billingType, $dueDate]) {
+            ChallengePayment::create([
+                'user_id' => $athlete->id,
+                'status' => $status,
+                'billing_type' => $billingType,
+                'value' => 79.90,
+                'due_date' => $dueDate,
+            ]);
+        }
+
+        $this->actingAs(User::factory()->ofRole(UserRole::Nutricionista)->create())
+            ->get(route('admin.payments', [
+                'status' => 'PENDING',
+                'billing_type' => 'UNDEFINED',
+                'due_from' => '2026-11-08',
+                'due_to' => '2026-11-09',
+            ]))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('payments.total', 2)
+                ->where('payments.data.0.dueDate', '09/11/2026')
+                ->where('payments.data.1.dueDate', '08/11/2026')
+                ->where('filters.billing_type', 'UNDEFINED'));
     }
 
     public function test_payment_summary_includes_pix_even_without_pix_payments(): void

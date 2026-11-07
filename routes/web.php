@@ -65,9 +65,13 @@ Route::middleware(['auth', 'verified', 'challenge.paid'])->group(function () {
 
         return Inertia::render('Objetivo', ['goal' => $goal, 'skillCatalog' => Skill::catalog()]);
     })->name('meus-objetivos.show');
+    Route::get('admin/boas-vindas', [DashboardController::class, 'welcomePreview'])->name('admin.welcome.preview');
     Route::get('admin/liberacoes', [ChallengeAccessController::class, 'show'])->name('admin.challenge-access');
+    Route::patch('admin/liberacoes/atleta', [ChallengeAccessController::class, 'updateAthlete'])->middleware('throttle:6,1')->name('admin.challenge-access.athlete');
     Route::put('admin/liberacoes', [ChallengeAccessController::class, 'update'])->middleware('throttle:6,1')->name('admin.challenge-access.update');
     Route::get('admin/usuarios', [DashboardController::class, 'users'])->name('admin.users');
+    Route::get('admin/pagamentos/lembretes', [\App\Http\Controllers\PaymentReminderController::class, 'show'])->name('admin.payment-reminders');
+    Route::post('admin/pagamentos/lembretes', [\App\Http\Controllers\PaymentReminderController::class, 'store'])->middleware('throttle:6,1')->name('admin.payment-reminders.store');
     Route::get('admin/pagamentos', [DashboardController::class, 'payments'])->name('admin.payments');
     Route::get('admin/usuarios/novo', [DashboardController::class, 'createUser'])->name('admin.users.create');
     Route::patch('admin/usuarios/{athlete}/cortesia', [DashboardController::class, 'updateCourtesy'])->name('admin.users.courtesy');
@@ -99,7 +103,7 @@ Route::middleware(['auth', 'verified', 'challenge.paid'])->group(function () {
     Route::post('atleta/dias/{day}/foto-treino', [AthleteProgressController::class, 'storeWorkoutPhoto'])->whereNumber('day')->name('athlete.days.photo.store');
     Route::delete('atleta/dias/{day}/foto-treino', [AthleteProgressController::class, 'destroyWorkoutPhoto'])->whereNumber('day')->name('athlete.days.photo.destroy');
     Route::post('atleta/dias/{day}/foto-refeicao', [AthleteProgressController::class, 'storeMealPhoto'])->whereNumber('day')->name('athlete.days.meal.store');
-    Route::delete('atleta/dias/{day}/foto-refeicao', [AthleteProgressController::class, 'destroyMealPhoto'])->whereNumber('day')->name('athlete.days.meal.destroy');
+    Route::delete('atleta/dias/{day}/foto-refeicao/{photo?}', [AthleteProgressController::class, 'destroyMealPhoto'])->whereNumber('day')->name('athlete.days.meal.destroy');
     Route::put('equipe/atletas/{athlete}/dias/{day}/comentario-refeicao', [AthleteProgressController::class, 'commentMeal'])->whereNumber('day')->name('equipe.athlete.meal.comment');
     Route::post('atleta/conquistas', [AthleteProgressController::class, 'storeAchievement'])->name('athlete.achievements.store');
     Route::put('atleta/conquistas/{achievement}', [AthleteProgressController::class, 'updateAchievement'])->name('athlete.achievements.update');

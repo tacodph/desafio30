@@ -6,6 +6,7 @@ namespace App\Models;
 use App\Enums\UserRole;
 use Database\Factories\UserFactory;
 use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -55,6 +56,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'challenge_paid_at' => 'datetime',
+            'challenge_early_access' => 'boolean',
             'welcome_acknowledged_at' => 'datetime',
             'challenge_courtesy_at' => 'datetime',
             'password' => 'hashed',
@@ -79,6 +81,16 @@ class User extends Authenticatable
     public function payments(): HasMany
     {
         return $this->hasMany(ChallengePayment::class);
+    }
+
+    public function scopeWithPendingChallengePayment(Builder $query): Builder
+    {
+        return $query->where('user_type_id', UserType::idFor(UserRole::Atleta))
+            ->whereNull('challenge_paid_at')
+            ->whereNull('challenge_courtesy_at')
+            ->whereHas('payments', fn (Builder $payments) => $payments
+                ->where('status', ChallengePayment::PENDING)
+                ->whereNotNull('asaas_payment_id'));
     }
 
     public function isAthlete(): bool

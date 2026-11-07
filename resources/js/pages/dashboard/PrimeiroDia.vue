@@ -5,6 +5,14 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 
+const positions = [
+    { key: 'photo_front', label: 'Frente' },
+    { key: 'photo_side', label: 'Lado' },
+    { key: 'photo_back', label: 'Costas' },
+] as const;
+
+type PhotoKey = (typeof positions)[number]['key'];
+
 const props = defineProps<{
     firstAccess: boolean;
     baseline: {
@@ -13,6 +21,7 @@ const props = defineProps<{
         abdomen: string | number;
         hip: string | number;
         photo: string | null;
+        startPhotos: Partial<Record<PhotoKey, string>>;
     };
 }>();
 
@@ -26,11 +35,13 @@ const form = useForm({
     waist: props.baseline.waist,
     abdomen: props.baseline.abdomen,
     hip: props.baseline.hip,
-    photo: null as File | null,
+    photo_front: null as File | null,
+    photo_side: null as File | null,
+    photo_back: null as File | null,
 });
 
-const onPhoto = (event: Event) => {
-    form.photo = (event.target as HTMLInputElement).files?.[0] ?? null;
+const onPhoto = (key: PhotoKey, event: Event) => {
+    form[key] = (event.target as HTMLInputElement).files?.[0] ?? null;
 };
 
 const save = () => form.post(route('athlete.start.first-day.store'));
@@ -47,7 +58,7 @@ const fieldClass = 'h-11 rounded-xl border border-brand-line2 bg-brand-card2 px-
                 <div class="eyebrow">{{ firstAccess ? 'Passo 1 de 2 · ponto de partida' : 'Ponto de partida' }}</div>
                 <h1 class="display-title text-[clamp(36px,5vw,56px)]">Primeiro dia</h1>
                 <p class="m-0 text-brand-muted">
-                    Registre como você está hoje. Peso, cintura, abdômen e quadril, e uma foto se quiser. No dia 30, essa foto mostra a sua evolução.
+                    Registre suas medidas e as três fotos do início do desafio para acompanhar sua evolução até o dia 30.
                 </p>
             </div>
 
@@ -74,21 +85,37 @@ const fieldClass = 'h-11 rounded-xl border border-brand-line2 bg-brand-card2 px-
                         <InputError :message="form.errors.hip" />
                     </label>
                 </div>
-                <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-4">
-                    <img v-if="baseline.photo" :src="baseline.photo" alt="Foto do dia 1" class="h-32 w-28 shrink-0 rounded-xl object-cover" />
-                    <label class="flex min-w-0 flex-col gap-1.5 text-sm font-semibold">
-                        {{ baseline.photo ? 'Trocar a foto' : 'Foto de hoje' }}
-                        <input type="file" accept="image/*" class="text-sm font-normal text-brand-muted" @change="onPhoto" />
-                        <InputError :message="form.errors.photo" />
-                    </label>
-                </div>
+                <fieldset class="grid gap-3">
+                    <legend class="mb-2 text-sm font-semibold">Fotos do início do desafio</legend>
+                    <p class="text-sm text-brand-muted">
+                        Envie uma foto de frente, uma de lado e uma de costas.
+                        <Link :href="route('athlete.start.measures-guide')" class="font-semibold text-brand-gold underline">Veja os exemplos no material de apoio.</Link>
+                    </p>
+                    <div class="grid gap-3 sm:grid-cols-3">
+                        <label v-for="position in positions" :key="position.key" class="flex min-w-0 flex-col gap-2 rounded-xl border border-brand-line2 p-3 text-sm font-semibold">
+                            {{ position.label }}
+                            <img
+                                v-if="baseline.startPhotos?.[position.key]"
+                                :src="baseline.startPhotos[position.key]"
+                                :alt="'Foto inicial · ' + position.label"
+                                class="h-40 w-full rounded-lg object-contain"
+                            />
+                            <input type="file" accept="image/*" :required="!baseline.startPhotos?.[position.key]" class="w-full text-sm font-normal text-brand-muted" @change="onPhoto(position.key, $event)" />
+                            <InputError :message="form.errors[position.key]" />
+                        </label>
+                    </div>
+                    <div v-if="baseline.photo" class="flex items-center gap-3 text-sm text-brand-muted">
+                        <img :src="baseline.photo" alt="Foto inicial anterior" class="h-24 w-16 rounded-lg object-cover" />
+                        <span>Foto inicial anterior</span>
+                    </div>
+                </fieldset>
                 <Button type="submit" class="w-fit" :disabled="form.processing">{{ firstAccess ? 'Continuar para as metas' : 'Salvar' }}</Button>
             </form>
 
             <Link :href="route('athlete.start.measures-guide')" class="surface-card flex flex-col gap-1 p-5 sm:p-6">
                 <div class="eyebrow">Material de apoio</div>
                 <h2 class="m-0 text-xl font-bold text-brand-cream">Como tirar suas medidas</h2>
-                <p class="m-0 mt-1 text-sm text-brand-muted">Veja como medir cintura, abdômen, quadril e tirar a foto de evolução.</p>
+                <p class="m-0 mt-1 text-sm text-brand-muted">Veja como medir cintura, abdômen, quadril e tirar as fotos de evolução.</p>
             </Link>
         </div>
     </AppLayout>

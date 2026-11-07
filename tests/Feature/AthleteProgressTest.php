@@ -202,27 +202,23 @@ class AthleteProgressTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_an_athlete_picks_three_different_skills_each_week(): void
+    public function test_an_athlete_picks_one_skill_per_week(): void
     {
         $athlete = $this->startedAthlete();
         $marmita = 'Fazer marmitas para 3 dias da semana.';
         $pratos = 'Aprender a fazer 5 pratos saudáveis que nunca fez.';
-        $salada = 'Aprender a fazer uma salada que realmente tenha vontade de comer.';
-        $this->actingAs($athlete)
-            ->put('/atleta/habilidades', ['week' => 1, 'picks' => [$marmita, $pratos, $salada]])
-            ->assertRedirect('/atleta/evolucao/dias');
 
-        $this->put('/atleta/habilidades', ['week' => 2, 'picks' => [$marmita, $pratos, $salada]])
+        $this->actingAs($athlete)
+            ->put('/atleta/habilidades', ['week' => 1, 'picks' => [$marmita]])
             ->assertRedirect('/atleta/evolucao/dias');
+        $this->put('/atleta/habilidades', ['week' => 2, 'picks' => [$pratos]])
+            ->assertRedirect('/atleta/evolucao/dias');
+        $this->put('/atleta/habilidades', ['week' => 1, 'picks' => [$marmita, $pratos]])
+            ->assertSessionHasErrors('picks');
 
         $saved = $athlete->fresh()->athleteProfile->weekly_skills;
-
-        $this->assertSame([$marmita, $pratos, $salada], $saved[0]);
-        $this->assertSame([$marmita, $pratos, $salada], $saved[1]);
-
-        $this->actingAs($athlete)
-            ->put('/atleta/habilidades', ['week' => 1, 'picks' => [$marmita, $marmita, $salada]])
-            ->assertSessionHasErrors('picks.1');
+        $this->assertSame([$marmita], $saved[0]);
+        $this->assertSame([$pratos], $saved[1]);
     }
 
     public function test_an_athlete_registers_the_day_one_baseline_once(): void
@@ -238,6 +234,7 @@ class AthleteProgressTest extends TestCase
         $this->assertNotNull($athlete->fresh()->welcome_acknowledged_at);
         $this->get('/atleta/boas-vindas')->assertRedirect('/dashboard');
         $this->get('/dashboard')->assertRedirect('/atleta/ponto-de-partida/primeiro-dia');
+        $this->post('/atleta/ponto-de-partida/primeiro-dia')->assertSessionHasErrors(['photo_front', 'photo_side', 'photo_back']);
 
         $this->actingAs($athlete)
             ->post('/atleta/ponto-de-partida/primeiro-dia', [
@@ -245,7 +242,9 @@ class AthleteProgressTest extends TestCase
                 'waist' => 80,
                 'abdomen' => 85,
                 'hip' => 98,
-                'photo' => UploadedFile::fake()->image('antes.jpg'),
+                'photo_front' => UploadedFile::fake()->image('frente.jpg'),
+                'photo_side' => UploadedFile::fake()->image('lado.jpg'),
+                'photo_back' => UploadedFile::fake()->image('costas.jpg'),
             ])
             ->assertRedirect('/atleta/ponto-de-partida/metas');
 
@@ -254,7 +253,8 @@ class AthleteProgressTest extends TestCase
         $this->assertNotNull($profile->welcomed_at);
         $this->assertSame('70.5', $profile->weight);
         $this->assertSame('80.0', $profile->waist);
-        Storage::disk('public')->assertExists($profile->photo);
+        $this->assertCount(3, $profile->start_photos);
+        Storage::disk('public')->assertExists(array_values($profile->start_photos));
 
         $this->actingAs($athlete)->get('/dashboard')->assertRedirect('/atleta/ponto-de-partida/metas');
 
@@ -532,23 +532,29 @@ class AthleteProgressTest extends TestCase
             ->post('/atleta/dias/2/foto-treino', ['photo' => \Illuminate\Http\UploadedFile::fake()->image('a.jpg')])
             ->assertRedirect('/atleta/ponto-de-partida/primeiro-dia');
     }
-    public function test_an_athlete_posts_a_meal_photo_and_the_nutritionist_leaves_praise(): void
+    public function test_an_athlete_adds_multiple_meal_photos_and_the_nutritionist_leaves_praise(): void
     {
         \Illuminate\Support\Facades\Storage::fake('public');
         $athlete = $this->startedAthlete();
+
+        $disk = Storage::disk('public');
+        $legacy = 'meals/foto-anterior.jpg';
+        $disk->put($legacy, 'foto anterior');
+        $athlete->checkins()->updateOrCreate(['day' => 2], ['meal_photo' => $legacy]);
 
         $this->actingAs($athlete)
             ->post('/atleta/dias/2/foto-refeicao', ['photo' => \Illuminate\Http\UploadedFile::fake()->image('prato.jpg')])
             ->assertRedirect();
 
-        $first = $athlete->checkins()->where('day', 2)->firstOrFail()->meal_photo;
+        $first = $athlete->checkins()->where('day', 2)->firstOrFail()->meal_photos[0];
         \Illuminate\Support\Facades\Storage::disk('public')->assertExists($first);
 
         $this->post('/atleta/dias/2/foto-refeicao', ['photo' => \Illuminate\Http\UploadedFile::fake()->image('outro.png')]);
-        \Illuminate\Support\Facades\Storage::disk('public')->assertMissing($first);
+        $disk->assertExists([$legacy, $first]);
 
         $this->get('/atleta/evolucao/dias')
-            ->assertInertia(fn (Assert $page) => $page->where('days.1.meal_photo', fn ($url) => str_starts_with($url, '/storage/meals/')));
+            ->assertInertia(fn (Assert $page) => $page->has('days.1.meal_photos', 3)
+                ->where('days.1.meal_photos.0.url', '/storage/'.$legacy));
 
         $this->post('/atleta/dias/2/foto-refeicao', ['photo' => \Illuminate\Http\UploadedFile::fake()->create('x.pdf', 10)])->assertSessionHasErrors('photo');
 
@@ -561,7 +567,8 @@ class AthleteProgressTest extends TestCase
                 ->where('canComment', true)
                 ->where('canEdit', false)
                 ->where('athleteId', $athlete->id)
-                ->where('days.1.meal_photo', fn ($url) => str_starts_with($url, '/storage/meals/')));
+                ->has('days.1.meal_photos', 3)
+                ->where('days.1.meal_photos.0.url', '/storage/'.$legacy));
 
         $this->put("/equipe/atletas/{$athlete->id}/dias/2/comentario-refeicao", ['comment' => 'Prato colorido, mandou bem!'])
             ->assertRedirect();
@@ -580,6 +587,11 @@ class AthleteProgressTest extends TestCase
 
         $this->put("/equipe/atletas/{$athlete->id}/dias/2/comentario-refeicao", ['comment' => 'Não pode'])
             ->assertForbidden();
+
+        $this->delete(route('athlete.days.meal.destroy', ['day' => 2, 'photo' => basename($first)]))->assertRedirect();
+        $disk->assertMissing($first);
+        $disk->assertExists($legacy);
+        $this->assertCount(2, $athlete->checkins()->where('day', 2)->firstOrFail()->mealPhotoPaths());
 
         $this->delete('/atleta/dias/2/foto-refeicao')->assertRedirect();
         $this->assertNull($athlete->checkins()->where('day', 2)->firstOrFail()->meal_photo);

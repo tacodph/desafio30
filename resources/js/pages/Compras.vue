@@ -3,7 +3,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { shoppingList } from '@/data/shoppingList';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 
 const props = defineProps<{
     weeks: { week: number; period: string }[];
@@ -14,14 +14,13 @@ const props = defineProps<{
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Alimentação', href: '/meus-objetivos/alimentacao' },
-    { title: 'Lista de compras', href: '/objetivos/alimentacao/compras' },
+    { title: 'Lista de compras inteligente', href: '/objetivos/alimentacao/compras' },
 ];
 
 const loggedIn = computed(() => Boolean(usePage<SharedData>().props.auth.user));
 
-const intro = shoppingList.sections[0].groups.flatMap((group) => group.notes);
 const sections = computed(() => (props.catalog.length ? props.catalog : shoppingList.sections.filter((section) => /^\d/.test(section.title))));
+const showTips = ref(false);
 const canCreate = computed(() => props.lists.length < props.weeks.length);
 
 const summaries = computed(() =>
@@ -45,7 +44,7 @@ const summaries = computed(() =>
 </script>
 
 <template>
-    <Head title="Lista de compras" />
+    <Head title="Lista de compras inteligente" />
 
     <component :is="loggedIn ? AppLayout : 'div'" v-bind="loggedIn ? { breadcrumbs } : { class: 'min-h-screen bg-brand-ink text-brand-cream' }">
         <header v-if="!loggedIn" class="sticky top-0 z-20 border-b border-brand-line bg-brand-ink/88 backdrop-blur-[10px]">
@@ -59,20 +58,38 @@ const summaries = computed(() =>
 
         <main class="mx-auto flex max-w-[900px] flex-col gap-8 px-6 py-10">
             <p v-if="adminPreview" role="status" class="rounded-xl border border-brand-gold/40 p-4 text-sm text-brand-gold">Visualização administrativa, somente para consulta. O calendário e os bloqueios dos atletas continuam valendo.</p>
-            <div>
-                <div class="text-sm font-bold uppercase tracking-[3px] text-[#43A047]">Alimentação e organização</div>
-                <h1 class="mt-2 text-3xl font-black">Lista de Compras Inteligente</h1>
-                <p class="mt-1 text-sm text-brand-cream/70">Nutri gente como a gente · Helen Freitas</p>
-                <p v-for="note in intro" :key="note" class="mt-4 text-[15px] leading-relaxed text-brand-cream/85">{{ note }}</p>
+            <div class="grid gap-3">
+                <h1 class="text-3xl font-black text-brand-gold">Lista de compras da semana</h1>
+                <h2 class="text-lg font-bold uppercase">Monte sua lista de compras</h2>
+                <p class="text-sm text-brand-cream/70">Escolha os alimentos que pretende consumir nesta semana, selecionando os itens em cada categoria.</p>
+                <p class="text-sm text-brand-cream/70">
+                    Ao finalizar, clique em <strong>Gerar lista de compras</strong> e tenha tudo organizado automaticamente em uma única lista.
+                </p>
+            </div>
+
+            <div class="-mt-4 flex flex-wrap items-center gap-3">
+                <Link v-if="canSave && canCreate" :href="route('alimentacao.compras.create')" class="rounded-full bg-[#43A047] px-4 py-2 text-sm font-bold text-white">
+                    Nova lista
+                </Link>
+                <button
+                    type="button"
+                    class="rounded-full bg-[#43A047] px-4 py-2 text-sm font-bold text-white"
+                    :aria-expanded="showTips"
+                    aria-controls="shopping-tips"
+                    @click="showTips = !showTips"
+                >
+                    Dicas para uma compra funcional
+                </button>
+            </div>
+            <div v-show="showTips" id="shopping-tips" class="surface-card space-y-3 p-4 sm:p-5">
+                <ul class="flex flex-col gap-2 text-[15px] leading-relaxed">
+                    <li v-for="tip in shoppingList.tips" :key="tip">{{ tip }}</li>
+                </ul>
+                <p v-for="line in shoppingList.closing" :key="line" class="text-sm leading-relaxed text-brand-cream/70">{{ line }}</p>
             </div>
 
             <section v-if="canSave" class="flex flex-col gap-4">
-                <div class="flex flex-wrap items-center justify-between gap-3">
-                    <h2 class="m-0 text-xl font-black">Listas criadas</h2>
-                    <Link v-if="canCreate" :href="route('alimentacao.compras.create')" class="rounded-full bg-[#43A047] px-4 py-2 text-sm font-bold text-white">
-                        Nova lista
-                    </Link>
-                </div>
+                <h2 class="m-0 text-xl font-black">Aqui vão aparecer as listas criadas</h2>
                 <p v-if="lists.length === 0" class="m-0 text-sm text-brand-cream/70">Nenhuma lista ainda. Escolha a semana e marque o que vai comprar.</p>
                 <p v-else-if="!canCreate" class="m-0 text-sm text-brand-cream/70">Todas as semanas já têm lista. Edite uma delas se precisar mudar.</p>
                 <div class="grid gap-4 sm:grid-cols-2">
@@ -122,13 +139,6 @@ const summaries = computed(() =>
                 </section>
             </template>
 
-            <section class="surface-card flex flex-col gap-3 p-6">
-                <h2 class="text-xl font-black">Dicas para uma compra que funciona na vida real</h2>
-                <ul class="flex flex-col gap-2 text-[15px] leading-relaxed">
-                    <li v-for="tip in shoppingList.tips" :key="tip">{{ tip }}</li>
-                </ul>
-                <p v-for="line in shoppingList.closing" :key="line" class="text-sm leading-relaxed text-brand-cream/70">{{ line }}</p>
-            </section>
         </main>
     </component>
 </template>

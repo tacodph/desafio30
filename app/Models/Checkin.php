@@ -36,7 +36,15 @@ class Checkin extends Model
             'plus_count' => 'integer',
             'notes' => 'array',
             'details' => 'array',
+            'meal_photos' => 'array',
         ];
+    }
+
+    public function mealPhotoPaths(): array
+    {
+        return $this->meal_photo
+            ? [$this->meal_photo, ...($this->meal_photos ?? [])]
+            : ($this->meal_photos ?? []);
     }
 
     public function user(): BelongsTo

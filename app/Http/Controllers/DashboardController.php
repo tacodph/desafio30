@@ -59,7 +59,7 @@ class DashboardController extends Controller
                     'waist' => $profile->waist,
                     'abdomen' => $profile->abdomen,
                     'hip' => $profile->hip,
-                    'photo' => $profile->photo ? '/storage/'.$profile->photo : null,
+                    'photo' => ($photo = $profile->start_photos['photo_front'] ?? $profile->photo) ? '/storage/'.$photo : null,
                 ],
             ]);
         }
@@ -128,6 +128,13 @@ class DashboardController extends Controller
         }, $statuses);
     }
 
+    public function welcomePreview(Request $request): Response
+    {
+        $this->abortUnless($request, UserRole::Administrador);
+
+        return Inertia::render('dashboard/BoasVindas', ['adminPreview' => true]);
+    }
+
     public function payments(Request $request, AsaasClient $asaas): Response
     {
         $role = $this->role($request);
@@ -136,7 +143,35 @@ class DashboardController extends Controller
         $canViewBalance = $role === UserRole::Administrador;
         $today = today('America/Sao_Paulo')->toDateString();
 
+        $filters = $request->validate([
+            'status' => ['nullable', 'string', 'max:64'],
+            'billing_type' => ['nullable', 'string', 'max:64'],
+            'due_from' => ['nullable', 'date_format:Y-m-d'],
+            'due_to' => ['nullable', 'date_format:Y-m-d'],
+        ]);
+
+        $payments = ChallengePayment::query();
+
+        if ($status = $filters['status'] ?? null) {
+            $payments->where('status', $status);
+        }
+
+        if (($filters['billing_type'] ?? null) === 'UNDEFINED') {
+            $payments->where(fn ($query) => $query->where('billing_type', 'UNDEFINED')->orWhereNull('billing_type'));
+        } elseif ($billingType = $filters['billing_type'] ?? null) {
+            $payments->where('billing_type', $billingType);
+        }
+
+        if ($from = $filters['due_from'] ?? null) {
+            $payments->whereDate('due_date', '>=', $from);
+        }
+
+        if ($to = $filters['due_to'] ?? null) {
+            $payments->whereDate('due_date', '<=', $to);
+        }
+
         return Inertia::render('dashboard/Payments', [
+            'filters' => $filters,
             'statusSummary' => fn () => $this->paymentSummary('status'),
             'billingTypeSummary' => fn () => $this->paymentSummary('billing_type'),
             'canViewBalance' => $canViewBalance,
@@ -147,8 +182,7 @@ class DashboardController extends Controller
                     return null;
                 }
             }) : null,
-            'payments' => ChallengePayment::query()
-                ->with('user:id,name,email')
+            'payments' => $payments->with('user:id,name,email')
                 ->latest('id')
                 ->paginate(25, [
                     'id',
@@ -161,6 +195,7 @@ class DashboardController extends Controller
                     'confirmed_at',
                     'created_at',
                 ])
+                ->appends($filters)
                 ->through(fn (ChallengePayment $payment) => [
                     'id' => $payment->id,
                     'athlete' => $payment->user?->name,

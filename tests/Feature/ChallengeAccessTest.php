@@ -243,6 +243,29 @@ class ChallengeAccessTest extends TestCase
         $this->assertDatabaseCount('challenge_access_settings', 0);
     }
 
+    public function test_admin_can_grant_and_revoke_early_access_for_one_athlete(): void
+    {
+        $this->travelTo(Carbon::parse('2026-11-06 12:00:00', ChallengeAccess::TIMEZONE));
+        $selected = $this->athlete();
+        $other = $this->athlete();
+        $admin = User::factory()->ofRole(UserRole::Administrador)->create(['password' => Hash::make('senha-teste-admin')]);
+        $route = route('admin.challenge-access.athlete');
+        $data = ['athlete_id' => $selected->id, 'enabled' => true, 'password' => 'senha-teste-admin'];
+
+        $this->actingAs($other)->patch($route, $data)->assertForbidden();
+        $this->actingAs($admin)->patch($route, [...$data, 'password' => 'incorreta'])
+            ->assertSessionHasErrors('password', null, 'athleteAccess');
+        $this->assertFalse($selected->refresh()->challenge_early_access);
+
+        $this->patch($route, $data)->assertRedirect('/admin/liberacoes');
+        $this->actingAs($selected->refresh())->get('/atleta/evolucao/dias')
+            ->assertInertia(fn (Assert $page) => $page->where('access.editableDays', []));
+        $this->actingAs($other)->get('/atleta/evolucao/dias')->assertRedirect('/dashboard');
+
+        $this->actingAs($admin)->patch($route, [...$data, 'enabled' => false])->assertRedirect('/admin/liberacoes');
+        $this->actingAs($selected->refresh())->get('/atleta/evolucao/dias')->assertRedirect('/dashboard');
+    }
+
     public function test_saving_requires_the_admin_password_and_persists_all_modes(): void
     {
         $admin = User::factory()->ofRole(UserRole::Administrador)->create(['password' => Hash::make('senha-teste-admin')]);
@@ -253,6 +276,14 @@ class ChallengeAccessTest extends TestCase
         $this->put('/admin/liberacoes', ['modes' => $modes, 'password' => 'senha-teste-admin'])->assertRedirect('/admin/liberacoes');
         $this->assertDatabaseCount('challenge_access_settings', count(ChallengeAccess::FEATURES));
         $this->assertDatabaseHas('challenge_access_settings', ['feature' => 'entries', 'mode' => 'closed', 'updated_by' => $admin->id]);
+        $modes['dias'] = 'manual';
+        $modes['entries'] = 'manual';
+        $this->put('/admin/liberacoes', ['modes' => $modes, 'password' => 'senha-teste-admin'])->assertRedirect('/admin/liberacoes');
+        $this->travelTo(Carbon::parse('2026-11-06 12:00:00', ChallengeAccess::TIMEZONE));
+        $this->actingAs($this->athlete())->get('/atleta/evolucao/dias')
+            ->assertInertia(fn (Assert $page) => $page->where('access.editableDays', range(1, 30)));
+
+        $this->actingAs($admin);
         $modes['entries'] = 'open';
         $this->put('/admin/liberacoes', ['modes' => $modes, 'password' => 'senha-teste-admin'])->assertSessionHasErrors('modes.entries');
     }

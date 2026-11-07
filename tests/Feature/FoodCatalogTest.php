@@ -25,7 +25,7 @@ class FoodCatalogTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->where('groups.0.category', '1. Proteínas')
                 ->where('groups.0.name', 'Carnes bovinas')
-                ->where('groups.0.foods.0.name', 'Patinho'));
+                ->where('groups.0.foods.0.name', 'Patinho bovino sem gordura'));
 
         $this->actingAs($admin)
             ->post('/admin/alimentos', [
@@ -37,7 +37,7 @@ class FoodCatalogTest extends TestCase
 
         $this->assertDatabaseHas('foods', ['name' => 'Cupim', 'active' => true]);
 
-        $patinho = Food::query()->where('name', 'Patinho')->first();
+        $patinho = Food::query()->where('name', 'Patinho bovino sem gordura')->first();
 
         $this->actingAs($admin)
             ->patch('/admin/alimentos/'.$patinho->id)
@@ -47,7 +47,7 @@ class FoodCatalogTest extends TestCase
 
         $this->get('/objetivos/alimentacao/compras')
             ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page->where('catalog.0.groups.0.items.0', 'Lagarto'));
+            ->assertInertia(fn (Assert $page) => $page->where('catalog.0.groups.0.items.0', 'Lagarto bovino'));
 
         $this->actingAs($admin)
             ->get('/admin/alimentos')
@@ -63,7 +63,7 @@ class FoodCatalogTest extends TestCase
             ->assertRedirect('/admin/alimentos');
 
         $this->assertDatabaseMissing('foods', ['name' => 'Cupim']);
-        $this->assertDatabaseHas('foods', ['name' => 'Patinho']);
+        $this->assertDatabaseHas('foods', ['name' => 'Patinho bovino sem gordura']);
 
         $this->get('/objetivos/alimentacao/compras')
             ->assertOk()

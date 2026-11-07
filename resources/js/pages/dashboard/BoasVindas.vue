@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { Button } from '@/components/ui/button';
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm } from '@inertiajs/vue3';
 import { onMounted, ref } from 'vue';
+
+defineProps<{ adminPreview?: boolean }>();
 
 const form = useForm({});
 const colors = ['#fbbf24', '#fb923c', '#f472b6', '#34d399', '#60a5fa'];
@@ -69,7 +71,10 @@ onMounted(() => {
                 <p class="font-bold">Bem-vinda ao Desafio da Virada! 🧡</p>
             </section>
 
-            <form @submit.prevent="form.post(route('athlete.welcome.acknowledge'))">
+            <Link v-if="adminPreview" :href="route('dashboard')" class="inline-flex rounded-lg border border-brand-line2 px-4 py-2 text-sm font-semibold">
+                Voltar ao painel
+            </Link>
+            <form v-else @submit.prevent="form.post(route('athlete.welcome.acknowledge'))">
                 <Button type="submit" :disabled="form.processing">OK, continuar</Button>
             </form>
         </div>

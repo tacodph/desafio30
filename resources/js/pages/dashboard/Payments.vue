@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
+import { ref, watch } from 'vue';
 import { CircleAlert, CircleCheck, Clock, CreditCard } from 'lucide-vue-next';
 
 type PaymentRecord = {
@@ -30,7 +31,10 @@ type PaymentSummary = {
     amount: number;
 };
 
-defineProps<{
+type PaymentFilters = Partial<Record<'status' | 'billing_type' | 'due_from' | 'due_to', string | null>>;
+
+const props = defineProps<{
+    filters: PaymentFilters;
     statusSummary: PaymentSummary[];
     billingTypeSummary: PaymentSummary[];
     canViewBalance: boolean;
@@ -43,6 +47,13 @@ defineProps<{
         total: number;
     };
 }>();
+
+const filterForm = ref<PaymentFilters>({ ...props.filters });
+watch(() => props.filters, (filters) => { filterForm.value = { ...filters }; });
+const applyFilters = () => {
+    const query = Object.fromEntries(Object.entries(filterForm.value).filter(([, value]) => value));
+    router.get(route('admin.payments'), query, { preserveScroll: true });
+};
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Painel', href: '/dashboard' },
@@ -138,6 +149,51 @@ const money = (value: string | number) => Number(value).toLocaleString('pt-BR', 
                 </p>
             </section>
 
+            <Link v-if="canViewBalance" :href="route('admin.payment-reminders')" class="surface-card w-fit px-4 py-3 text-sm font-semibold">
+                Enviar lembretes de pagamento
+            </Link>
+
+            <form class="surface-card space-y-4 p-4" aria-labelledby="payment-filters" @submit.prevent="applyFilters">
+                <div>
+                    <h2 id="payment-filters" class="font-semibold">Filtrar lista de pagamentos</h2>
+                    <p class="text-sm text-brand-muted">Os cards acima mostram os totais gerais.</p>
+                </div>
+                <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    <label class="flex min-w-0 flex-col gap-1 text-sm">
+                        Status
+                        <select v-model="filterForm.status" class="rounded-lg border border-brand-line2 bg-brand-card2 px-3 py-2">
+                            <option :value="undefined">Todos os status</option>
+                            <option v-for="item in statusSummary" :key="item.category" :value="item.category">
+                                {{ statusLabel(item.category) }}
+                            </option>
+                        </select>
+                    </label>
+                    <label class="flex min-w-0 flex-col gap-1 text-sm">
+                        Forma de pagamento
+                        <select v-model="filterForm.billing_type" class="rounded-lg border border-brand-line2 bg-brand-card2 px-3 py-2">
+                            <option :value="undefined">Todas as formas</option>
+                            <option v-for="item in billingTypeSummary" :key="item.category" :value="item.category">
+                                {{ billingTypeLabel(item.category) }}
+                            </option>
+                        </select>
+                    </label>
+                    <label class="flex min-w-0 flex-col gap-1 text-sm">
+                        Vencimento a partir de
+                        <input v-model="filterForm.due_from" type="date" :max="filterForm.due_to || undefined" class="rounded-lg border border-brand-line2 bg-brand-card2 px-3 py-2" />
+                    </label>
+                    <label class="flex min-w-0 flex-col gap-1 text-sm">
+                        Vencimento até
+                        <input v-model="filterForm.due_to" type="date" :min="filterForm.due_from || undefined" class="rounded-lg border border-brand-line2 bg-brand-card2 px-3 py-2" />
+                    </label>
+                </div>
+                <div class="flex flex-wrap gap-3">
+                    <button type="submit" class="rounded-lg bg-brand-gold px-4 py-2 text-sm font-bold text-brand-ink">Aplicar filtros</button>
+                    <Link :href="route('admin.payments')" preserve-scroll class="rounded-lg border border-brand-line2 px-4 py-2 text-sm">
+                        Limpar filtros
+                    </Link>
+                </div>
+            </form>
+
             <div class="surface-card overflow-x-auto">
                 <table class="w-full min-w-[900px] text-left text-sm">
                     <thead class="text-[13px] uppercase tracking-[2px] text-brand-muted-2">
@@ -175,7 +231,7 @@ const money = (value: string | number) => Number(value).toLocaleString('pt-BR', 
                             <td class="px-5 py-4">{{ payment.confirmedAt ?? '—' }}</td>
                         </tr>
                         <tr v-if="payments.data.length === 0">
-                            <td colspan="7" class="px-5 py-10 text-center text-brand-muted">Nenhuma solicitação de pagamento foi registrada.</td>
+                            <td colspan="7" class="px-5 py-10 text-center text-brand-muted">Nenhuma cobrança encontrada.</td>
                         </tr>
                     </tbody>
                 </table>

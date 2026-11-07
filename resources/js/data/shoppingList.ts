@@ -25,22 +25,12 @@ export const shoppingList = {
                 {
                     "title": "Carnes bovinas",
                     "items": [
-                        "Patinho",
-                        "Lagarto",
-                        "Coxão mole",
-                        "Coxão duro",
-                        "Músculo",
-                        "Alcatra",
-                        "Acém",
-                        "Filé-mignon",
-                        "Maminha",
-                        "Paleta bovina",
-                        "Lombo bovino",
-                        "Fraldinha",
-                        "Contrafilé",
-                        "Picanha",
-                        "Carne moída",
-                        "Outra carne: ____________________"
+                        "Patinho bovino sem gordura",
+                        "Lagarto bovino",
+                        "Coxão mole sem gordura",
+                        "Maminha sem gordura",
+                        "Músculo bovino sem gordura",
+                        "Paleta bovina sem gordura"
                     ],
                     "notes": [
                         "Dica: quando desejar uma opção mais magra, retire a gordura aparente e escolha o corte e o preparo conforme sua preferência e seu plano alimentar."
@@ -51,20 +41,17 @@ export const shoppingList = {
                     "items": [
                         "Peito de frango sem pele",
                         "Filé de frango",
-                        "Coxa de frango",
-                        "Sobrecoxa de frango",
-                        "Frango inteiro",
-                        "Peru",
-                        "Outra ave: ____________________"
+                        "Peito de peru sem pele (não embutido)",
+                        "Coxa de frango sem pele",
+                        "Sobrecoxa de frango sem pele"
                     ],
-                    "notes": []
+                    "notes": ["Coxa e sobrecoxa de frango sem pele: consuma no máximo duas vezes por semana."]
                 },
                 {
                     "title": "Carne suína",
                     "items": [
                         "Lombo suíno",
                         "Filé-mignon suíno",
-                        "Pernil",
                         "Outra opção: ____________________"
                     ],
                     "notes": []
@@ -75,8 +62,8 @@ export const shoppingList = {
                         "Tilápia",
                         "Salmão",
                         "Peixe branco",
-                        "Atum fresco",
-                        "Sardinha fresca",
+                        "Atum fresco (ou atum em lata, em conserva em água)",
+                        "Sardinha fresca (ou em lata)",
                         "Badejo",
                         "Camarão",
                         "Outro peixe ou fruto do mar: ____________________"
@@ -92,11 +79,10 @@ export const shoppingList = {
                     "notes": []
                 },
                 {
-                    "title": "Miúdos (opcionais)",
+                    "title": "Miúdos",
                     "items": [
                         "Fígado bovino",
                         "Fígado de frango",
-                        "Coração",
                         "Moela"
                     ],
                     "notes": []
@@ -129,85 +115,58 @@ export const shoppingList = {
                 {
                     "title": "Iogurtes e leites",
                     "items": [
-                        "Iogurte natural",
-                        "Iogurte natural tipo skyr",
-                        "Iogurte proteico",
+                        "Iogurte natural integral",
+                        "Iogurte natural desnatado",
                         "Coalhada",
-                        "Leite",
-                        "Leite em pó",
-                        "Bebida láctea ou alternativa habitual: ____________________"
+                        "Leite pasteurizado",
+                        "Leite em pó integral",
+                        "Leite em pó desnatado",
+                        "Iogurte proteico",
+                        "Bebidas proteicas"
                     ],
                     "notes": [
-                        "Observação sobre iogurtes: priorize iogurtes naturais ou opções compatíveis com seu plano alimentar. Se preferir iogurte com sabor, a orientação deste material é considerar a marca Verde Campo como exceção indicada pela nutricionista. Confira sempre o rótulo e a versão do produto, pois as formulações podem variar."
+                        "Confira no Cantinho da Nutri sugestões de marcas."
                     ]
                 },
                 {
-                    "title": "Queijos e cremes",
+                    "title": "Queijos",
                     "items": [
                         "Cottage",
                         "Ricota",
                         "Queijo minas frescal",
-                        "Queijo minas padrão",
                         "Muçarela",
-                        "Queijo prato",
+                        "Queijo minas padrão",
                         "Queijo coalho",
-                        "Queijo canastra",
-                        "Parmesão",
                         "Meia-cura",
+                        "Queijo prato",
+                        "Queijo canastra",
                         "Gorgonzola",
-                        "Requeijão",
-                        "Cream cheese",
-                        "Creme de ricota",
-                        "Outro: ____________________"
+                        "Parmesão"
                     ],
-                    "notes": []
+                    "notes": [
+                        "Os queijos estão por ordem aproximada de calorias e quantidade de gordura. Mantenha queijos mais magros na maior parte da semana e escolha os queijos mais gordurosos para variar sua alimentação duas a três vezes por semana.",
+                        "A ordem é aproximada, pois o teor de gordura pode variar conforme a marca, o fabricante e o tempo de maturação do queijo. Em geral, queijos mais frescos e com maior teor de umidade tendem a apresentar menos gordura, enquanto os mais curados e maturados são mais concentrados."
+                    ]
                 }
             ]
         },
         {
-            "title": "3. Carboidratos, cereais e raízes",
+            "title": "3. Carboidratos",
             "groups": [
-                {
-                    "title": "",
-                    "items": [],
-                    "notes": []
-                },
                 {
                     "title": "Cereais, pães e massas",
                     "items": [
                         "Arroz branco",
                         "Arroz integral",
-                        "Aveia em flocos",
-                        "Aveia em flocos finos",
-                        "Pão integral",
-                        "Pão francês",
-                        "Pão de forma",
-                        "Macarrão comum",
+                        "Aveia (flocos finos, flocos grossos ou farelo de aveia)",
+                        "Pão de forma integral",
+                        "Macarrão de arroz ou de milho",
                         "Macarrão integral",
-                        "Macarrão de arroz ou milho",
-                        "Quinoa em grãos ou flocos",
-                        "Milho",
-                        "Amaranto",
-                        "Farinha de mandioca",
-                        "Tapioca",
-                        "Cuscuz",
+                        "Cuscuz de milho",
+                        "Cuscuz de arroz",
+                        "Goma de tapioca",
                         "Biscoito de arroz",
-                        "Granola",
-                        "Outro: ____________________"
-                    ],
-                    "notes": []
-                },
-                {
-                    "title": "Tubérculos e raízes",
-                    "items": [
-                        "Batata inglesa",
-                        "Batata-doce",
-                        "Batata-baroa / mandioquinha",
-                        "Mandioca / aipim",
-                        "Inhame",
-                        "Cará",
-                        "Batata-yacon",
-                        "Outro: ____________________"
+                        "Milho"
                     ],
                     "notes": []
                 }
@@ -473,20 +432,15 @@ export const shoppingList = {
                     "title": "",
                     "items": [
                         "Café",
-                        "Chá",
-                        "Cacau em pó",
-                        "Chocolate",
-                        "Molho de tomate",
-                        "Milho em conserva",
-                        "Ervilha em conserva",
-                        "Atum ou sardinha em lata",
-                        "Leite de coco",
-                        "Vinagre",
-                        "Mostarda",
-                        "Adoçante ou açúcar habitual",
+                        "Chá de folhas ou sachê",
+                        "Cacau em pó 100%",
+                        "Passata de tomate",
+                        "Milho congelado",
+                        "Coco ralado sem açúcar",
+                        "Adoçante",
                         "Outro item: ____________________"
                     ],
-                    "notes": []
+                    "notes": ["Sugestão de adoçante natural: estévia, taumatina ou polióis, como xilitol e eritritol.", "Evite chás adoçados."]
                 }
             ]
         },
@@ -497,16 +451,16 @@ export const shoppingList = {
                     "title": "",
                     "items": [
                         "Vegetais congelados",
-                        "Legumes já higienizados ou cortados",
-                        "Salada higienizada",
-                        "Leguminosas cozidas ou enlatadas",
-                        "Frutas fáceis de transportar",
-                        "Frango já preparado ou opção pronta compatível com o plano",
-                        "Refeição congelada",
-                        "Opção de iFood/refeição pronta que eu já conheço",
-                        "Outro: ____________________"
+                        "Frutas congeladas",
+                        "Vegetais já higienizados ou cortados",
+                        "Bandejas práticas de vegetais",
+                        "Salada pronta e higienizada",
+                        "Frango desfiado"
                     ],
-                    "notes": []
+                    "notes": [
+                        "Confira no Cantinho da Nutri sugestões de marcas.",
+                        "Confira também no Cantinho da Nutri opções de iFood e refeições prontas."
+                    ]
                 }
             ]
         },
