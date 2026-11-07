@@ -4,7 +4,7 @@ import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavGroupItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { Apple, ClipboardCheck, Droplets, Dumbbell, Flag, LayoutGrid, Lightbulb, PartyPopper, Salad, Settings, Star, Trophy, Users, Mail } from 'lucide-vue-next';
+import { Apple, BookOpen, ClipboardCheck, Droplets, Dumbbell, Flag, LayoutGrid, Lightbulb, PartyPopper, Salad, Settings, Star, Trophy, Users, Mail } from 'lucide-vue-next';
 import { computed } from 'vue';
 import AppLogo from './AppLogo.vue';
 
@@ -39,6 +39,9 @@ const mainNavItems = computed<NavGroupItem[]>(() => {
     if (role.value === 'administrador') {
         return [
             { title: 'Painel', href: '/dashboard', icon: LayoutGrid },
+            { title: 'Administração', icon: Settings, children: [
+                { title: 'Treinos', href: '/admin/treinos' },
+            ] },
             { title: 'Usuários', href: '/admin/usuarios', icon: Users },
             { title: 'Pagamentos', href: '/admin/pagamentos', icon: ClipboardCheck },
             { title: 'Lembretes de pagamento', href: '/admin/pagamentos/lembretes', icon: Mail },
@@ -46,6 +49,8 @@ const mainNavItems = computed<NavGroupItem[]>(() => {
             { title: 'Objetivos', href: '/meus-objetivos/alimentacao', icon: Salad },
             { title: 'Evolução (visualizar)', icon: ClipboardCheck, children: evolutionChildren.value },
             { title: 'Monte seu Cardápio (visualizar)', href: '/objetivos/alimentacao/compras', icon: Salad },
+            { title: 'Monte seu prato (visualizar)', href: '/alimentacao/monte-seu-prato', icon: Salad },
+            { title: 'Cantinho da Nutri', href: '/cantinho-da-nutri', icon: BookOpen },
             { title: 'Pontuação', href: '/pontuacao', icon: Trophy },
             { title: 'Mensagem de boas-vindas', href: '/admin/boas-vindas', icon: PartyPopper },
             { title: 'Liberações do desafio', href: '/admin/liberacoes', icon: Settings },
@@ -69,7 +74,11 @@ const mainNavItems = computed<NavGroupItem[]>(() => {
                 icon: ClipboardCheck,
                 children: evolutionChildren.value,
             },
-            { title: 'Alimentação', icon: Salad, children: [{ title: 'Lista de compras inteligente', href: '/objetivos/alimentacao/compras', disabled: !page.props.evolutionAccess?.pages.shopping }] },
+            { title: 'Alimentação', icon: Salad, children: [
+                { title: 'Lista de compras inteligente', href: '/objetivos/alimentacao/compras', disabled: !page.props.evolutionAccess?.pages.shopping },
+                { title: 'Monte seu prato', href: '/alimentacao/monte-seu-prato' },
+            ] },
+            { title: 'Cantinho da Nutri', href: '/cantinho-da-nutri', icon: BookOpen },
             { title: 'Treino', icon: Dumbbell, children: [objective('treino')] },
             { title: 'Hidratação', icon: Droplets, children: [objective('hidratacao')] },
             { title: 'Habilidade', icon: Lightbulb, children: [objective('habilidade')] },

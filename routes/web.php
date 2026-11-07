@@ -58,6 +58,9 @@ Route::post('webhooks/asaas', WebhookController::class)->name('webhooks.asaas');
 
 Route::middleware(['auth', 'verified', 'challenge.paid'])->group(function () {
     Route::get('dashboard', DashboardController::class)->name('dashboard');
+    Route::get('cantinho-da-nutri', fn () => Inertia::render('ComoCombinarAlimentos'))->name('nutri.index');
+    Route::redirect('alimentacao/como-combinar', '/cantinho-da-nutri')->name('alimentacao.combinacoes');
+    Route::get('alimentacao/monte-seu-prato', fn () => Inertia::render('MonteSeuPrato'))->name('alimentacao.prato');
     Route::get('pontuacao', [DashboardController::class, 'scoring'])->name('pontuacao');
     Route::put('pontuacao', [DashboardController::class, 'updateScoring'])->name('pontuacao.update');
     Route::get('meus-objetivos/{goal}', function (string $goal) {
@@ -76,6 +79,8 @@ Route::middleware(['auth', 'verified', 'challenge.paid'])->group(function () {
     Route::get('admin/usuarios/novo', [DashboardController::class, 'createUser'])->name('admin.users.create');
     Route::patch('admin/usuarios/{athlete}/cortesia', [DashboardController::class, 'updateCourtesy'])->name('admin.users.courtesy');
     Route::post('admin/usuarios', [DashboardController::class, 'storeUser'])->name('admin.users.store');
+    Route::get('admin/treinos', [\App\Http\Controllers\WorkoutTypeController::class, 'index'])->name('admin.workout-types');
+    Route::post('admin/treinos', [\App\Http\Controllers\WorkoutTypeController::class, 'store'])->name('admin.workout-types.store');
     Route::get('admin/alimentos', [DashboardController::class, 'foods'])->name('admin.foods');
     Route::post('admin/alimentos', [DashboardController::class, 'storeFood'])->name('admin.foods.store');
     Route::patch('admin/alimentos/{food}', [DashboardController::class, 'toggleFood'])->name('admin.foods.toggle');
@@ -99,6 +104,9 @@ Route::middleware(['auth', 'verified', 'challenge.paid'])->group(function () {
     Route::get('objetivos/alimentacao/compras/{week}/editar', [AthleteProgressController::class, 'editShopping'])->whereNumber('week')->name('alimentacao.compras.edit');
     Route::post('objetivos/alimentacao/compras', [AthleteProgressController::class, 'storeShopping'])->name('alimentacao.compras.store');
     Route::put('objetivos/alimentacao/compras', [AthleteProgressController::class, 'updateShopping'])->name('alimentacao.compras.update');
+    Route::patch('atleta/dias/{day}/objetivos/{goal}', [AthleteProgressController::class, 'updateDayGoal'])
+        ->whereNumber('day')->whereIn('goal', ['movement', 'water', 'sleep', 'strength', 'skill', 'plus', 'notes'])
+        ->name('athlete.days.goal.update');
     Route::put('atleta/dias', [AthleteProgressController::class, 'updateDays'])->name('athlete.days.update');
     Route::post('atleta/dias/{day}/foto-treino', [AthleteProgressController::class, 'storeWorkoutPhoto'])->whereNumber('day')->name('athlete.days.photo.store');
     Route::delete('atleta/dias/{day}/foto-treino', [AthleteProgressController::class, 'destroyWorkoutPhoto'])->whereNumber('day')->name('athlete.days.photo.destroy');

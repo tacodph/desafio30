@@ -5,6 +5,7 @@ import { Head, Link, useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
 
 const props = defineProps<{
+    adminPreview?: boolean;
     weeks: { week: number; period: string }[];
     week: number;
     list: { items: string[]; extras: string[] } | null;
@@ -55,6 +56,7 @@ const form = useForm({
 });
 
 const save = () => {
+    if (props.adminPreview) return;
     const items = new Set<string>();
 
     catalog.forEach((section) => {
@@ -83,6 +85,8 @@ const save = () => {
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <form class="mx-auto flex w-full max-w-[1100px] flex-col gap-8 p-4 md:p-6" @submit.prevent="save">
+            <p v-if="adminPreview" role="status" class="surface-card p-4 text-sm text-brand-gold">Visualização administrativa, somente para consulta.</p>
+            <fieldset :disabled="adminPreview" class="m-0 grid min-w-0 gap-8 border-0 p-0">
             <div>
                 <div class="text-sm font-bold uppercase tracking-[3px] text-[#43A047]">Lista de compras</div>
                 <h1 class="mt-2 text-3xl font-black">Vamos às compras?</h1>
@@ -141,6 +145,7 @@ const save = () => {
                 </button>
                 <Link :href="route('alimentacao.compras')" class="rounded-full border border-brand-line3 px-5 py-3 text-sm font-bold">Cancelar</Link>
             </div>
+            </fieldset>
         </form>
     </AppLayout>
 </template>

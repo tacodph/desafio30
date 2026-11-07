@@ -70,6 +70,8 @@ const props = defineProps<{
 
 type Tab = 'dias' | 'conquistas' | 'resumo';
 
+const showAthleteControls = computed(() => props.canEdit || props.adminPreview);
+
 const tabs: [Tab, string][] = [
     ['dias', 'Dias'],
     ['conquistas', 'Conquistas'],
@@ -88,7 +90,7 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => [
 ]);
 const week = ref(props.currentWeek);
 const savedWeekSkills = computed(() => (props.weeklySkills[week.value - 1] ?? []).filter(Boolean));
-const needsWeekSkills = computed(() => props.canEdit && savedWeekSkills.value.length === 0);
+const needsWeekSkills = computed(() => showAthleteControls.value && savedWeekSkills.value.length === 0);
 const editingWeekSkills = ref(needsWeekSkills.value);
 const weekSkillForm = useForm({
     week: week.value,
@@ -248,7 +250,7 @@ const saveComment = () => {
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-6 p-4 md:p-6">
             <p v-if="adminPreview" role="status" class="surface-card m-0 border-brand-gold/40 p-4 text-sm leading-relaxed text-brand-gold">Visualização administrativa, somente para consulta. Você pode revisar as páginas fora da data, sem liberar atletas nem registrar dados reais.</p>
-            <div v-if="tab !== 'dias' || !canEdit" class="flex flex-wrap items-end justify-between gap-4">
+            <div v-if="tab !== 'dias' || !showAthleteControls" class="flex flex-wrap items-end justify-between gap-4">
                 <div>
                     <div class="eyebrow">{{ canComment ? nutriName : 'Meu desafio' }}</div>
                     <h1 class="display-title text-[clamp(36px,5vw,56px)]">{{ athleteName ?? 'Evolução' }}</h1>
@@ -257,7 +259,7 @@ const saveComment = () => {
                 <span class="font-display text-4xl font-black text-brand-gold">{{ total }} pts</span>
             </div>
 
-            <div v-if="tab !== 'dias' || !canEdit" class="flex flex-wrap gap-2">
+            <div v-if="tab !== 'dias' || !showAthleteControls" class="flex flex-wrap gap-2">
                 <template v-for="item in tabs" :key="item[0]">
                     <Link
                         v-if="canEdit && access.pages[item[0]]"
@@ -299,6 +301,7 @@ const saveComment = () => {
                     v-for="(item, index) in visibleDays"
                     :key="item.entry.day"
                     :entry="item.entry"
+                    :admin-preview="adminPreview"
                     :date="item.info.date"
                     :weekday="item.info.weekday"
                     :goals="goals"
@@ -309,14 +312,14 @@ const saveComment = () => {
                     :workout-types="workoutTypes"
                     :week-skills="weeklySkills[item.info.week - 1] ?? []"
                     :default-open="item.entry.day === openDay"
-                    :can-edit="canEdit && !needsWeekSkills && access.editableDays.includes(item.entry.day)"
-                    :locked-reason="canEdit && !access.editableDays.includes(item.entry.day) ? 'Lançamentos indisponíveis para esta data.' : needsWeekSkills ? 'Escolha a habilidade da semana para lançar.' : undefined"
+                    :can-edit="canEdit && access.editableDays.includes(item.entry.day)"
+                    :locked-reason="canEdit && !access.editableDays.includes(item.entry.day) ? 'Lançamentos indisponíveis para esta data.' : undefined"
                     :can-comment="canComment"
                     :athlete-id="athleteId"
                     :score-rules="scoreRules"
                 >
-                    <template v-if="canEdit && index === 0" #before-check-in>
-                        <section class="grid gap-3 rounded-xl border border-brand-line2 p-3">
+                    <template v-if="showAthleteControls && index === 0" #before-check-in>
+                        <fieldset :disabled="adminPreview" class="m-0 grid min-w-0 gap-3 rounded-xl border border-brand-line2 p-3">
                             <div class="flex flex-wrap items-start justify-between gap-3">
                                 <div>
                                     <div class="eyebrow">Escolha sua habilidade</div>
@@ -366,7 +369,7 @@ const saveComment = () => {
                                 </div>
                                 <InputError :message="weekSkillForm.errors.picks || weekSkillForm.errors['picks.0']" />
                             </div>
-                        </section>
+                        </fieldset>
                     </template>
                 </DayCard>
             </div>
@@ -378,13 +381,15 @@ const saveComment = () => {
                         <p v-if="card.highlight" class="m-0 mt-2 font-bold text-brand-cream">{{ card.highlight }}</p>
                         <p class="m-0 mt-2 whitespace-pre-line text-sm leading-relaxed text-brand-muted">{{ card.about }}</p>
                     </div>
-                    <form v-if="canEdit" class="grid gap-4" @submit.prevent="saveConquista(card.form)">
+                    <form v-if="showAthleteControls" @submit.prevent="!adminPreview && saveConquista(card.form)">
+                        <fieldset :disabled="adminPreview" class="m-0 grid min-w-0 gap-4 border-0 p-0">
                         <div class="grid gap-2">
                             <Label :for="`conquista-${card.type}`">{{ card.fieldLabel ?? 'Conquista' }}</Label>
                             <Input :id="`conquista-${card.type}`" v-model="card.form.detail" :placeholder="card.placeholder ?? 'O que aconteceu'" />
                             <InputError :message="card.form.errors.detail" />
                         </div>
-                        <Button type="submit" class="w-fit" :disabled="card.form.processing">Adicionar</Button>
+                        <Button type="submit" class="w-fit" :disabled="adminPreview || card.form.processing">Adicionar</Button>
+                        </fieldset>
                     </form>
                     <article
                         v-for="item in achievements.filter((entry) => entry.type === card.type)"

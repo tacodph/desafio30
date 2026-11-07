@@ -103,6 +103,21 @@ class AsaasWebhookTest extends TestCase
         $this->assertFalse($user->fresh()->hasPaidChallenge());
     }
 
+    public function test_updated_event_refreshes_billing_type_without_confirming_an_unpaid_charge(): void
+    {
+        Http::fake(['*/payments/pay_123' => Http::response(['id' => 'pay_123', 'status' => 'PENDING', 'billingType' => 'PIX'], 200)]);
+        $user = User::factory()->unpaid()->create();
+        $payment = $this->payment($user);
+        $payment->update(['billing_type' => 'UNDEFINED']);
+
+        $this->send('PAYMENT_UPDATED', 'PENDING')->assertOk();
+
+        $this->assertSame('PIX', $payment->fresh()->billing_type);
+        $this->assertSame('PENDING', $payment->fresh()->status);
+        $this->assertFalse($user->fresh()->hasPaidChallenge());
+        $this->assertNotNull(AsaasWebhookEvent::query()->first()->processed_at);
+    }
+
     public function test_repeated_event_does_not_repeat_effects(): void
     {
         Http::fake(['*/payments/pay_123' => Http::response(['id' => 'pay_123', 'status' => 'RECEIVED'], 200)]);

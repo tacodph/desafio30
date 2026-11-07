@@ -240,6 +240,80 @@ class AthleteProgressController extends Controller
         return to_route('athlete.progress.tab', 'dias');
     }
 
+    public function updateDayGoal(Request $request, int $day, string $goal): RedirectResponse
+    {
+        $this->abortUnlessAthlete($request);
+
+        if ($pending = $this->pendingStart($request)) {
+            return $pending;
+        }
+
+        $this->access->ensureDayEditable($day);
+
+        $goalRules = match ($goal) {
+            'movement' => [
+                'details.workouts' => ['present', 'array', 'max:6'],
+                'details.workouts.*.type' => ['required', 'string', 'max:40'],
+                'details.workouts.*.minutes' => ['nullable', 'integer', 'min:0', 'max:600'],
+            ],
+            'water' => ['details.water_ml' => ['required', 'integer', 'min:0', 'max:10000']],
+            'sleep' => ['details.sleep_hours' => ['required', 'numeric', 'min:0', 'max:24']],
+            'strength' => [
+                'details.food' => ['required', 'array'],
+                'details.food.*' => ['boolean'],
+            ],
+            'skill' => ['details.skill' => ['nullable', 'string', 'max:180']],
+            'plus' => ['plus_count' => ['required', 'integer', 'min:0', 'max:9']],
+            'notes' => [],
+        };
+
+        $noteKey = $goal === 'notes' ? 'day' : $goal;
+        $data = $request->validate([
+            ...$goalRules,
+            'details' => ['sometimes', 'array'],
+            'details.manual' => ['sometimes', 'array'],
+            'details.manual.'.$goal => ['sometimes', 'boolean'],
+            'notes' => ['sometimes', 'array'],
+            'notes.'.$noteKey => ['nullable', 'string', 'max:255'],
+        ]);
+
+        DB::transaction(function () use ($request, $data, $day, $goal) {
+            $userId = $request->user()->id;
+            User::query()->lockForUpdate()->findOrFail($userId);
+            $checkin = Checkin::query()->firstOrNew(['user_id' => $userId, 'day' => $day]);
+            $details = ChallengeSheet::detailsFor($checkin);
+            $incoming = DayLog::normalize($data['details'] ?? []);
+            $field = [
+                'movement' => 'workouts',
+                'water' => 'water_ml',
+                'sleep' => 'sleep_hours',
+                'strength' => 'food',
+                'skill' => 'skill',
+            ][$goal] ?? null;
+
+            if ($field) {
+                $details[$field] = $incoming[$field];
+                $details['manual'][$goal] = $incoming['manual'][$goal];
+                $checkin->{$goal} = DayLog::achieved($details, $request->user()->athleteProfile)[$goal];
+                $checkin->checked_in = true;
+            }
+
+            if ($goal === 'plus') {
+                $checkin->plus_count = $data['plus_count'] ?? 0;
+                $checkin->checked_in = true;
+            }
+
+            $noteKey = $goal === 'notes' ? 'day' : ($goal === 'plus' ? 'plus' : $goal);
+            $notes = $checkin->notes ?? [];
+            $notes[$noteKey] = $data['notes'][$noteKey] ?? null;
+            $checkin->notes = array_filter($notes, fn ($note) => filled($note)) ?: null;
+            $checkin->details = $details;
+            $checkin->save();
+        });
+
+        return to_route('athlete.progress.tab', 'dias');
+    }
+
     public function updateDays(Request $request): RedirectResponse
     {
         $this->abortUnlessAthlete($request);
@@ -536,7 +610,7 @@ class AthleteProgressController extends Controller
             'canEdit' => $canEdit,
             'canComment' => $canComment,
             'athleteId' => $canComment ? $athlete->id : null,
-            'athleteName' => $adminPreview ? 'Visualização do atleta' : ($canComment ? $athlete->name : null),
+            'athleteName' => $canComment ? $athlete->name : null,
             'nutritionistName' => User::query()
                 ->where('user_type_id', UserType::idFor(UserRole::Nutricionista))
                 ->orderBy('name')
@@ -567,7 +641,10 @@ class AthleteProgressController extends Controller
 
     public function createShopping(Request $request): Response|RedirectResponse
     {
-        $this->abortUnlessAthlete($request);
+        $adminPreview = $request->user()->userType?->name === UserRole::Administrador->value;
+        if (! $adminPreview) {
+            $this->abortUnlessAthlete($request);
+        }
 
         if ($request->user()->isAthlete() && ! $this->access->pageOpen('shopping')) {
             return Inertia::render('dashboard/EvolutionLocked', [
@@ -585,6 +662,7 @@ class AthleteProgressController extends Controller
         }
 
         return Inertia::render('ComprasForm', [
+            'adminPreview' => $adminPreview,
             'weeks' => $free,
             'week' => $free->first()['week'],
             'list' => null,

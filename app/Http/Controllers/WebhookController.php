@@ -11,6 +11,8 @@ class WebhookController extends Controller
 {
     /** Eventos que mudam o acesso ou a cobrança. Os demais recebem 200 e são ignorados. */
     public const HANDLED_EVENTS = [
+        'PAYMENT_UPDATED',
+        'PAYMENT_RESTORED',
         'PAYMENT_CONFIRMED',
         'PAYMENT_RECEIVED',
         'PAYMENT_OVERDUE',

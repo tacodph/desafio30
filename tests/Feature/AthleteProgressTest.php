@@ -621,6 +621,68 @@ class AthleteProgressTest extends TestCase
             ->where('days.2.checked_in', true)
             ->where('days.2.details.water_ml', 500));
     }
+    public function test_objectives_are_saved_independently_without_requiring_training(): void
+    {
+        $athlete = $this->startedAthlete();
+        $this->actingAs($athlete)
+            ->patch('/atleta/dias/2/objetivos/water', [
+                'details' => ['water_ml' => 2500, 'sleep_hours' => '', 'workouts' => [['type' => 'Corrida', 'minutes' => 60]]],
+            ])->assertSessionHasNoErrors()->assertRedirect('/atleta/evolucao/dias');
+
+        $day = $athlete->checkins()->where('day', 2)->firstOrFail();
+        $this->assertTrue($day->checked_in);
+        $this->assertTrue($day->water);
+        $this->assertFalse($day->movement);
+        $this->assertSame([], $day->details['workouts']);
+        $this->assertFalse($day->sleep);
+
+        $this->patch('/atleta/dias/2/objetivos/sleep', ['details' => ['sleep_hours' => 8, 'water_ml' => 0]])
+            ->assertSessionHasNoErrors();
+        $day->refresh();
+        $this->assertTrue($day->sleep);
+        $this->assertTrue($day->water);
+        $this->assertSame(2500, $day->details['water_ml']);
+
+        $this->patch('/atleta/dias/2/objetivos/water', ['details' => ['water_ml' => 0]])->assertSessionHasNoErrors();
+        $day->refresh();
+        $this->assertFalse($day->water);
+        $this->assertTrue($day->sleep);
+        $this->assertTrue($day->checked_in);
+
+        $this->patch('/atleta/dias/2/objetivos/movement', ['details' => ['workouts' => []]])
+            ->assertSessionHasNoErrors();
+        $this->assertFalse($day->refresh()->movement);
+        $this->patch('/atleta/dias/2/objetivos/strength', [
+            'details' => ['food' => ['no_alcohol' => true, 'no_fast_food' => true, 'no_sweet' => true]],
+        ])->assertSessionHasNoErrors();
+        $this->assertTrue($day->refresh()->strength);
+
+        $this->assertSame(1, $athlete->checkins()->count());
+
+        $this->actingAs(User::factory()->ofRole(UserRole::Administrador)->create())
+            ->patch('/atleta/dias/2/objetivos/water', ['details' => ['water_ml' => 2500]])
+            ->assertForbidden();
+    }
+
+    public function test_saving_a_goal_preserves_legacy_checkins_and_prevents_a_missing_checkin_penalty(): void
+    {
+        $athlete = $this->startedAthlete();
+        $athlete->athleteProfile->update(['penalty' => true]);
+        $athlete->checkins()->create(['day' => 1, 'checked_in' => true, 'water' => true]);
+        $this->actingAs($athlete);
+
+        $this->patch('/atleta/dias/2/objetivos/sleep', ['details' => ['sleep_hours' => 8]])->assertSessionHasNoErrors();
+        $this->travelTo(\Illuminate\Support\Carbon::parse('2026-11-11 12:00:00', \App\Support\ChallengeAccess::TIMEZONE));
+        $this->get('/atleta/evolucao/dias')
+            ->assertInertia(fn (Assert $page) => $page->where('penalty.missed', 0));
+
+        $this->travelTo(\Illuminate\Support\Carbon::parse('2026-11-09 12:00:00', \App\Support\ChallengeAccess::TIMEZONE));
+        $this->patch('/atleta/dias/1/objetivos/sleep', ['details' => ['sleep_hours' => 8]])->assertSessionHasNoErrors();
+        $legacy = $athlete->checkins()->where('day', 1)->firstOrFail();
+        $this->assertTrue($legacy->water);
+        $this->assertTrue($legacy->details['manual']['water']);
+    }
+
     private function startedAthlete(): User
     {
         $athlete = User::factory()->create();

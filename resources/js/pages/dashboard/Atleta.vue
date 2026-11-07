@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
+import CantinhoDaNutri from '@/components/CantinhoDaNutri.vue';
 import { GOALS, useChallenge } from '@/composables/useChallenge';
 import { images } from '@/data/images';
 import { type BreadcrumbItem } from '@/types';
@@ -59,21 +60,7 @@ const { countdown, milestones } = useChallenge();
                 </div>
             </div>
 
-            <section class="flex flex-col gap-3">
-                <div>
-                    <div class="eyebrow">Alimentação</div>
-                    <h2 class="font-display m-0 text-3xl font-extrabold uppercase">Cantinho da nutri</h2>
-                    <p class="m-0 mt-2 max-w-2xl text-sm text-brand-muted">Praticidade e equilíbrio, sem terrorismo.</p>
-                </div>
-                <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
-                    <Link v-if="$page.props.evolutionAccess?.pages.shopping" :href="route('alimentacao.compras')" class="surface-card min-w-0 p-4 sm:p-5">
-                        <h3 class="font-display m-0 text-lg font-extrabold uppercase leading-tight sm:text-xl">Listas de compras</h3>
-                    </Link>
-                    <div v-for="item in ['Cardápios da semana', 'Kit da vida real', 'Comer sem tudo ou nada']" :key="item" class="surface-card min-w-0 p-4 sm:p-5">
-                        <h3 class="font-display m-0 text-lg font-extrabold uppercase leading-tight sm:text-xl">{{ item }}</h3>
-                    </div>
-                </div>
-            </section>
+            <CantinhoDaNutri compact />
 
             <div v-if="baseline.photo || baseline.weight || baseline.waist || baseline.abdomen || baseline.hip" class="surface-card flex items-center gap-4 p-4 sm:gap-5 sm:p-5">
                 <img v-if="baseline.photo" :src="baseline.photo" alt="Foto do dia 1" class="h-24 w-20 shrink-0 rounded-xl object-cover sm:h-28 sm:w-24" />

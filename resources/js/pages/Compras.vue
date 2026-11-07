@@ -21,6 +21,7 @@ const loggedIn = computed(() => Boolean(usePage<SharedData>().props.auth.user));
 
 const sections = computed(() => (props.catalog.length ? props.catalog : shoppingList.sections.filter((section) => /^\d/.test(section.title))));
 const showTips = ref(false);
+const showAthleteControls = computed(() => props.canSave || props.adminPreview);
 const canCreate = computed(() => props.lists.length < props.weeks.length);
 
 const summaries = computed(() =>
@@ -68,7 +69,7 @@ const summaries = computed(() =>
             </div>
 
             <div class="-mt-4 flex flex-wrap items-center gap-3">
-                <Link v-if="canSave && canCreate" :href="route('alimentacao.compras.create')" class="rounded-full bg-[#43A047] px-4 py-2 text-sm font-bold text-white">
+                <Link v-if="showAthleteControls && canCreate" :href="route('alimentacao.compras.create')" class="rounded-full bg-[#43A047] px-4 py-2 text-sm font-bold text-white">
                     Nova lista
                 </Link>
                 <button
@@ -88,7 +89,7 @@ const summaries = computed(() =>
                 <p v-for="line in shoppingList.closing" :key="line" class="text-sm leading-relaxed text-brand-cream/70">{{ line }}</p>
             </div>
 
-            <section v-if="canSave" class="flex flex-col gap-4">
+            <section v-if="showAthleteControls" class="flex flex-col gap-4">
                 <h2 class="m-0 text-xl font-black">Aqui vão aparecer as listas criadas</h2>
                 <p v-if="lists.length === 0" class="m-0 text-sm text-brand-cream/70">Nenhuma lista ainda. Escolha a semana e marque o que vai comprar.</p>
                 <p v-else-if="!canCreate" class="m-0 text-sm text-brand-cream/70">Todas as semanas já têm lista. Edite uma delas se precisar mudar.</p>
@@ -122,7 +123,7 @@ const summaries = computed(() =>
                 </div>
             </section>
 
-            <template v-if="!canSave">
+            <template v-if="!showAthleteControls">
                 <section v-for="section in sections" :key="section.title" class="surface-card flex flex-col gap-6 p-6">
                     <h2 class="text-xl font-black">{{ section.title }}</h2>
                     <div

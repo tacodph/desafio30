@@ -119,6 +119,10 @@ class ChallengeAccessTest extends TestCase
         }
         $this->get('/objetivos/alimentacao/compras')->assertInertia(fn (Assert $page) => $page
             ->component('Compras')->where('adminPreview', true)->where('canSave', false)->where('lists', []));
+        $this->get(route('alimentacao.compras.create'))->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('ComprasForm')->where('adminPreview', true)->where('list', null)->has('catalog'));
+
         $this->put('/atleta/dias', ['days' => [['day' => 1]]])->assertForbidden();
         $this->post('/atleta/dias/1/foto-treino', [])->assertForbidden();
         $this->post('/atleta/conquistas', ['type' => 'cantinho', 'detail' => 'Teste'])->assertForbidden();
@@ -164,6 +168,7 @@ class ChallengeAccessTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page->where('access.editableDays', [2]));
         foreach ([1, 3, 30] as $day) {
             $this->put('/atleta/dias', ['days' => [['day' => $day]]])->assertSessionHasErrors('days');
+            $this->patch('/atleta/dias/'.$day.'/objetivos/water', ['details' => ['water_ml' => 2500]])->assertSessionHasErrors('days');
         }
         $this->put('/atleta/dias', ['days' => [['day' => 2], ['day' => 3]]])->assertSessionHasErrors('days');
         $this->assertDatabaseCount('checkins', 0);

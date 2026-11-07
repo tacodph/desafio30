@@ -1,0 +1,41 @@
+{
+  "mode": "Built-in image_gen",
+  "assets": [
+    {
+      "asset": "public/images/alimentacao/capa-iogurte-v1.png",
+      "prompt": "Photorealistic editorial food photograph for a square website thumbnail. Subject: one simple ceramic bowl of plain natural yogurt, creamy white yogurt with spoon, no toppings. Dark charcoal tabletop and background, soft warm studio light, appetizing natural textures, tight centered composition filling the square, clear silhouettes legible at small size. Only the described food and minimal tableware. No text, no letters, no labels, no infographic, no collage borders, no watermark."
+    },
+    {
+      "asset": "public/images/alimentacao/capa-queijos-v1.png",
+      "prompt": "Photorealistic editorial food photograph for a square website thumbnail. Subject: a small selection of cottage cheese in a bowl, fresh ricotta and sliced minas fresh cheese on a small board. Dark charcoal tabletop and background, soft warm studio light, appetizing natural textures, tight centered composition filling the square, clear silhouettes legible at small size. Only the described food and minimal tableware. No text, no letters, no labels, no infographic, no collage borders, no watermark."
+    },
+    {
+      "asset": "public/images/alimentacao/capa-ovos-v1.png",
+      "prompt": "Photorealistic editorial food photograph for a square website thumbnail. Subject: one whole uncracked egg alongside three distinct preparations in small dishes: scrambled eggs, a folded omelette, and halved boiled eggs; all four elements clearly visible. Dark charcoal tabletop and background, soft warm studio light, appetizing natural textures, tight centered composition filling the square, clear silhouettes legible at small size. Only the described food and minimal tableware. No text, no letters, no labels, no infographic, no collage borders, no watermark."
+    },
+    {
+      "asset": "public/images/alimentacao/capa-whey-v1.png",
+      "prompt": "Photorealistic editorial food photograph for a square website thumbnail. Subject: a single unbranded measuring scoop filled with pale whey protein powder, only the scoop and powder, no shaker, no tub, no fruit. Dark charcoal tabletop and background, soft warm studio light, appetizing natural textures, tight centered composition filling the square, clear silhouettes legible at small size. Only the described food and minimal tableware. No text, no letters, no labels, no infographic, no collage borders, no watermark."
+    },
+    {
+      "asset": "public/images/alimentacao/capa-aveia-v1.png",
+      "prompt": "Photorealistic editorial food photograph for a square website thumbnail. Subject: a small bowl filled with dry rolled oat flakes, with a few loose oat flakes nearby, only oats. Dark charcoal tabletop and background, soft warm studio light, appetizing natural textures, tight centered composition filling the square, clear silhouettes legible at small size. Only the described food and minimal tableware. No text, no letters, no labels, no infographic, no collage borders, no watermark."
+    },
+    {
+      "asset": "public/images/alimentacao/capa-pao-v1.png",
+      "prompt": "Photorealistic editorial food photograph for a square website thumbnail. Subject: a wholegrain loaf of bread with two slices showing its crumb, only bread, no toppings. Dark charcoal tabletop and background, soft warm studio light, appetizing natural textures, tight centered composition filling the square, clear silhouettes legible at small size. Only the described food and minimal tableware. No text, no letters, no labels, no infographic, no collage borders, no watermark."
+    },
+    {
+      "asset": "public/images/alimentacao/capa-gorduras-v1.png",
+      "prompt": "Photorealistic editorial food photograph for a square website thumbnail. Subject: a halved avocado and a small bowl of mixed walnuts and almonds. Dark charcoal tabletop and background, soft warm studio light, appetizing natural textures, tight centered composition filling the square, clear silhouettes legible at small size. Only the described food and minimal tableware. No text, no letters, no labels, no infographic, no collage borders, no watermark."
+    },
+    {
+      "asset": "public/images/alimentacao/capa-substituir-ovos-v1.png",
+      "prompt": "Photorealistic editorial food photograph for a square website thumbnail. Subject: an appetizing wholegrain sandwich with shredded chicken and tomato, no egg anywhere. Dark charcoal tabletop and background, soft warm studio light, appetizing natural textures, tight centered composition filling the square, clear silhouettes legible at small size. Only the described food and minimal tableware. No text, no letters, no labels, no infographic, no collage borders, no watermark."
+    },
+    {
+      "asset": "public/images/alimentacao/capa-snacks-v1.png",
+      "prompt": "Photorealistic editorial food photograph for a square website thumbnail. Subject: plain vegetable chips of sweet potato and beet in a small bowl, no packaging. Dark charcoal tabletop and background, soft warm studio light, appetizing natural textures, tight centered composition filling the square, clear silhouettes legible at small size. Only the described food and minimal tableware. No text, no letters, no labels, no infographic, no collage borders, no watermark."
+    }
+  ]
+}

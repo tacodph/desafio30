@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { achieved, dayPoints, workoutMinutes, type Achieved, type DayDetails, type DayGoals } from '@/data/dayLog';
 import { router, useForm } from '@inertiajs/vue3';
-import { Camera, ChevronDown, Droplets, Dumbbell, Lightbulb, Moon, Pencil, Plus, Salad, Star, X } from 'lucide-vue-next';
+import { Camera, ChevronDown, Droplets, Dumbbell, Lightbulb, Moon, Plus, Salad, Star, X } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 
 type DayForm = {
@@ -28,6 +28,7 @@ const props = withDefaults(
         weekSkills: string[];
         defaultOpen?: boolean;
         canEdit?: boolean;
+        adminPreview?: boolean;
         lockedReason?: string;
         scoreRules?: Record<string, number>;
         canComment?: boolean;
@@ -40,63 +41,53 @@ const weekdayLabels: Record<string, string> = { dom: 'domingo', seg: 'segunda', 
 
 const open = ref(props.defaultOpen ?? false);
 
-// Dia já salvo fica travado até clicar em "Editar"; cada dia tem o seu próprio salvar.
-const editing = ref(props.canEdit && !props.saved);
-watch(() => props.canEdit, (allowed) => { editing.value = allowed && !props.saved; });
-const saving = ref(false);
+type GoalKey = keyof Achieved | 'plus' | 'notes';
+
+const showAthleteControls = computed(() => props.canEdit || props.adminPreview);
+const editing = computed(() => Boolean(props.canEdit || props.adminPreview));
+const saving = ref<GoalKey | null>(null);
 const saveError = ref('');
+const saveMessage = ref('');
 
-// Ao editar, guarda uma cópia do dia para o "Cancelar" devolver o que estava salvo.
-const snapshot = ref('');
-
-const startEdit = () => {
-    snapshot.value = JSON.stringify({ checked_in: props.entry.checked_in, plus_count: props.entry.plus_count, notes: props.entry.notes, details: props.entry.details });
-    cheerFrom.value = { ...achieved(props.entry.details, props.goals) };
-    saveError.value = '';
-    editing.value = true;
+const goalLabels: Record<GoalKey, string> = {
+    movement: 'Treino', water: 'Água', sleep: 'Sono', strength: 'Alimentação',
+    skill: 'Habilidade', plus: 'Refeição luxo', notes: 'Observação',
 };
 
-const cancelEdit = () => {
-    Object.assign(props.entry, JSON.parse(snapshot.value));
+const saveGoal = (goal: GoalKey) => {
+    if (!props.canEdit || props.adminPreview || saving.value) return;
+
     saveError.value = '';
-    editing.value = false;
-};
-
-const hasWorkout = computed(() => props.entry.details.workouts.some((item) => item.type));
-
-const saveDay = () => {
-    saveError.value = '';
-
-    if (!hasWorkout.value) {
-        saveError.value = 'Inclua o treino do dia para salvar.';
-
-        return;
-    }
-
-    props.entry.checked_in = true;
-    const now = achieved(props.entry.details, props.goals);
-    router.put(
-        route('athlete.days.update'),
-        { days: [JSON.parse(JSON.stringify(props.entry))] },
+    saveMessage.value = '';
+    const current = achieved(props.entry.details, props.goals);
+    router.patch(
+        route('athlete.days.goal.update', { day: props.entry.day, goal }),
+        {
+            details: JSON.parse(JSON.stringify(props.entry.details)),
+            plus_count: props.entry.plus_count,
+            notes: { ...props.entry.notes },
+        },
         {
             preserveState: true,
             preserveScroll: true,
-            onStart: () => (saving.value = true),
+            onStart: () => { saving.value = goal; },
             onSuccess: () => {
-                editing.value = false;
-                const keys = (Object.keys(GOAL_CHEERS) as (keyof Achieved)[]).filter((key) => now[key] && !cheerFrom.value[key]);
-                cheerFrom.value = now;
+                if (goal !== 'notes') props.entry.checked_in = true;
+                saveMessage.value = 'Registro de ' + goalLabels[goal].toLocaleLowerCase('pt-BR') + ' salvo.';
 
-                if (!keys.length) {
-                    return;
+                if (goal === 'plus' || goal === 'notes') return;
+
+                const newlyAchieved = current[goal] && !cheerFrom.value[goal];
+                cheerFrom.value[goal] = current[goal];
+
+                if (newlyAchieved) {
+                    cheers.value = [GOAL_CHEERS[goal]];
+                    burst();
+                    cheersOpen.value = true;
                 }
-
-                cheers.value = keys.map((key) => GOAL_CHEERS[key]);
-                burst();
-                cheersOpen.value = true;
             },
-            onError: (errors) => (saveError.value = Object.values(errors)[0] ?? 'Não foi possível salvar o dia.'),
-            onFinish: () => (saving.value = false),
+            onError: (errors) => { saveError.value = Object.values(errors)[0] ?? 'Não foi possível salvar o objetivo.'; },
+            onFinish: () => { saving.value = null; },
         },
     );
 };
@@ -142,36 +133,6 @@ const liters = computed({
         props.entry.details.water_ml = Math.max(0, Math.round((Number(value) || 0) * 1000));
     },
 });
-
-// Ao abrir um dia ainda não salvo, lança água, sono e alimentação com a meta. Treino e habilidade o atleta preenche.
-const launchGoals = () => {
-    props.entry.checked_in = true;
-    const details = props.entry.details;
-
-    if (details.water_ml === 0) {
-        details.water_ml = props.goals.water_ml;
-    }
-
-    if (!details.sleep_hours) {
-        details.sleep_hours = props.goals.sleep_hours;
-    }
-
-    if (!Object.values(details.food).some(Boolean)) {
-        details.food.no_alcohol = true;
-        details.food.no_fast_food = true;
-        details.food.no_sweet = true;
-    }
-};
-
-watch(
-    open,
-    (isOpen) => {
-        if (isOpen && props.canEdit && !props.saved) {
-            launchGoals();
-        }
-    },
-    { immediate: true },
-);
 
 // "Meta atingida": ao marcar, preenche o campo com a meta; ao desmarcar, devolve o que estava antes.
 const before: Partial<Record<keyof DayDetails['manual'], string>> = {};
@@ -318,12 +279,9 @@ const foodChips = [
     ['no_sweet', 'Sem açúcar'],
 ] as const;
 
-const pickSkill = (idea: string) => {
-    if (!editing.value) {
-        startEdit();
-    }
-
-    props.entry.details.skill = props.entry.details.skill === idea ? '' : idea;
+const pickSkill = (idea: string, checked: boolean) => {
+    props.entry.details.skill = checked ? idea : '';
+    props.entry.details.manual.skill = false;
 };
 
 const fieldClass =
@@ -366,21 +324,23 @@ const chipClass = (active: boolean) =>
                     <span :class="done.skill ? 'text-brand-gold' : 'text-brand-muted'">{{ done.skill ? 'Praticada' : 'Ainda não' }}</span>
                 </div>
                 <div class="grid gap-1.5">
-                    <button
-                        v-for="skill in weekSkills"
-                        :key="skill"
-                        type="button"
-                        class="rounded-lg border px-3 py-2.5 text-left text-sm leading-snug"
-                        :class="entry.details.skill === skill ? 'border-brand-gold bg-brand-gold text-brand-ink' : 'border-brand-line3 text-brand-cream'"
-                        @click="pickSkill(skill)"
-                    >
-                        {{ skill }}
-                    </button>
+                    <div v-for="skill in weekSkills" :key="skill" class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-brand-line3 px-3 py-2.5 text-sm">
+                        <span class="min-w-0 flex-1">{{ skill }}</span>
+                        <label class="flex min-h-9 shrink-0 items-center gap-2.5 text-xs text-brand-muted">
+                            <input
+                                type="checkbox"
+                                :checked="entry.details.skill === skill || entry.details.manual.skill"
+                                class="size-5 accent-brand-gold"
+                                @change="pickSkill(skill, ($event.target as HTMLInputElement).checked)"
+                            />
+                            Meta atingida
+                        </label>
+                    </div>
+                    <p v-if="!weekSkills.length" class="m-0 text-xs text-brand-muted">Escolha a habilidade da semana no primeiro dia.</p>
                 </div>
-                <label v-if="!entry.details.skill" class="flex min-h-9 items-center gap-2.5 text-xs text-brand-muted">
-                    <input v-model="entry.details.manual.skill" type="checkbox" class="size-5 shrink-0 accent-brand-gold" />
-                    Meta atingida
-                </label>
+                <button v-if="showAthleteControls" type="button" class="h-10 w-fit rounded-lg bg-brand-gold px-4 text-sm font-bold text-brand-ink disabled:opacity-60" :disabled="Boolean(saving) || adminPreview" @click="saveGoal('skill')">
+                    {{ saving === 'skill' ? 'Salvando…' : 'Salvar habilidade' }}
+                </button>
             </section>
 
             <!-- Treino -->
@@ -389,6 +349,7 @@ const chipClass = (active: boolean) =>
                     <span class="flex items-center gap-2"><Dumbbell class="size-4 text-brand-gold" /> Treino</span>
                     <span :class="done.movement ? 'text-brand-gold' : 'text-brand-muted'">{{ minutes }} / {{ goals.movement_minutes }} min</span>
                 </div>
+                <p class="m-0 text-xs text-brand-muted">Faça este check-in ao concluir sua meta de treino.</p>
                 <div class="h-2 overflow-hidden rounded-full bg-brand-line3/40">
                     <div class="h-full rounded-full bg-brand-gold" :style="{ width: pct(minutes, goals.movement_minutes) }" />
                 </div>
@@ -411,21 +372,24 @@ const chipClass = (active: boolean) =>
                     </template>
                 </div>
                 <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
-                    <button v-if="canEdit" type="button" class="flex min-h-9 w-fit items-center gap-1.5 text-sm font-semibold text-brand-gold" @click="addWorkout"><Plus class="size-4" /> Adicionar treino</button>
-                    <button v-if="canEdit" type="button" class="flex min-h-9 w-fit items-center gap-1.5 text-sm font-semibold text-brand-gold disabled:opacity-60" :disabled="uploading" @click="photoInput?.click()">
+                    <button v-if="showAthleteControls" type="button" class="flex min-h-9 w-fit items-center gap-1.5 text-sm font-semibold text-brand-gold" @click="addWorkout"><Plus class="size-4" /> Adicionar treino</button>
+                    <button v-if="showAthleteControls" type="button" class="flex min-h-9 w-fit items-center gap-1.5 text-sm font-semibold text-brand-gold disabled:opacity-60" :disabled="uploading" @click="photoInput?.click()">
                         <Camera class="size-4" /> {{ uploading ? 'Enviando...' : photo ? 'Trocar foto' : 'Adicionar foto' }}
                     </button>
                     <input ref="photoInput" type="file" accept="image/*" class="hidden" @change="sendPhoto" />
                 </div>
                 <div v-if="photo" class="relative w-fit">
                     <img :src="photo" alt="Foto do treino" class="max-h-48 max-w-full rounded-lg border border-brand-line2 object-cover" />
-                    <button v-if="canEdit" type="button" class="absolute right-1.5 top-1.5 rounded-full bg-brand-ink/80 p-1.5 text-brand-cream" aria-label="Remover foto do treino" @click="removePhoto"><X class="size-4" /></button>
+                    <button v-if="showAthleteControls" type="button" class="absolute right-1.5 top-1.5 rounded-full bg-brand-ink/80 p-1.5 text-brand-cream" aria-label="Remover foto do treino" @click="removePhoto"><X class="size-4" /></button>
                 </div>
                 <p v-if="photoError" class="m-0 text-xs text-red-400">{{ photoError }}</p>
                 <label v-if="minutes < goals.movement_minutes || entry.details.manual.movement" class="flex min-h-9 items-center gap-2.5 text-xs text-brand-muted">
                     <input :checked="entry.details.manual.movement" type="checkbox" class="size-5 shrink-0 accent-brand-gold" @change="toggleGoal('movement', ($event.target as HTMLInputElement).checked)" />
                     Meta atingida
                 </label>
+                <button v-if="showAthleteControls" type="button" class="h-10 w-fit rounded-lg bg-brand-gold px-4 text-sm font-bold text-brand-ink disabled:opacity-60" :disabled="Boolean(saving) || adminPreview" @click="saveGoal('movement')">
+                    {{ saving === 'movement' ? 'Salvando…' : 'Salvar treino' }}
+                </button>
             </section>
 
             <!-- Água -->
@@ -434,6 +398,7 @@ const chipClass = (active: boolean) =>
                     <span class="flex items-center gap-2"><Droplets class="size-4 text-brand-gold" /> Água</span>
                     <span :class="done.water ? 'text-brand-gold' : 'text-brand-muted'">{{ (entry.details.water_ml / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 2 }) }} / {{ (goals.water_ml / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 2 }) }} L</span>
                 </div>
+                <p class="m-0 text-xs text-brand-muted">Faça este check-in ao atingir sua meta de água.</p>
                 <div class="h-2 overflow-hidden rounded-full bg-brand-line3/40">
                     <div class="h-full rounded-full bg-brand-gold" :style="{ width: pct(entry.details.water_ml, goals.water_ml) }" />
                 </div>
@@ -449,6 +414,9 @@ const chipClass = (active: boolean) =>
                     <input :checked="entry.details.manual.water" type="checkbox" class="size-5 shrink-0 accent-brand-gold" @change="toggleGoal('water', ($event.target as HTMLInputElement).checked)" />
                     Meta atingida
                 </label>
+                <button v-if="showAthleteControls" type="button" class="h-10 w-fit rounded-lg bg-brand-gold px-4 text-sm font-bold text-brand-ink disabled:opacity-60" :disabled="Boolean(saving) || adminPreview" @click="saveGoal('water')">
+                    {{ saving === 'water' ? 'Salvando…' : 'Salvar água' }}
+                </button>
             </section>
 
             <!-- Sono -->
@@ -457,6 +425,7 @@ const chipClass = (active: boolean) =>
                     <span class="flex items-center gap-2"><Moon class="size-4 text-brand-gold" /> Sono</span>
                     <span :class="done.sleep ? 'text-brand-gold' : 'text-brand-muted'">{{ entry.details.sleep_hours || 0 }} / {{ goals.sleep_hours }} h</span>
                 </div>
+                <p class="m-0 text-xs text-brand-muted">Faça este check-in pela manhã.</p>
                 <div class="h-2 overflow-hidden rounded-full bg-brand-line3/40">
                     <div class="h-full rounded-full bg-brand-gold" :style="{ width: pct(Number(entry.details.sleep_hours) || 0, goals.sleep_hours) }" />
                 </div>
@@ -468,6 +437,9 @@ const chipClass = (active: boolean) =>
                     <input :checked="entry.details.manual.sleep" type="checkbox" class="size-5 shrink-0 accent-brand-gold" @change="toggleGoal('sleep', ($event.target as HTMLInputElement).checked)" />
                     Meta atingida
                 </label>
+                <button v-if="showAthleteControls" type="button" class="h-10 w-fit rounded-lg bg-brand-gold px-4 text-sm font-bold text-brand-ink disabled:opacity-60" :disabled="Boolean(saving) || adminPreview" @click="saveGoal('sleep')">
+                    {{ saving === 'sleep' ? 'Salvando…' : 'Salvar sono' }}
+                </button>
             </section>
 
             <!-- Alimentação -->
@@ -488,17 +460,16 @@ const chipClass = (active: boolean) =>
                     <input :checked="entry.details.manual.strength" type="checkbox" class="size-5 shrink-0 accent-brand-gold" @change="toggleGoal('strength', ($event.target as HTMLInputElement).checked)" />
                     Meta atingida
                 </label>
-                <div v-if="canEdit" class="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <div v-if="showAthleteControls" class="flex flex-wrap items-center gap-x-3 gap-y-1">
                     <button type="button" class="flex min-h-9 w-fit items-center gap-1.5 text-sm font-semibold text-brand-gold disabled:opacity-60" :disabled="mealUploading" @click="mealInput?.click()">
-                        <Camera class="size-4" /> {{ mealUploading ? 'Enviando fotos…' : 'Adicionar fotos da refeição' }}
+                        <Camera class="size-4" /> {{ mealUploading ? 'Enviando fotos…' : 'Adicionar foto da refeição (opcional)' }}
                     </button>
-                    <p class="m-0 text-xs text-brand-muted">Você pode tirar as fotos do seu celular e subir todas de uma vez quando finalizar o seu dia.</p>
                 </div>
                 <input ref="mealInput" type="file" accept="image/*" multiple class="hidden" @change="sendMealPhotos" />
                 <div v-if="mealPhotos?.length" class="grid grid-cols-2 gap-2 sm:grid-cols-3">
                     <div v-for="(photo, index) in mealPhotos" :key="photo.id" class="relative">
                         <img :src="photo.url" :alt="'Foto da refeição ' + (index + 1)" loading="lazy" class="aspect-square w-full rounded-lg border border-brand-line2 object-cover" />
-                        <button v-if="canEdit" type="button" class="absolute right-1.5 top-1.5 rounded-full bg-brand-ink/80 p-1.5 text-brand-cream disabled:opacity-60" :disabled="mealUploading" :aria-label="'Remover foto da refeição ' + (index + 1)" @click="removeMealPhoto(photo.id)">
+                        <button v-if="showAthleteControls" type="button" class="absolute right-1.5 top-1.5 rounded-full bg-brand-ink/80 p-1.5 text-brand-cream disabled:opacity-60" :disabled="mealUploading" :aria-label="'Remover foto da refeição ' + (index + 1)" @click="removeMealPhoto(photo.id)">
                             <X class="size-4" />
                         </button>
                     </div>
@@ -508,6 +479,9 @@ const chipClass = (active: boolean) =>
                 <p v-if="mealComment && !canComment" class="m-0 text-sm leading-relaxed text-brand-muted">
                     <span class="font-semibold text-brand-cream">Nutri · </span>{{ mealComment }}
                 </p>
+                <button v-if="showAthleteControls" type="button" class="h-10 w-fit rounded-lg bg-brand-gold px-4 text-sm font-bold text-brand-ink disabled:opacity-60" :disabled="Boolean(saving) || adminPreview" @click="saveGoal('strength')">
+                    {{ saving === 'strength' ? 'Salvando…' : 'Salvar alimentação' }}
+                </button>
             </section>
 
             <!-- Refeição luxo -->
@@ -517,9 +491,15 @@ const chipClass = (active: boolean) =>
                     <input v-model.number="entry.plus_count" type="number" min="0" max="9" aria-label="Quantidade de refeição luxo" :class="[fieldClass, 'w-16']" />
                 </div>
                 <input v-model="entry.notes.plus" maxlength="255" placeholder="O que foi? Ex.: pizza, hambúrguer, churrasco" :class="fieldClass" />
+                <button v-if="showAthleteControls" type="button" class="h-10 w-fit rounded-lg bg-brand-gold px-4 text-sm font-bold text-brand-ink disabled:opacity-60" :disabled="Boolean(saving) || adminPreview" @click="saveGoal('plus')">
+                    {{ saving === 'plus' ? 'Salvando…' : 'Salvar refeição luxo' }}
+                </button>
             </section>
 
             <input v-model="entry.notes.day" maxlength="255" placeholder="Observação do dia (opcional)" :class="fieldClass" />
+                <button v-if="showAthleteControls" type="button" class="h-10 w-fit rounded-lg border border-brand-line3 px-4 text-sm font-semibold disabled:opacity-60" :disabled="Boolean(saving) || adminPreview" @click="saveGoal('notes')">
+                    {{ saving === 'notes' ? 'Salvando…' : 'Salvar observação' }}
+                </button>
             </fieldset>
 
             <section v-if="canComment" class="grid gap-2 rounded-xl border border-brand-line2 px-3 py-3">
@@ -531,19 +511,7 @@ const chipClass = (active: boolean) =>
                 <p v-if="mealNote.errors.comment" class="m-0 text-xs text-red-400">{{ mealNote.errors.comment }}</p>
             </section>
 
-            <div v-if="canEdit" class="flex flex-wrap items-center gap-3">
-                <button v-if="editing" type="button" class="h-11 rounded-lg bg-brand-gold px-5 text-sm font-bold text-brand-ink disabled:opacity-60" :disabled="saving || !hasWorkout" @click="saveDay">
-                    {{ saving ? 'Salvando...' : `Salvar dia ${entry.day}` }}
-                </button>
-                <span v-if="editing && !hasWorkout" class="text-xs text-brand-muted">Inclua o treino do dia para salvar.</span>
-                <button v-if="editing && saved && snapshot" type="button" class="h-11 rounded-lg border border-brand-line3 px-5 text-sm font-bold text-brand-muted disabled:opacity-60" :disabled="saving" @click="cancelEdit">
-                    Cancelar
-                </button>
-                <button v-else-if="!editing" type="button" class="flex h-11 items-center gap-2 rounded-lg border border-brand-gold px-5 text-sm font-bold text-brand-gold" @click="startEdit">
-                    <Pencil class="size-4" /> Editar dia {{ entry.day }}
-                </button>
-                <span v-if="!editing" class="text-xs text-brand-muted">Dia salvo</span>
-            </div>
+            <p v-if="saveMessage" role="status" class="m-0 text-sm text-brand-gold">{{ saveMessage }}</p>
             <p v-if="saveError" class="m-0 text-xs text-red-400">{{ saveError }}</p>
         </div>
 

@@ -91,7 +91,7 @@ class ChallengeSheet
      *
      * @return array<string, mixed>
      */
-    private static function detailsFor(?Checkin $checkin): array
+    public static function detailsFor(?Checkin $checkin): array
     {
         if ($checkin?->details !== null) {
             return DayLog::normalize($checkin->details);
@@ -187,7 +187,7 @@ class ChallengeSheet
             'currentWeek' => self::currentWeek(),
             'today' => max(1, min(self::TOTAL_DAYS, self::dayOn(Carbon::today(ChallengeAccess::TIMEZONE)))),
             'goals' => DayLog::goals($profile),
-            'workoutTypes' => DayLog::WORKOUT_TYPES,
+            'workoutTypes' => \App\Models\WorkoutType::query()->orderBy('id')->pluck('name')->all(),
             'weeklySkills' => array_values(array_map(
                 fn ($picks) => array_slice(array_values(array_filter((array) $picks)), 0, 1),
                 $profile?->weekly_skills ?? [],
