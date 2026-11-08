@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\UserRole;
 use App\Models\AthleteProfile;
 use App\Models\ChallengePayment;
+use App\Models\ScoreRule;
 use App\Models\User;
 use App\Models\UserType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -109,6 +110,29 @@ class DashboardTest extends TestCase
             ->get('/dashboard')
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page->component('dashboard/Equipe'));
+    }
+
+    public function test_athlete_dashboard_uses_summary_and_current_scoring_rules(): void
+    {
+        $athlete = User::factory()->create();
+        $athlete->forceFill(['welcome_acknowledged_at' => now()])->save();
+        AthleteProfile::query()->create(['user_id' => $athlete->id, 'welcomed_at' => now(), 'goals_set_at' => now()]);
+        $athlete->checkins()->create(['day' => 1, 'checked_in' => true, 'movement' => true]);
+        ScoreRule::query()->where('key', 'movement')->update(['label' => 'Treino ajustado', 'points' => 7]);
+
+        $this->actingAs($athlete)
+            ->get('/dashboard')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('dashboard/Atleta')
+                ->where('total', 8)
+                ->where('weeks.0.total', 8)
+                ->where('weeks.0.athletes_total', 1)
+                ->where('dailyScores.1.label', 'Treino ajustado')
+                ->where('dailyScores.1.points', 7)
+                ->has('days', 30)
+                ->has('weeks', 5)
+                ->has('bonusScores', 3));
     }
 
     public function test_payment_overview_counts_charges_and_unique_customers_for_authorized_staff(): void

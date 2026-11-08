@@ -50,17 +50,15 @@ class DashboardController extends Controller
                 return to_route('athlete.start.goals');
             }
 
-            $profile = $user->athleteProfile;
+            $progress = ChallengeSheet::payload($user);
+            $scoreRules = ScoreRule::grouped();
 
             return Inertia::render('dashboard/Atleta', [
-                'total' => collect(ChallengeSheet::weeks($user))->sum('total'),
-                'baseline' => [
-                    'weight' => $profile->weight,
-                    'waist' => $profile->waist,
-                    'abdomen' => $profile->abdomen,
-                    'hip' => $profile->hip,
-                    'photo' => ($photo = $profile->start_photos['photo_front'] ?? $profile->photo) ? '/storage/'.$photo : null,
-                ],
+                'total' => $progress['total'],
+                'days' => $progress['days'],
+                'weeks' => $progress['weeks'],
+                'dailyScores' => $scoreRules['daily'],
+                'bonusScores' => $scoreRules['bonus'],
             ]);
         }
 
