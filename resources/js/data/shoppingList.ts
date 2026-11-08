@@ -143,10 +143,7 @@ export const shoppingList = {
                         "Gorgonzola",
                         "Parmesão"
                     ],
-                    "notes": [
-                        "Os queijos estão por ordem aproximada de calorias e quantidade de gordura. Mantenha queijos mais magros na maior parte da semana e escolha os queijos mais gordurosos para variar sua alimentação duas a três vezes por semana.",
-                        "A ordem é aproximada, pois o teor de gordura pode variar conforme a marca, o fabricante e o tempo de maturação do queijo. Em geral, queijos mais frescos e com maior teor de umidade tendem a apresentar menos gordura, enquanto os mais curados e maturados são mais concentrados."
-                    ]
+                    "notes": []
                 }
             ]
         },

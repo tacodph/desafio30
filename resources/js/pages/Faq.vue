@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
+import { handleAccordionClick } from '@/lib/accordionScroll';
 import { Head, Link, usePage } from '@inertiajs/vue3';
 import type { SharedData } from '@/types';
 import { CircleHelp, Search } from 'lucide-vue-next';
@@ -15,7 +16,7 @@ const filtered = computed(() => props.faqs.filter((faq) => normalize(`${faq.ques
 <template>
     <Head title="Dúvidas Frequentes" />
     <component :is="page.props.auth.user ? AppLayout : 'div'" :breadcrumbs="[{ title: 'Ajuda', href: '/ajuda/duvidas-frequentes' }, { title: 'Dúvidas Frequentes', href: '/ajuda/duvidas-frequentes' }]">
-        <main class="mx-auto w-full max-w-4xl px-4 py-8 md:p-8">
+        <main class="mx-auto w-full max-w-4xl px-4 py-8 md:p-8" @click="handleAccordionClick">
             <header class="rounded-3xl border border-brand-gold/20 bg-brand-gold/[0.04] p-7 text-center sm:p-12">
                 <p class="text-sm font-extrabold uppercase tracking-[3px] text-brand-gold">Desafio da Virada</p>
                 <CircleHelp class="mx-auto my-6 size-20 text-brand-gold" aria-hidden="true" />

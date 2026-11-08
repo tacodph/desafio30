@@ -59,7 +59,7 @@ const panels = ['8 255 528 254', '544 255 534 254', '8 519 528 283', '544 519 53
             <header class="space-y-2">
                 <div class="eyebrow">Alimentação</div>
                 <h1 class="display-title text-[clamp(36px,5vw,56px)] text-brand-gold">Escolhendo melhor fora de casa</h1>
-                <p class="text-sm text-brand-muted">Opções práticas para manter o foco no desafio em bares, restaurantes, padarias, delivery ou shopping. Clique nas imagens para ampliar e conferir as orientações.</p>
+                <p class="text-sm text-brand-muted">Sugestões para fazer boas escolhas mesmo se alimentando fora de casa</p>
             </header>
             <section class="grid items-start gap-5 md:grid-cols-2" aria-label="Orientações ilustradas para comer fora de casa">
                 <article v-for="(situation, index) in situations" :key="situation.title" class="surface-card min-w-0 space-y-3 p-3">
@@ -87,12 +87,6 @@ const panels = ['8 255 528 254', '544 255 534 254', '8 519 528 283', '544 519 53
                     </Dialog>
                 </article>
             </section>
-            <article class="surface-card min-w-0 space-y-3 p-3">
-                <h2 class="text-lg font-bold">Guia completo</h2>
-                <a href="/images/alimentacao/escolhendo-melhor-fora-de-casa.png" target="_blank" rel="noopener noreferrer" aria-label="Ampliar guia completo Escolhendo melhor fora de casa">
-                    <img src="/images/alimentacao/escolhendo-melhor-fora-de-casa.png" alt="Guia completo com as oito situações para escolher melhor fora de casa." loading="lazy" class="mx-auto h-auto w-full max-w-2xl rounded-xl" />
-                </a>
-            </article>
         </main>
     </AppLayout>
 </template>

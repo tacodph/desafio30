@@ -13,7 +13,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-const props = defineProps<{
+defineProps<{
     total: number;
     baseline: { weight: string | null; waist: string | null; abdomen: string | null; hip: string | null; photo: string | null };
 }>();
@@ -28,13 +28,7 @@ const { countdown, milestones } = useChallenge();
         <div class="flex h-full flex-1 flex-col gap-6 rounded-xl p-4 md:p-6">
             <p v-if="$page.props.accessNotice" role="status" class="surface-card m-0 p-4 text-sm text-brand-muted">{{ $page.props.accessNotice }}</p>
             <div class="flex flex-col gap-3">
-                <div class="eyebrow">Desafio 30 Dias</div>
-                <h1 class="display-title text-[clamp(36px,5vw,56px)]">
-                    A gente <span class="text-brand-gold">cresce junto</span>
-                </h1>
-                <p class="max-w-xl text-brand-muted">
-                    {{ countdown.label }}. Cinco objetivos, de 9 de novembro a 8 de dezembro.
-                </p>
+                <h1 class="display-title text-[clamp(36px,5vw,56px)] text-brand-gold">Desafio da virada</h1>
             </div>
 
             <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -94,7 +88,7 @@ const { countdown, milestones } = useChallenge();
                 </Link>
 
                 <div class="surface-card flex items-center justify-center p-4 md:p-6">
-                    <img :src="images.logo" alt="Desafio 30 Dias" class="max-h-28 object-contain md:max-h-40" />
+                    <img :src="images.logo" alt="Desafio da virada" class="max-h-28 object-contain md:max-h-40" />
                 </div>
             </div>
 

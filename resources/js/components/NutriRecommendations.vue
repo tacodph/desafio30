@@ -9,7 +9,6 @@ const imageUrl = (file: string) => `/images/alimentacao/nutri_indica/${file}`;
 <template>
     <section class="space-y-6 rounded-2xl bg-[#151515] p-4 text-white sm:p-6" aria-label="A nutri indica!">
         <header class="space-y-3">
-            <h3 class="font-display text-3xl font-black uppercase text-yellow-400 sm:text-4xl">A nutri indica!</h3>
             <p class="text-sm leading-relaxed text-white/80">Confira os produtos selecionados pela nutri. Toque na imagem para ver a embalagem ampliada.</p>
         </header>
         <p role="status" class="text-sm text-white/60">{{ products.length }} {{ products.length === 1 ? 'produto' : 'produtos' }}</p>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import guideImage from '@/assets/alimentacao/lidando-com-o-fim-de-semana.png';
+import WeekendImpact from '@/components/WeekendImpact.vue';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head } from '@inertiajs/vue3';
@@ -25,6 +26,7 @@ const tips = [
                 <div class="eyebrow">Alimentação</div>
                 <h1 class="display-title text-[clamp(36px,5vw,56px)] leading-tight text-brand-gold">Lidando com o fim de semana</h1>
             </header>
+            <WeekendImpact />
             <section class="space-y-5 rounded-3xl border-2 border-yellow-400 bg-[#101010] p-4 text-black sm:p-6" aria-labelledby="weekend-heading">
                 <header class="flex flex-col items-center gap-5 sm:flex-row">
                     <img src="/images/logo-mark-30-virada.png" alt="Desafio da Virada — 30 dias" width="100" height="100" class="size-24 shrink-0 object-contain" />

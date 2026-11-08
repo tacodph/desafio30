@@ -50,14 +50,14 @@ const mainNavItems = computed<NavGroupItem[]>(() => {
             { title: 'Objetivos', href: '/meus-objetivos/alimentacao', icon: Salad },
             { title: 'Evolução (visualizar)', icon: ClipboardCheck, children: evolutionChildren.value },
             { title: 'Monte seu Cardápio (visualizar)', href: '/objetivos/alimentacao/compras', icon: Salad },
-            { title: 'Monte seu prato (visualizar)', href: '/alimentacao/monte-seu-prato', icon: Salad },
+            { title: 'Almoço - Monte seu prato (visualizar)', href: '/alimentacao/monte-seu-prato', icon: Salad },
             { title: 'Alimentação', icon: Salad, children: [
                 { title: 'Escolhendo melhor fora de casa', href: '/alimentacao/escolhendo-melhor-fora-de-casa' },
                 { title: 'Lidando com o fim de semana', href: '/alimentacao/lidando-com-o-fim-de-semana' },
             ] },
             { title: 'Cantinho da Nutri', icon: BookOpen, children: [
-                { title: 'Materiais e orientações', href: '/cantinho-da-nutri' },
                 { title: 'A nutri indica!', href: '/cantinho-da-nutri/a-nutri-indica' },
+                { title: 'Materiais e orientações', href: '/cantinho-da-nutri' },
                 { title: 'Monitoramento 30 dias', href: '/cantinho-da-nutri/monitoramento' },
             ] },
             { title: 'Pontuação', href: '/pontuacao', icon: Trophy },
@@ -97,13 +97,13 @@ const mainNavItems = computed<NavGroupItem[]>(() => {
             },
             { title: 'Alimentação', icon: Salad, children: [
                 { title: 'Lista de compras inteligente', href: '/objetivos/alimentacao/compras', disabled: !page.props.evolutionAccess?.pages.shopping },
-                { title: 'Monte seu prato', href: '/alimentacao/monte-seu-prato', disabled: !page.props.evolutionAccess?.pages.alimentacao },
+                { title: 'Almoço - Monte seu prato', href: '/alimentacao/monte-seu-prato', disabled: !page.props.evolutionAccess?.pages.alimentacao },
                 { title: 'Escolhendo melhor fora de casa', href: '/alimentacao/escolhendo-melhor-fora-de-casa', disabled: !page.props.evolutionAccess?.pages.alimentacao },
                 { title: 'Lidando com o fim de semana', href: '/alimentacao/lidando-com-o-fim-de-semana', disabled: !page.props.evolutionAccess?.pages.alimentacao },
             ] },
             { title: 'Cantinho da Nutri', icon: BookOpen, children: [
-                { title: 'Materiais e orientações', href: '/cantinho-da-nutri', disabled: !page.props.evolutionAccess?.pages.nutri },
                 { title: 'A nutri indica!', href: '/cantinho-da-nutri/a-nutri-indica', disabled: !page.props.evolutionAccess?.pages.nutri },
+                { title: 'Materiais e orientações', href: '/cantinho-da-nutri', disabled: !page.props.evolutionAccess?.pages.nutri },
                 { title: 'Monitoramento 30 dias', href: '/cantinho-da-nutri/monitoramento', disabled: !page.props.evolutionAccess?.pages.nutri },
             ] },
             { title: 'Treino', icon: Dumbbell, children: [objective('treino')] },

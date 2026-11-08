@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
+import { handleAccordionClick } from '@/lib/accordionScroll';
 import { shoppingList } from '@/data/shoppingList';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/vue3';
+import { ChevronDown } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 
 const props = defineProps<{
@@ -26,20 +28,22 @@ const canCreate = computed(() => props.lists.length < props.weeks.length);
 
 const summaries = computed(() =>
     props.lists.map((list) => {
-        const counts = sections.value
+        const remaining = new Set(list.items);
+        const groups = sections.value
             .map((section) => {
                 const names = new Set(section.groups.flatMap((group) => group.items));
+                const items = list.items.filter((item) => remaining.has(item) && names.has(item));
+                items.forEach((item) => remaining.delete(item));
 
-                return { title: section.title.replace(/^\d+\.\s*/, ''), count: list.items.filter((item) => names.has(item)).length };
+                return { title: section.title.replace(/^\d+\.\s*/, ''), items };
             })
-            .filter((row) => row.count > 0);
-        const known = counts.reduce((sum, row) => sum + row.count, 0);
+            .filter((group) => group.items.length > 0);
 
-        if (list.items.length > known) {
-            counts.push({ title: 'Outros', count: list.items.length - known });
+        if (remaining.size) {
+            groups.push({ title: 'Outros', items: [...remaining] });
         }
 
-        return { ...list, total: list.items.length + list.extras.length, counts, preview: [...list.items, ...list.extras].slice(0, 6) };
+        return { ...list, groups };
     }),
 );
 </script>
@@ -57,7 +61,7 @@ const summaries = computed(() =>
             </div>
         </header>
 
-        <main class="mx-auto flex max-w-[900px] flex-col gap-8 px-6 py-10">
+        <main class="mx-auto flex max-w-[900px] flex-col gap-8 px-6 py-10" @click="handleAccordionClick">
             <p v-if="adminPreview" role="status" class="rounded-xl border border-brand-gold/40 p-4 text-sm text-brand-gold">Visualização administrativa, somente para consulta. O calendário e os bloqueios dos atletas continuam valendo.</p>
             <div class="grid gap-3">
                 <h1 class="text-3xl font-black text-brand-gold">Lista de compras da semana</h1>
@@ -93,33 +97,30 @@ const summaries = computed(() =>
                 <h2 class="m-0 text-xl font-black">Aqui vão aparecer as listas criadas</h2>
                 <p v-if="lists.length === 0" class="m-0 text-sm text-brand-cream/70">Nenhuma lista ainda. Escolha a semana e marque o que vai comprar.</p>
                 <p v-else-if="!canCreate" class="m-0 text-sm text-brand-cream/70">Todas as semanas já têm lista. Edite uma delas se precisar mudar.</p>
-                <div class="grid gap-4 sm:grid-cols-2">
-                    <article v-for="list in summaries" :key="list.week" class="surface-card flex flex-col gap-4 p-5" style="border-top: 4px solid #43A047">
-                        <div class="flex items-start justify-between gap-3">
-                            <div>
+                <div class="grid gap-4">
+                    <details v-for="list in summaries" :key="list.week" name="saved-shopping-lists" class="surface-card group/list overflow-hidden" style="border-top: 4px solid #43A047">
+                        <summary class="flex cursor-pointer list-none items-center justify-between gap-3 p-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#43A047] [&::-webkit-details-marker]:hidden">
+                            <div class="space-y-1">
                                 <h3 class="m-0 text-lg font-black">Semana {{ list.week }}</h3>
                                 <span class="text-sm text-brand-cream/70">{{ list.period }}</span>
                             </div>
-                            <div class="text-right">
-                                <span class="block text-4xl font-black leading-none tabular-nums text-[#43A047]">{{ list.total }}</span>
-                                <span class="text-xs uppercase tracking-[2px] text-brand-cream/70">{{ list.total === 1 ? 'item' : 'itens' }}</span>
-                            </div>
+                            <ChevronDown class="size-5 shrink-0 text-[#43A047] transition-transform group-open/list:rotate-180" aria-hidden="true" />
+                        </summary>
+                        <div class="grid gap-5 border-t border-brand-line p-5">
+                            <section v-for="group in list.groups" :key="group.title" class="space-y-3">
+                                <h4 class="text-sm font-bold uppercase tracking-wide text-[#43A047]">{{ group.title }}</h4>
+                                <ul class="grid list-disc gap-x-8 gap-y-2 pl-5 text-sm sm:grid-cols-2">
+                                    <li v-for="item in group.items" :key="item" class="break-words leading-relaxed">{{ item }}</li>
+                                </ul>
+                            </section>
+                            <section v-if="list.extras.length" class="space-y-3">
+                                <h4 class="text-sm font-bold uppercase tracking-wide text-[#43A047]">Itens extras</h4>
+                                <ul class="grid list-disc gap-x-8 gap-y-2 pl-5 text-sm sm:grid-cols-2"><li v-for="(item, index) in list.extras" :key="index" class="break-words leading-relaxed">{{ item }}</li></ul>
+                            </section>
+                            <p v-if="!list.items.length && !list.extras.length" class="text-sm text-brand-cream/70">Nenhum alimento registrado nesta lista.</p>
+                            <Link :href="route('alimentacao.compras.edit', list.week)" class="w-fit text-sm font-bold text-[#43A047]">Editar lista</Link>
                         </div>
-                        <ul class="m-0 flex list-none flex-col gap-1 p-0 text-sm">
-                            <li v-for="row in list.counts" :key="row.title" class="flex justify-between gap-3">
-                                <span>{{ row.title }}</span>
-                                <span class="font-bold tabular-nums">{{ row.count }}</span>
-                            </li>
-                            <li v-if="list.extras.length" class="flex justify-between gap-3">
-                                <span>Itens extras</span>
-                                <span class="font-bold tabular-nums">{{ list.extras.length }}</span>
-                            </li>
-                        </ul>
-                        <p class="m-0 text-sm leading-relaxed text-brand-cream/70">
-                            {{ list.preview.join(', ') }}<span v-if="list.total > list.preview.length"> e mais {{ list.total - list.preview.length }}</span>
-                        </p>
-                        <Link :href="route('alimentacao.compras.edit', list.week)" class="w-fit text-sm font-bold text-[#43A047]">Editar lista</Link>
-                    </article>
+                    </details>
                 </div>
             </section>
 

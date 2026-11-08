@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
+import { handleAccordionClick } from '@/lib/accordionScroll';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { ChevronDown } from 'lucide-vue-next';
@@ -85,7 +86,7 @@ const save = () => {
     <Head :title="editing ? 'Editar lista de compras' : 'Nova lista de compras'" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <form class="mx-auto flex w-full max-w-[1100px] flex-col gap-8 p-4 md:p-6" @submit.prevent="save">
+        <form class="mx-auto flex w-full max-w-[1100px] flex-col gap-8 p-4 md:p-6" @submit.prevent="save" @click="handleAccordionClick">
             <p v-if="adminPreview" role="status" class="surface-card p-4 text-sm text-brand-gold">Visualização administrativa, somente para consulta.</p>
             <fieldset :disabled="adminPreview" class="m-0 grid min-w-0 gap-8 border-0 p-0">
             <div>

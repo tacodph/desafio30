@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
+import { handleAccordionClick, scrollAccordionStart } from '@/lib/accordionScroll';
 import NutritionMaterialImage from '@/components/NutritionMaterialImage.vue';
 import NumberedRecipeImage from '@/components/NumberedRecipeImage.vue';
 import IllustratedRecipeCards from '@/components/IllustratedRecipeCards.vue';
-import NutriRecommendations from '@/components/NutriRecommendations.vue';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Head } from '@inertiajs/vue3';
 import { BadgeCheck, ChevronDown, Heart, Info, Lightbulb, LockKeyhole, Maximize2, Salad, Search, ShoppingCart, Snowflake, Wheat, Zap } from 'lucide-vue-next';
@@ -12,6 +12,20 @@ import { ref } from 'vue';
 const openMaterial = ref<string | null>(null);
 defineProps<{ recipeUnlock: { requiredDays: number; completedDays: number; unlocked: boolean } }>();
 const openRecipes = ref<string | null>(null);
+
+const toggleMaterial = (event: MouseEvent, id: string) => {
+    openMaterial.value = openMaterial.value === id ? null : id;
+    if (openMaterial.value === id) {
+        void scrollAccordionStart(event.currentTarget as HTMLElement, () => openMaterial.value === id);
+    }
+};
+
+const toggleRecipes = (event: MouseEvent, id: string) => {
+    openRecipes.value = openRecipes.value === id ? null : id;
+    if (openRecipes.value === id) {
+        void scrollAccordionStart(event.currentTarget as HTMLElement, () => openRecipes.value === id);
+    }
+};
 
 const yogurtMeals = [
     { title: 'Overnight oats', ingredients: 'Iogurte + aveia + fruta + castanhas.', viewBox: '20 106 142 146' },
@@ -248,14 +262,6 @@ const materials: Material[] = [
             'Pense nesses snacks como uma alternativa ocasional. No dia a dia, dê prioridade a refeições mais nutritivas e completas.',
         ],
     },
-    {
-        id: 'nutri-indica',
-        cover: '/images/alimentacao/nutri_indica/graoBico.jpeg',
-        title: 'A nutri indica!',
-        image: '',
-        tip: '',
-        combinations: [],
-    },
 ];
 </script>
 
@@ -265,7 +271,7 @@ const materials: Material[] = [
     <AppLayout :breadcrumbs="[
         { title: 'Cantinho da Nutri', href: '/cantinho-da-nutri' },
     ]">
-        <main class="mx-auto flex w-full max-w-5xl flex-col gap-6 p-4 md:p-6">
+        <main class="mx-auto flex w-full max-w-5xl flex-col gap-6 p-4 md:p-6" @click="handleAccordionClick">
             <header class="space-y-3">
                 <div class="eyebrow">Materiais e orientações</div>
                 <h1 class="display-title text-[clamp(36px,5vw,56px)] text-brand-gold">Cantinho da Nutri</h1>
@@ -278,7 +284,7 @@ const materials: Material[] = [
                         class="grid w-full grid-cols-[5rem_1fr_auto] items-center gap-3 rounded-xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold sm:grid-cols-[9rem_1fr_auto] sm:gap-6"
                         :aria-expanded="openMaterial === material.id"
                         :aria-controls="'combinations-' + material.id"
-                        @click="openMaterial = openMaterial === material.id ? null : material.id"
+                        @click="toggleMaterial($event, material.id)"
                     >
                         <img :src="material.cover" alt="" width="144" height="144" loading="lazy" decoding="async" class="aspect-square w-full rounded-xl object-cover" />
                         <span class="min-w-0 space-y-3">
@@ -323,10 +329,6 @@ const materials: Material[] = [
                                         <h2 class="flex shrink-0 items-center gap-2 font-display text-2xl font-black uppercase text-yellow-400"><BadgeCheck class="size-9 shrink-0" aria-hidden="true" />Boas opções:</h2>
                                         <p class="text-base leading-relaxed">Iogurtes naturais sem adição de açúcar, com versões integrais, desnatadas e zero lactose.</p>
                                     </aside>
-                                    <details class="rounded-xl border border-white/20 p-3">
-                                        <summary class="cursor-pointer text-sm font-bold text-yellow-400">Ver material original</summary>
-                                        <svg :viewBox="option.viewBox" width="1199" :height="option.height" role="img" :aria-label="option.title" overflow="hidden" class="mt-4 block h-auto w-full rounded-xl"><image href="/images/alimentacao/opcoes-iogurtes.png" width="1199" height="1312" /></svg>
-                                    </details>
                                 </DialogContent>
                             </Dialog>
                         </div>
@@ -367,10 +369,6 @@ const materials: Material[] = [
                                     <h2 class="shrink-0 font-display text-2xl font-black uppercase text-yellow-400">Dica final:</h2>
                                     <p class="text-sm leading-relaxed">Escolha o queijo de acordo com o seu objetivo, sua rotina e a composição da refeição, priorizando o equilíbrio entre proteína, gordura e calorias.</p>
                                 </aside>
-                                <details class="rounded-xl border border-white/20 p-3">
-                                    <summary class="cursor-pointer text-sm font-bold text-yellow-400">Ver material original</summary>
-                                    <NutritionMaterialImage :src="cheeseGuideImage" panel="left" alt="Queijos na rotina: como escolher e usar?" class="mx-auto mt-4 h-auto w-full max-w-2xl rounded-xl" />
-                                </details>
                             </DialogContent>
                         </Dialog>
 
@@ -440,13 +438,6 @@ const materials: Material[] = [
                                 </div>
                                 <p class="border-t border-black/60 pt-3 text-sm font-semibold leading-relaxed sm:border-l sm:border-t-0 sm:pl-4 sm:pt-0">As combinações são sugestões de preparações práticas e podem variar de acordo com a sua prescrição nutricional, seus objetivos e rotina.</p>
                             </aside>
-                            <Dialog>
-                                <DialogTrigger as-child><button type="button" class="flex items-center gap-2 text-sm font-bold text-yellow-400 underline"><Maximize2 class="size-4" aria-hidden="true" />Ver material original</button></DialogTrigger>
-                                <DialogContent class="max-h-[90dvh] w-[calc(100%_-_2rem)] max-w-3xl overflow-y-auto rounded-xl border-brand-line2 bg-brand-card text-brand-cream">
-                                    <DialogHeader><DialogTitle>Não gosto de ovos. O que posso colocar no lugar?</DialogTitle><DialogDescription>Material original com alternativas de proteína e seis combinações sem ovos.</DialogDescription></DialogHeader>
-                                    <NutritionMaterialImage :src="material.image" panel="right" alt="Alternativas de proteína e seis combinações práticas sem ovos" class="h-auto w-full rounded-xl" />
-                                </DialogContent>
-                            </Dialog>
                         </section>
 
                         <section v-else-if="material.id === 'gorduras'" class="space-y-5 rounded-2xl bg-[#151515] p-4 text-white sm:p-6" aria-label="Gorduras boas: por que incluir no seu dia a dia?">
@@ -486,13 +477,6 @@ const materials: Material[] = [
                                 <div class="flex shrink-0 items-center gap-3"><Info class="size-11 shrink-0 stroke-[2.5]" aria-hidden="true" /><strong class="font-display text-2xl font-black uppercase leading-tight">Dica<br />importante:</strong></div>
                                 <p class="border-t border-black/60 pt-3 text-sm font-semibold leading-relaxed sm:border-l sm:border-t-0 sm:pl-4 sm:pt-0">Para aproveitar os benefícios dessas gorduras, reduza o excesso de óleo no preparo das refeições (use apenas o mínimo necessário) e dê preferência a essas fontes de melhor qualidade ao longo do dia.</p>
                             </aside>
-                            <Dialog>
-                                <DialogTrigger as-child><button type="button" class="flex items-center gap-2 text-sm font-bold text-yellow-400 underline"><Maximize2 class="size-4" aria-hidden="true" />Ver material original</button></DialogTrigger>
-                                <DialogContent class="max-h-[90dvh] w-[calc(100%_-_2rem)] max-w-4xl overflow-y-auto rounded-xl border-brand-line2 bg-brand-card text-brand-cream">
-                                    <DialogHeader><DialogTitle>Gorduras boas: por que incluir no seu dia a dia?</DialogTitle><DialogDescription>Material original com as cinco fontes de gordura, formas de uso e quantidades.</DialogDescription></DialogHeader>
-                                    <img :src="material.image" alt="Gorduras boas: castanhas e oleaginosas, mix de sementes, abacate, coco e cacau em pó." class="h-auto w-full rounded-xl" />
-                                </DialogContent>
-                            </Dialog>
                         </section>
 
                         <section v-else-if="material.id === 'pao'" class="space-y-5 rounded-2xl bg-[#1b1915] p-4 text-white sm:p-6" aria-label="Como escolher o melhor pão integral">
@@ -549,13 +533,6 @@ const materials: Material[] = [
                                 <h4 class="flex shrink-0 items-center gap-3 bg-yellow-400 p-5 font-display text-2xl font-black uppercase leading-tight text-black"><Info class="size-12 shrink-0" aria-hidden="true" />Importante<br />saber</h4>
                                 <div class="grid gap-4 p-5 md:grid-cols-3"><p v-for="paragraph in breadImportant" :key="paragraph" class="border-t border-yellow-400/50 pt-3 text-sm leading-relaxed first:border-0 first:pt-0 md:border-l md:border-t-0 md:pl-4 md:pt-0">{{ paragraph }}</p></div>
                             </aside>
-                            <Dialog>
-                                <DialogTrigger as-child><button type="button" class="flex items-center gap-2 text-sm font-bold text-yellow-400 underline"><Maximize2 class="size-4" aria-hidden="true" />Ver material original</button></DialogTrigger>
-                                <DialogContent class="max-h-[90dvh] w-[calc(100%_-_2rem)] max-w-4xl overflow-y-auto rounded-xl border-brand-line2 bg-brand-card text-brand-cream">
-                                    <DialogHeader><DialogTitle>Como escolher o melhor pão?</DialogTitle><DialogDescription>Material original com orientações para ler os rótulos e escolher o pão integral.</DialogDescription></DialogHeader>
-                                    <img :src="material.image" alt="Como escolher o melhor pão: cinco orientações, exemplo de ingredientes e opções integrais." class="h-auto w-full rounded-xl" />
-                                </DialogContent>
-                            </Dialog>
                         </section>
 
                         <section v-else-if="material.id === 'aveia'" class="space-y-5 rounded-2xl bg-[#1b1915] p-4 text-white sm:p-6" aria-label="Comprei aveia. Como usar?">
@@ -604,13 +581,6 @@ const materials: Material[] = [
                                     <p class="border-t border-black/60 pt-3 text-sm font-semibold leading-relaxed sm:border-l sm:border-t-0 sm:pl-4 sm:pt-0">As porções e combinações podem variar de acordo com a sua prescrição individual e seus objetivos.</p>
                                 </aside>
                             </div>
-                            <Dialog>
-                                <DialogTrigger as-child><button type="button" class="flex items-center gap-2 text-sm font-bold text-yellow-400 underline"><Maximize2 class="size-4" aria-hidden="true" />Ver material original</button></DialogTrigger>
-                                <DialogContent class="max-h-[90dvh] w-[calc(100%_-_2rem)] max-w-6xl overflow-y-auto rounded-xl border-brand-line2 bg-brand-card text-brand-cream">
-                                    <DialogHeader><DialogTitle>Comprei aveia. Como usar?</DialogTitle><DialogDescription>Material original com cinco combinações, orientações sobre fibras e dicas de consumo.</DialogDescription></DialogHeader>
-                                    <img :src="material.image" alt="Comprei aveia: cinco formas práticas de incluir na rotina, fibras, psyllium e dicas de consumo." class="h-auto w-full rounded-xl" />
-                                </DialogContent>
-                            </Dialog>
                         </section>
 
                         <section v-else-if="material.id === 'queijos'" class="space-y-5 rounded-2xl bg-[#1b1915] p-4 text-white sm:p-6" aria-label="Comprei queijos. Como usar?">
@@ -679,13 +649,6 @@ const materials: Material[] = [
                                 <h4 class="flex shrink-0 items-center gap-3 font-display text-2xl font-black uppercase text-yellow-400"><Lightbulb class="size-10 shrink-0" aria-hidden="true" />Dica:</h4>
                                 <p class="text-sm leading-relaxed">O whey é uma forma prática de aumentar a ingestão de proteína e pode ser usado em vitaminas, cremes e preparações do dia a dia.</p>
                             </aside>
-                            <Dialog>
-                                <DialogTrigger as-child><button type="button" class="flex items-center gap-2 text-sm font-bold text-yellow-400 underline"><Maximize2 class="size-4" aria-hidden="true" />Ver material original</button></DialogTrigger>
-                                <DialogContent class="max-h-[90dvh] w-[calc(100%_-_2rem)] max-w-5xl overflow-y-auto rounded-xl border-brand-line2 bg-brand-card text-brand-cream">
-                                    <DialogHeader><DialogTitle>Comprei whey protein. Como usar?</DialogTitle><DialogDescription>Cinco combinações práticas e saborosas com whey protein.</DialogDescription></DialogHeader>
-                                    <img :src="material.image" alt="Material original com cinco combinações de whey protein e dica de uso." class="h-auto w-full rounded-xl" />
-                                </DialogContent>
-                            </Dialog>
                         </section>
 
                         <section v-else-if="material.id === 'ovos'" class="space-y-5 rounded-2xl bg-[#1b1915] p-4 text-white sm:p-6" aria-label="Como variar os ovos?">
@@ -701,13 +664,6 @@ const materials: Material[] = [
                                 <h4 class="flex shrink-0 items-center gap-3 font-display text-2xl font-black uppercase text-yellow-400"><Lightbulb class="size-10 shrink-0" aria-hidden="true" />Dica:</h4>
                                 <p class="text-sm leading-relaxed">O ovo é uma proteína de alto valor biológico, versátil e prática. Combine com fontes de carboidrato (pão, aveia, tapioca) e vegetais para refeições mais completas.</p>
                             </aside>
-                            <Dialog>
-                                <DialogTrigger as-child><button type="button" class="flex items-center gap-2 text-sm font-bold text-yellow-400 underline"><Maximize2 class="size-4" aria-hidden="true" />Ver material original</button></DialogTrigger>
-                                <DialogContent class="max-h-[90dvh] w-[calc(100%_-_2rem)] max-w-5xl overflow-y-auto rounded-xl border-brand-line2 bg-brand-card text-brand-cream">
-                                    <DialogHeader><DialogTitle>Como variar os ovos?</DialogTitle><DialogDescription>Cinco combinações práticas e saborosas com ovos.</DialogDescription></DialogHeader>
-                                    <img :src="material.image" alt="Material original com cinco combinações com ovos e dica de uso." class="h-auto w-full rounded-xl" />
-                                </DialogContent>
-                            </Dialog>
                         </section>
 
                         <section v-else-if="material.id === 'iogurte'" class="space-y-5 rounded-2xl bg-[#1b1915] p-4 text-white sm:p-6" aria-label="Comprei iogurte. Como usar?">
@@ -723,16 +679,8 @@ const materials: Material[] = [
                                 <h4 class="flex shrink-0 items-center gap-3 font-display text-2xl font-black uppercase text-yellow-400"><Lightbulb class="size-10 shrink-0" aria-hidden="true" />Dica:</h4>
                                 <p class="text-sm leading-relaxed">{{ material.tip }}</p>
                             </aside>
-                            <Dialog>
-                                <DialogTrigger as-child><button type="button" class="flex items-center gap-2 text-sm font-bold text-yellow-400 underline"><Maximize2 class="size-4" aria-hidden="true" />Ver material original</button></DialogTrigger>
-                                <DialogContent class="max-h-[90dvh] w-[calc(100%_-_2rem)] max-w-5xl overflow-y-auto rounded-xl border-brand-line2 bg-brand-card text-brand-cream">
-                                    <DialogHeader><DialogTitle>Comprei iogurte. Como usar?</DialogTitle><DialogDescription>Cinco combinações práticas e saborosas com iogurte.</DialogDescription></DialogHeader>
-                                    <img :src="material.image" alt="Material original com cinco combinações com iogurte e dica de consumo." class="h-auto w-full rounded-xl" />
-                                </DialogContent>
-                            </Dialog>
                         </section>
 
-                        <NutriRecommendations v-else-if="material.id === 'nutri-indica'" />
 
                         <Dialog v-else>
                             <DialogTrigger as-child>
@@ -755,7 +703,7 @@ const materials: Material[] = [
                         </Dialog>
 
                         <section v-if="material.combinations.length || material.id === 'pao'" class="surface-card p-4">
-                            <button type="button" :disabled="!recipeUnlock.unlocked" :aria-expanded="recipeUnlock.unlocked ? openRecipes === material.id : undefined" :aria-controls="recipeUnlock.unlocked ? 'recipes-' + material.id : undefined" class="flex w-full items-center justify-center gap-3 rounded-xl border border-brand-gold/40 bg-brand-gold/10 px-4 py-3 text-sm font-bold text-brand-gold disabled:cursor-not-allowed" @click="openRecipes = openRecipes === material.id ? null : material.id">
+                            <button type="button" :disabled="!recipeUnlock.unlocked" :aria-expanded="recipeUnlock.unlocked ? openRecipes === material.id : undefined" :aria-controls="recipeUnlock.unlocked ? 'recipes-' + material.id : undefined" class="flex w-full items-center justify-center gap-3 rounded-xl border border-brand-gold/40 bg-brand-gold/10 px-4 py-3 text-sm font-bold text-brand-gold disabled:cursor-not-allowed" @click="toggleRecipes($event, material.id)">
                                 <LockKeyhole v-if="!recipeUnlock.unlocked" class="size-5 shrink-0" aria-hidden="true" />
                                 <span>{{ material.id === 'pao' ? 'Sugestão de marcas' : material.id === 'whey' ? 'Como escolher o Whey e sugestão de marcas' : recipeUnlock.unlocked ? (openRecipes === material.id ? 'Fechar receitas desbloqueadas' : 'Ver receitas desbloqueadas') : `Receitas serão desbloqueadas após ${recipeUnlock.requiredDays} dias com os 5 objetivos cumpridos` }}</span>
                             </button>
