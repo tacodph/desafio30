@@ -2,7 +2,7 @@
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
 const props = defineProps<{
@@ -41,6 +41,7 @@ const send = () => form.post(route('admin.payment-reminders.store'), {
         <div class="mx-auto flex w-full max-w-4xl flex-col gap-5 p-4 md:p-6">
             <h1 class="display-title text-[clamp(32px,5vw,52px)]">Lembretes de pagamento</h1>
             <p class="text-sm text-brand-muted">Selecione os atletas com cobrança pendente e revise o e-mail antes de enviar.</p>
+            <p class="text-sm text-brand-muted">Os lembretes entram em uma fila e dependem do processador de filas para envio. <Link href="/admin/mensagens/emails?category=payment_reminder" class="font-bold text-brand-gold underline">Acompanhar histórico e resultado dos envios</Link>.</p>
             <p v-if="queued" role="status" class="surface-card p-4 text-sm text-brand-gold">
                 {{ queued }} {{ queued === 1 ? 'lembrete colocado' : 'lembretes colocados' }} na fila de envio.
             </p>

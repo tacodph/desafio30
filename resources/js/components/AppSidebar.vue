@@ -53,6 +53,7 @@ const mainNavItems = computed<NavGroupItem[]>(() => {
             { title: 'Monte seu prato (visualizar)', href: '/alimentacao/monte-seu-prato', icon: Salad },
             { title: 'Alimentação', icon: Salad, children: [
                 { title: 'Escolhendo melhor fora de casa', href: '/alimentacao/escolhendo-melhor-fora-de-casa' },
+                { title: 'Lidando com o fim de semana', href: '/alimentacao/lidando-com-o-fim-de-semana' },
             ] },
             { title: 'Cantinho da Nutri', icon: BookOpen, children: [
                 { title: 'Materiais e orientações', href: '/cantinho-da-nutri' },
@@ -61,6 +62,7 @@ const mainNavItems = computed<NavGroupItem[]>(() => {
             ] },
             { title: 'Pontuação', href: '/pontuacao', icon: Trophy },
             { title: 'Mensagens', icon: PartyPopper, children: [
+                { title: 'Histórico de emails', href: '/admin/mensagens/emails' },
                 { title: 'Confirmação da inscrição', href: '/admin/boas-vindas' },
                 { title: 'Boas-vindas com vídeo', href: '/admin/mensagens/boas-vindas-video' },
             ] },
@@ -75,9 +77,9 @@ const mainNavItems = computed<NavGroupItem[]>(() => {
             { title: 'Boas-vindas', icon: PartyPopper, children: [
                 { title: 'Mensagem de boas-vindas com vídeo', href: '/atleta/boas-vindas/video' },
                 { title: 'Entenda os objetivos', href: '/atleta/boas-vindas/objetivos' },
-                { title: 'Como aproveitar melhor esses dias', href: '/atleta/boas-vindas/aproveitar-melhor' },
+                { title: 'O desafio não termina em 30 dias.', href: '/atleta/boas-vindas/aproveitar-melhor' },
                 { title: 'Tutoriais', children: [
-                    { title: 'Adicionar Desafio na tela inicial', href: '/atleta/boas-vindas/tutoriais/tela-inicial' },
+                    { title: 'Adicionar o site à tela inicial do celular', href: '/atleta/boas-vindas/tutoriais/tela-inicial' },
                 ] },
             ] },
             {
@@ -97,6 +99,7 @@ const mainNavItems = computed<NavGroupItem[]>(() => {
                 { title: 'Lista de compras inteligente', href: '/objetivos/alimentacao/compras', disabled: !page.props.evolutionAccess?.pages.shopping },
                 { title: 'Monte seu prato', href: '/alimentacao/monte-seu-prato', disabled: !page.props.evolutionAccess?.pages.alimentacao },
                 { title: 'Escolhendo melhor fora de casa', href: '/alimentacao/escolhendo-melhor-fora-de-casa', disabled: !page.props.evolutionAccess?.pages.alimentacao },
+                { title: 'Lidando com o fim de semana', href: '/alimentacao/lidando-com-o-fim-de-semana', disabled: !page.props.evolutionAccess?.pages.alimentacao },
             ] },
             { title: 'Cantinho da Nutri', icon: BookOpen, children: [
                 { title: 'Materiais e orientações', href: '/cantinho-da-nutri', disabled: !page.props.evolutionAccess?.pages.nutri },

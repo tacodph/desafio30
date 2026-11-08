@@ -54,7 +54,7 @@ const onOpenChange = (value: boolean) => { if (!value) acknowledge(); };
                 <DialogDescription class="text-base font-bold text-brand-cream">Sua plataforma já está liberada!</DialogDescription>
             </DialogHeader>
             <section aria-label="Vídeo de boas-vindas" class="space-y-3">
-                <h2 class="font-bold text-brand-gold">Um recado da Helen para você ❤️</h2>
+                <h2 class="font-bold text-brand-gold">Um recado da nutri para você ❤️</h2>
                 <video v-if="open" controls playsinline preload="none" class="max-h-[55dvh] w-full rounded-xl bg-black" aria-label="Vídeo de boas-vindas ao Desafio da Virada">
                     <source src="/videos/boasVindas.mp4" type="video/mp4" />
                     Seu navegador não suporta a reprodução deste vídeo.

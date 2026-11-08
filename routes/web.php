@@ -73,6 +73,7 @@ Route::middleware(['auth', 'verified', 'challenge.paid'])->group(function () {
     Route::redirect('alimentacao/como-combinar', '/cantinho-da-nutri')->name('alimentacao.combinacoes');
     Route::get('alimentacao/monte-seu-prato', fn () => Inertia::render('MonteSeuPrato'))->middleware('challenge.feature:alimentacao')->name('alimentacao.prato');
     Route::get('alimentacao/escolhendo-melhor-fora-de-casa', fn () => Inertia::render('EscolhendoMelhorForaDeCasa'))->middleware('challenge.feature:alimentacao')->name('alimentacao.fora-de-casa');
+    Route::get('alimentacao/lidando-com-o-fim-de-semana', fn () => Inertia::render('LidandoComOFimDeSemana'))->middleware('challenge.feature:alimentacao')->name('alimentacao.fim-de-semana');
     Route::get('pontuacao', [DashboardController::class, 'scoring'])->name('pontuacao');
     Route::put('pontuacao', [DashboardController::class, 'updateScoring'])->name('pontuacao.update');
     Route::get('meus-objetivos/{goal}', function (string $goal) {
@@ -82,6 +83,7 @@ Route::middleware(['auth', 'verified', 'challenge.paid'])->group(function () {
     })->name('meus-objetivos.show');
     Route::get('admin/boas-vindas', [DashboardController::class, 'welcomePreview'])->name('admin.welcome.preview');
     Route::get('admin/mensagens/boas-vindas-video', [DashboardController::class, 'releaseWelcomePreview'])->name('admin.release-welcome.preview');
+    Route::get('admin/mensagens/emails', [\App\Http\Controllers\EmailLogController::class, 'index'])->name('admin.email-logs');
     Route::get('admin/liberacoes', [ChallengeAccessController::class, 'show'])->name('admin.challenge-access');
     Route::patch('admin/liberacoes/atleta', [ChallengeAccessController::class, 'updateAthlete'])->middleware('throttle:6,1')->name('admin.challenge-access.athlete');
     Route::put('admin/liberacoes', [ChallengeAccessController::class, 'update'])->middleware('throttle:6,1')->name('admin.challenge-access.update');

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
 import CantinhoDaNutri from '@/components/CantinhoDaNutri.vue';
-import { GOALS, useChallenge } from '@/composables/useChallenge';
+import { useChallenge } from '@/composables/useChallenge';
 import { images } from '@/data/images';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/vue3';
@@ -35,16 +35,6 @@ const { countdown, milestones } = useChallenge();
                 <p class="max-w-xl text-brand-muted">
                     {{ countdown.label }}. Cinco objetivos, de 9 de novembro a 8 de dezembro.
                 </p>
-            </div>
-
-            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-                <Link v-for="goal in GOALS" :key="goal.key" :href="goal.key === 'plus' ? route('objetivo.luxo') : route('objetivos.show', goal.key)" class="surface-card flex items-center gap-4 p-5 sm:flex-col sm:items-start sm:gap-3">
-                    <img :src="goal.icon" alt="" class="size-16 shrink-0 sm:size-14" />
-                    <div class="flex min-w-0 flex-col gap-1 sm:gap-3">
-                        <span class="font-display text-2xl font-extrabold leading-none" :style="{ color: goal.color }">{{ goal.metric }}</span>
-                        <span class="font-display text-lg font-bold uppercase leading-tight">{{ goal.title }}</span>
-                    </div>
-                </Link>
             </div>
 
             <div class="grid grid-cols-2 gap-3 md:grid-cols-4">

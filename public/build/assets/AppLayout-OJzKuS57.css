@@ -1,0 +1,1 @@
+.release-confetti[data-v-071ec88d]{position:absolute;top:-1rem;width:.5rem;height:.75rem;animation:release-confetti-fall-071ec88d linear forwards}@keyframes release-confetti-fall-071ec88d{to{transform:translate(var(--drift),calc(100dvh + 2rem)) rotate(720deg);opacity:0}}@media (prefers-reduced-motion: reduce){.release-confetti[data-v-071ec88d]{animation:none;display:none}}

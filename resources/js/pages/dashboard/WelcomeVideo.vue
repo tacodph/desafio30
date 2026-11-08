@@ -15,7 +15,7 @@ const showMessage = () => { replay.value = true; replayKey.value++; };
     <AppLayout :breadcrumbs="[{ title: 'Boas-vindas', href: '/atleta/boas-vindas/video' }, { title: 'Mensagem com vídeo', href: '/atleta/boas-vindas/video' }]">
         <main class="mx-auto flex w-full max-w-3xl flex-col gap-5 p-4 md:p-8">
             <div class="eyebrow">Boas-vindas</div>
-            <h1 class="text-3xl font-black text-brand-gold">Um recado da Helen para você ❤️</h1>
+            <h1 class="text-3xl font-black text-brand-gold">Um recado da nutri para você ❤️</h1>
             <p class="text-brand-muted">Reveja o vídeo e a mensagem de boas-vindas ao Desafio da Virada sempre que quiser.</p>
             <section class="surface-card space-y-4 p-6">
                 <h2 class="text-xl font-bold">Que venham nossos 30 dias!</h2>

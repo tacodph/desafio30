@@ -458,7 +458,7 @@ const chipClass = (active: boolean) =>
                 </div>
                 <label v-if="!done.strength || entry.details.manual.strength" class="flex min-h-9 items-center gap-2.5 text-xs text-brand-muted">
                     <input :checked="entry.details.manual.strength" type="checkbox" class="size-5 shrink-0 accent-brand-gold" @change="toggleGoal('strength', ($event.target as HTMLInputElement).checked)" />
-                    Meta atingida
+                    <span class="leading-relaxed">Meta atingida (Seguiu o planejamento alimentar hoje? Fez as refeições programadas e boas escolhas alimentares ao longo do dia?)</span>
                 </label>
                 <div v-if="showAthleteControls" class="flex flex-wrap items-center gap-x-3 gap-y-1">
                     <button type="button" class="flex min-h-9 w-fit items-center gap-1.5 text-sm font-semibold text-brand-gold disabled:opacity-60" :disabled="mealUploading" @click="mealInput?.click()">

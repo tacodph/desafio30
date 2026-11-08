@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\UserRole;
 use App\Jobs\SendPendingPaymentReminder;
 use App\Models\User;
+use App\Models\EmailLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -48,9 +49,16 @@ class PaymentReminderController extends Controller
             throw ValidationException::withMessages(['athlete_ids' => 'A lista de pagamentos pendentes mudou. Confira os atletas selecionados antes de enviar.']);
         }
 
-        DB::transaction(function () use ($eligibleIds, $data) {
+        DB::transaction(function () use ($eligibleIds, $data, $request) {
             foreach ($eligibleIds as $id) {
-                SendPendingPaymentReminder::dispatch($id, $data['subject'], $data['body']);
+                $athlete = User::findOrFail($id);
+                $log = EmailLog::create([
+                    'actor_id' => $request->user()->id, 'category' => 'payment_reminder',
+                    'recipient_email' => $athlete->email,
+                    'recipients' => ['to' => [['email' => $athlete->email, 'name' => $athlete->name]]],
+                    'subject' => $data['subject'], 'body_text' => $data['body'], 'status' => 'queued',
+                ]);
+                SendPendingPaymentReminder::dispatch($id, $data['subject'], $data['body'], $log->id)->afterCommit();
             }
         });
 

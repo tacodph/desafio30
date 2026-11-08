@@ -10,7 +10,7 @@ import { type DayDetails, type DayGoals } from '@/data/dayLog';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
-import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, onBeforeUnmount, ref, watch } from 'vue';
 
 type Day = {
     day: number;
@@ -230,14 +230,30 @@ const weekParts = [
     { key: 'goals_bonus', label: 'Metas', description: 'Pontos pelas metas de alimentação, movimento, hidratação e sono.' },
 ] as const;
 
+const commentedAchievementId = ref<number | null>(null);
+const restoreCommentPosition = async (event: Event) => {
+    if (commentedAchievementId.value === null) return;
+    event.preventDefault();
+    const id = commentedAchievementId.value;
+    commentedAchievementId.value = null;
+    await nextTick();
+    const achievement = document.getElementById(`achievement-${id}`);
+    achievement?.focus({ preventScroll: true });
+    achievement?.scrollIntoView({ block: 'center', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+};
+
 const saveComment = () => {
     if (!commenting.value) {
         return;
     }
 
-    commentForm.put(route('athlete.achievements.comment', commenting.value.id), {
+    const id = commenting.value.id;
+    commentForm.put(route('athlete.achievements.comment', id), {
         preserveScroll: true,
+        preserveState: true,
         onSuccess: () => {
+            localTab.value = 'conquistas';
+            commentedAchievementId.value = id;
             commenting.value = null;
         },
     });
@@ -394,6 +410,8 @@ const saveComment = () => {
                     <article
                         v-for="item in achievements.filter((entry) => entry.type === card.type)"
                         :key="item.id"
+                        :id="`achievement-${item.id}`"
+                        tabindex="-1"
                         class="grid gap-2 border-t border-brand-line2 pt-3"
                     >
                         <div class="flex items-start justify-between gap-4">
@@ -490,7 +508,7 @@ const saveComment = () => {
         </div>
 
         <Dialog :open="commenting !== null" @update:open="(open) => !open && (commenting = null)">
-            <DialogContent class="border-brand-line2 bg-brand-card text-brand-cream">
+            <DialogContent class="border-brand-line2 bg-brand-card text-brand-cream" @close-auto-focus="restoreCommentPosition">
                 <DialogHeader>
                     <DialogTitle>Comentário de {{ nutriName }}</DialogTitle>
                     <DialogDescription class="text-brand-muted">{{ commenting?.detail }}</DialogDescription>

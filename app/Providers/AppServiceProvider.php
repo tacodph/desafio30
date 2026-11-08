@@ -11,7 +11,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->extend('mail.manager', fn ($manager, $app) => new \App\Mail\AuditedMailManager($app));
     }
 
     /**
