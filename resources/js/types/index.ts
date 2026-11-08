@@ -15,7 +15,7 @@ export interface NavItem {
     icon?: LucideIcon;
     isActive?: boolean;
     disabled?: boolean;
-    children?: { title: string; href: string; disabled?: boolean }[];
+    children?: NavGroupItem[];
 }
 
 export interface NavGroupItem extends Omit<NavItem, 'href'> {

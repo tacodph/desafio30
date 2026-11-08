@@ -135,6 +135,13 @@ class DashboardController extends Controller
         return Inertia::render('dashboard/BoasVindas', ['adminPreview' => true]);
     }
 
+    public function releaseWelcomePreview(Request $request): Response
+    {
+        $this->abortUnless($request, UserRole::Administrador);
+
+        return Inertia::render('dashboard/ReleaseWelcomePreview');
+    }
+
     public function payments(Request $request, AsaasClient $asaas): Response
     {
         $role = $this->role($request);

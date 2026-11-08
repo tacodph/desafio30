@@ -59,6 +59,8 @@ class HandleInertiaRequests extends Middleware
                 ];
             },
             'accessNotice' => fn () => $request->session()->get('access_notice'),
+            'showReleaseWelcome' => fn () => ! $request->user()?->release_welcome_acknowledged_at
+                && \App\Support\ReleaseWelcome::available($request->user()),
             'name' => config('app.name'),
             'quote' => ['message' => trim($message), 'author' => trim($author)],
             'auth' => [

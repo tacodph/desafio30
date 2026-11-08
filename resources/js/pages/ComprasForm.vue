@@ -2,6 +2,7 @@
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/vue3';
+import { ChevronDown } from 'lucide-vue-next';
 import { ref } from 'vue';
 
 const props = defineProps<{
@@ -109,8 +110,12 @@ const save = () => {
                 <p v-if="form.errors.week" class="m-0 text-sm text-red-300">{{ form.errors.week }}</p>
             </div>
 
-            <section v-for="section in catalog" :key="section.title" class="surface-card flex flex-col gap-6 p-4 sm:p-6">
-                <h2 class="text-xl font-black">{{ section.title }}</h2>
+            <details v-for="(section, sectionIndex) in catalog" :key="section.title" name="shopping-foods" :open="sectionIndex === 0" class="surface-card group/food overflow-hidden">
+                <summary class="flex cursor-pointer list-none items-center justify-between gap-3 p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#43A047] sm:p-6 [&::-webkit-details-marker]:hidden">
+                    <h2 class="text-xl font-black">{{ section.title }}</h2>
+                    <ChevronDown class="size-5 shrink-0 text-[#43A047] transition-transform group-open/food:rotate-180" aria-hidden="true" />
+                </summary>
+                <div class="flex flex-col gap-6 border-t border-brand-line p-4 sm:p-6">
                 <div
                     v-for="group in section.groups.filter((item) => item.items.length || item.notes.length)"
                     :key="section.title + group.title"
@@ -137,7 +142,8 @@ const save = () => {
                     </div>
                     <p v-for="note in group.notes" :key="note" class="text-sm leading-relaxed text-brand-cream/70">{{ note }}</p>
                 </div>
-            </section>
+                </div>
+            </details>
 
             <div class="sticky bottom-0 z-10 -mx-4 -mb-4 flex flex-wrap gap-3 border-t border-brand-line bg-background/95 px-4 py-3 backdrop-blur md:static md:mx-0 md:mb-0 md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none">
                 <button type="submit" class="rounded-full bg-[#43A047] px-5 py-3 text-sm font-bold text-white disabled:opacity-60" :disabled="form.processing">

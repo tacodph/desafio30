@@ -28,7 +28,7 @@ const objective = (goal: string) => ({ title: 'Lembre as regras', href: `/meus-o
 const evolutionChildren = computed(() => {
     const allowed = page.props.evolutionAccess?.pages ?? {};
     return [
-        { title: 'Dias', href: '/atleta/evolucao/dias', feature: 'dias' },
+        { title: 'Check in do dia', href: '/atleta/evolucao/dias', feature: 'dias' },
         { title: 'Conquistas', href: '/atleta/evolucao/conquistas', feature: 'conquistas' },
         { title: 'Resumo', href: '/atleta/evolucao/resumo', feature: 'resumo' },
         { title: 'Pontuação', href: '/pontuacao', feature: 'dias' },
@@ -41,6 +41,7 @@ const mainNavItems = computed<NavGroupItem[]>(() => {
             { title: 'Painel', href: '/dashboard', icon: LayoutGrid },
             { title: 'Administração', icon: Settings, children: [
                 { title: 'Treinos', href: '/admin/treinos' },
+                { title: 'Dúvidas Frequentes', href: '/admin/duvidas-frequentes' },
             ] },
             { title: 'Usuários', href: '/admin/usuarios', icon: Users },
             { title: 'Pagamentos', href: '/admin/pagamentos', icon: ClipboardCheck },
@@ -50,9 +51,19 @@ const mainNavItems = computed<NavGroupItem[]>(() => {
             { title: 'Evolução (visualizar)', icon: ClipboardCheck, children: evolutionChildren.value },
             { title: 'Monte seu Cardápio (visualizar)', href: '/objetivos/alimentacao/compras', icon: Salad },
             { title: 'Monte seu prato (visualizar)', href: '/alimentacao/monte-seu-prato', icon: Salad },
-            { title: 'Cantinho da Nutri', href: '/cantinho-da-nutri', icon: BookOpen },
+            { title: 'Alimentação', icon: Salad, children: [
+                { title: 'Escolhendo melhor fora de casa', href: '/alimentacao/escolhendo-melhor-fora-de-casa' },
+            ] },
+            { title: 'Cantinho da Nutri', icon: BookOpen, children: [
+                { title: 'Materiais e orientações', href: '/cantinho-da-nutri' },
+                { title: 'A nutri indica!', href: '/cantinho-da-nutri/a-nutri-indica' },
+                { title: 'Monitoramento 30 dias', href: '/cantinho-da-nutri/monitoramento' },
+            ] },
             { title: 'Pontuação', href: '/pontuacao', icon: Trophy },
-            { title: 'Mensagem de boas-vindas', href: '/admin/boas-vindas', icon: PartyPopper },
+            { title: 'Mensagens', icon: PartyPopper, children: [
+                { title: 'Confirmação da inscrição', href: '/admin/boas-vindas' },
+                { title: 'Boas-vindas com vídeo', href: '/admin/mensagens/boas-vindas-video' },
+            ] },
             { title: 'Liberações do desafio', href: '/admin/liberacoes', icon: Settings },
             { title: 'Configurações', href: '/settings/profile', icon: Settings },
         ];
@@ -61,6 +72,14 @@ const mainNavItems = computed<NavGroupItem[]>(() => {
     if (role.value === 'atleta') {
         return [
             { title: 'Painel', href: '/dashboard', icon: LayoutGrid },
+            { title: 'Boas-vindas', icon: PartyPopper, children: [
+                { title: 'Mensagem de boas-vindas com vídeo', href: '/atleta/boas-vindas/video' },
+                { title: 'Entenda os objetivos', href: '/atleta/boas-vindas/objetivos' },
+                { title: 'Como aproveitar melhor esses dias', href: '/atleta/boas-vindas/aproveitar-melhor' },
+                { title: 'Tutoriais', children: [
+                    { title: 'Adicionar Desafio na tela inicial', href: '/atleta/boas-vindas/tutoriais/tela-inicial' },
+                ] },
+            ] },
             {
                 title: 'Ponto de partida',
                 icon: Flag,
@@ -77,9 +96,12 @@ const mainNavItems = computed<NavGroupItem[]>(() => {
             { title: 'Alimentação', icon: Salad, children: [
                 { title: 'Lista de compras inteligente', href: '/objetivos/alimentacao/compras', disabled: !page.props.evolutionAccess?.pages.shopping },
                 { title: 'Monte seu prato', href: '/alimentacao/monte-seu-prato', disabled: !page.props.evolutionAccess?.pages.alimentacao },
+                { title: 'Escolhendo melhor fora de casa', href: '/alimentacao/escolhendo-melhor-fora-de-casa', disabled: !page.props.evolutionAccess?.pages.alimentacao },
             ] },
             { title: 'Cantinho da Nutri', icon: BookOpen, children: [
                 { title: 'Materiais e orientações', href: '/cantinho-da-nutri', disabled: !page.props.evolutionAccess?.pages.nutri },
+                { title: 'A nutri indica!', href: '/cantinho-da-nutri/a-nutri-indica', disabled: !page.props.evolutionAccess?.pages.nutri },
+                { title: 'Monitoramento 30 dias', href: '/cantinho-da-nutri/monitoramento', disabled: !page.props.evolutionAccess?.pages.nutri },
             ] },
             { title: 'Treino', icon: Dumbbell, children: [objective('treino')] },
             { title: 'Hidratação', icon: Droplets, children: [objective('hidratacao')] },
@@ -133,6 +155,7 @@ const mainNavItems = computed<NavGroupItem[]>(() => {
         </SidebarContent>
 
         <SidebarFooter>
+            <NavMain :items="[{ title: 'Dúvidas Frequentes', href: '/ajuda/duvidas-frequentes', icon: BookOpen }, { title: 'Suporte', href: '/suporte', icon: Mail }]" label="Ajuda" />
             <NavUser />
         </SidebarFooter>
     </Sidebar>

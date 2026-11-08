@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { SidebarGroup, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem } from '@/components/ui/sidebar';
+import { SidebarGroup, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
+import NavSubItems from '@/components/NavSubItems.vue';
 import { type NavGroupItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
 import { ChevronRight, LockKeyhole } from 'lucide-vue-next';
@@ -18,7 +19,7 @@ withDefaults(
 const page = usePage<SharedData>();
 
 const isCurrent = (href: string) => page.url === href || page.url.startsWith(`${href}/`) || page.url.startsWith(`${href}?`);
-const hasActiveChild = (item: NavGroupItem) => item.children?.some((child) => isCurrent(child.href)) ?? false;
+const hasActiveChild = (item: NavGroupItem): boolean => item.children?.some((child) => Boolean(child.href && isCurrent(child.href)) || hasActiveChild(child)) ?? false;
 </script>
 
 <template>
@@ -37,19 +38,7 @@ const hasActiveChild = (item: NavGroupItem) => item.children?.some((child) => is
                             </SidebarMenuButton>
                         </CollapsibleTrigger>
                         <CollapsibleContent>
-                            <SidebarMenuSub>
-                                <SidebarMenuSubItem v-for="child in item.children" :key="child.href">
-                                    <SidebarMenuSubButton v-if="child.disabled" as="button" type="button" disabled aria-disabled="true" title="Acesso ainda não liberado" class="opacity-50">
-                                        <span>{{ child.title }}</span>
-                                        <LockKeyhole class="ml-auto size-3.5" aria-hidden="true" />
-                                    </SidebarMenuSubButton>
-                                    <SidebarMenuSubButton v-else as-child :is-active="isCurrent(child.href)">
-                                        <Link :href="child.href">
-                                            <span>{{ child.title }}</span>
-                                        </Link>
-                                    </SidebarMenuSubButton>
-                                </SidebarMenuSubItem>
-                            </SidebarMenuSub>
+                            <NavSubItems :items="item.children" />
                         </CollapsibleContent>
                     </SidebarMenuItem>
                 </Collapsible>

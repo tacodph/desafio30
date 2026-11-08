@@ -51,6 +51,46 @@ class AthleteProgressController extends Controller
         return to_route('dashboard');
     }
 
+    public function acknowledgeReleaseWelcome(Request $request): RedirectResponse
+    {
+        abort_unless(\App\Support\ReleaseWelcome::available($request->user()), 403);
+
+        User::query()->whereKey($request->user()->id)
+            ->whereNull('release_welcome_acknowledged_at')
+            ->update(['release_welcome_acknowledged_at' => now()]);
+        $request->user()->refresh();
+
+        return back();
+    }
+
+    public function welcomeVideo(Request $request): Response
+    {
+        $this->abortUnlessAthlete($request);
+
+        return Inertia::render('dashboard/WelcomeVideo');
+    }
+
+    public function welcomeObjectives(Request $request): Response
+    {
+        $this->abortUnlessAthlete($request);
+
+        return Inertia::render('dashboard/WelcomeObjectives');
+    }
+
+    public function welcomeTips(Request $request): Response
+    {
+        $this->abortUnlessAthlete($request);
+
+        return Inertia::render('dashboard/WelcomeTips');
+    }
+
+    public function homeScreenTutorial(Request $request): Response
+    {
+        $this->abortUnlessAthlete($request);
+
+        return Inertia::render('dashboard/HomeScreenTutorial');
+    }
+
     public function firstDay(Request $request): Response|RedirectResponse
     {
         $this->abortUnlessAthlete($request);
@@ -160,6 +200,39 @@ class AthleteProgressController extends Controller
             'waterMinimum' => DayLog::waterMinimumLiters($request->user()->athleteProfile?->weight),
         ]);
     }
+    public function monitoring(Request $request): Response
+    {
+        $payload = ChallengeSheet::payload($request->user());
+
+        return Inertia::render('dashboard/Monitoramento', [
+            'days' => $payload['days'],
+            'goals' => $payload['goals'],
+            'weeklySkills' => $payload['weeklySkills'],
+            'startDate' => ChallengeSheet::START,
+        ]);
+    }
+
+    public function nutritionMaterials(Request $request): Response
+    {
+        $user = $request->user();
+        $completedDays = 0;
+
+        if ($user->isAthlete()) {
+            $lastDay = min(ChallengeSheet::TOTAL_DAYS, ChallengeSheet::dayOn(Carbon::today(ChallengeAccess::TIMEZONE)));
+            $completedDays = $user->checkins()->whereBetween('day', [1, $lastDay])->get()
+                ->filter(fn (Checkin $checkin) => ! in_array(false, DayLog::achieved(ChallengeSheet::detailsFor($checkin), $user->athleteProfile), true))
+                ->count();
+        }
+
+        return Inertia::render('ComoCombinarAlimentos', [
+            'recipeUnlock' => [
+                'requiredDays' => 7,
+                'completedDays' => $completedDays,
+                'unlocked' => ! $user->isAthlete() || $completedDays >= 7,
+            ],
+        ]);
+    }
+
     public function show(Request $request, string $tab): Response|RedirectResponse
     {
         if ($request->user()->userType?->name === UserRole::Administrador->value) {

@@ -53,11 +53,12 @@ const navLinks = [
     { href: '#mindset', label: 'Mindset' },
     { href: '#nutri', label: 'Nutri' },
     { href: '#parceiros', label: 'Parceiros' },
+    { href: '/ajuda/duvidas-frequentes', label: 'Dúvidas Frequentes' },
 ];
 </script>
 
 <template>
-    <Head title="A gente cresce junto" />
+    <Head title="Desafio da Virada" />
 
     <div class="min-h-screen overflow-x-hidden bg-brand-ink text-brand-cream">
         <header class="sticky top-0 z-20 border-b border-brand-line bg-brand-ink/88 backdrop-blur-[10px]">
@@ -509,6 +510,10 @@ const navLinks = [
                     <span class="font-display text-xl font-extrabold italic leading-tight text-brand-gold">30 dias.</span>
                     <span class="mt-1 text-sm font-bold text-brand-muted-2">9 nov → 8 dez</span>
                 </div>
+            </div>
+            <div class="flex flex-wrap gap-5">
+                <Link href="/ajuda/duvidas-frequentes" class="text-sm font-semibold text-brand-gold hover:underline">Dúvidas Frequentes</Link>
+                <Link href="/suporte" class="text-sm font-semibold text-brand-gold hover:underline">Precisa de ajuda? Fale com o suporte</Link>
             </div>
             <span class="text-sm font-semibold text-brand-muted-2">#DesafiodaVirada #30Dias #5Objetivos #AGenteCresceJunto</span>
         </footer>

@@ -73,7 +73,7 @@ type Tab = 'dias' | 'conquistas' | 'resumo';
 const showAthleteControls = computed(() => props.canEdit || props.adminPreview);
 
 const tabs: [Tab, string][] = [
-    ['dias', 'Dias'],
+    ['dias', 'Check in do dia'],
     ['conquistas', 'Conquistas'],
     ['resumo', 'Resumo'],
 ];

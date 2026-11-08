@@ -1,0 +1,1 @@
+import{i as e}from"./images-iAp925If.js";import{d as o,c as a,o as r,H as t,u as n}from"./app-Dfwuhv0o.js";const c=["src"],_=o({inheritAttrs:!1,__name:"AppLogoIcon",props:{className:{}},setup(i){return(s,m)=>(r(),a("img",t({src:n(e).logo,alt:"Desafio 30 Dias",class:[s.className,"object-contain"]},s.$attrs),null,16,c))}});export{_};

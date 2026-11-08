@@ -58,6 +58,7 @@ class User extends Authenticatable
             'challenge_paid_at' => 'datetime',
             'challenge_early_access' => 'boolean',
             'welcome_acknowledged_at' => 'datetime',
+            'release_welcome_acknowledged_at' => 'datetime',
             'challenge_courtesy_at' => 'datetime',
             'password' => 'hashed',
         ];

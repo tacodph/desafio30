@@ -14,7 +14,7 @@ defineProps<Props>();
     </div>
     <div class="ml-1 grid flex-1 text-left text-sm">
         <span class="font-display mb-0.5 truncate text-base font-extrabold italic uppercase leading-none tracking-wide">
-            Desafio <span class="text-brand-gold">30</span> Dias
+            Desafio <span class="text-brand-gold">da Virada</span>
         </span>
     </div>
 </template>
