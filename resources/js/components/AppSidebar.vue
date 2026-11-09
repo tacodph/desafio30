@@ -76,6 +76,7 @@ const mainNavItems = computed<NavGroupItem[]>(() => {
             { title: 'Painel', href: '/dashboard', icon: LayoutGrid },
             { title: 'Boas-vindas', icon: PartyPopper, children: [
                 { title: 'Mensagem de boas-vindas com vídeo', href: '/atleta/boas-vindas/video' },
+                { title: 'Como funciona a plataforma', href: '/atleta/boas-vindas/plataforma' },
                 { title: 'Entenda os objetivos', href: '/atleta/boas-vindas/objetivos' },
                 { title: 'O desafio não termina em 30 dias.', href: '/atleta/boas-vindas/aproveitar-melhor' },
                 { title: 'Tutoriais', children: [

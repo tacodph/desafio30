@@ -109,6 +109,7 @@ Route::middleware(['auth', 'verified', 'challenge.paid'])->group(function () {
     Route::get('atleta/boas-vindas', [AthleteProgressController::class, 'welcome'])->name('athlete.welcome');
     Route::get('atleta/boas-vindas/video', [AthleteProgressController::class, 'welcomeVideo'])->name('athlete.welcome.video');
     Route::get('atleta/boas-vindas/objetivos', [AthleteProgressController::class, 'welcomeObjectives'])->name('athlete.welcome.objectives');
+    Route::get('atleta/boas-vindas/plataforma', [AthleteProgressController::class, 'welcomePlatform'])->name('athlete.welcome.platform');
     Route::get('atleta/boas-vindas/aproveitar-melhor', [AthleteProgressController::class, 'welcomeTips'])->name('athlete.welcome.tips');
     Route::get('atleta/boas-vindas/tutoriais/tela-inicial', [AthleteProgressController::class, 'homeScreenTutorial'])->name('athlete.tutorial.home-screen');
     Route::post('atleta/boas-vindas', [AthleteProgressController::class, 'acknowledgeWelcome'])->name('athlete.welcome.acknowledge');

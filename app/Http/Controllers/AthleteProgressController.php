@@ -77,6 +77,13 @@ class AthleteProgressController extends Controller
         return Inertia::render('dashboard/WelcomeObjectives');
     }
 
+    public function welcomePlatform(Request $request): Response
+    {
+        $this->abortUnlessAthlete($request);
+
+        return Inertia::render('dashboard/WelcomePlatform');
+    }
+
     public function welcomeTips(Request $request): Response
     {
         $this->abortUnlessAthlete($request);
