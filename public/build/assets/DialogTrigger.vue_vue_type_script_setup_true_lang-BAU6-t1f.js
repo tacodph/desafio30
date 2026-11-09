@@ -1,0 +1,1 @@
+import{r}from"./Button.vue_vue_type_script_setup_true_lang-Bp_fOqm4.js";import{d as s,i as t,o as n,u as p,l as i,p as l,w as c,K as u}from"./app-CQDRd85O.js";const _=s({__name:"DialogTrigger",props:{asChild:{type:Boolean},as:{}},setup(o){const a=o;return(e,m)=>(n(),t(p(r),i(l(a)),{default:c(()=>[u(e.$slots,"default")]),_:3},16))}});export{_};

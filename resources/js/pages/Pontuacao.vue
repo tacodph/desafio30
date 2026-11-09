@@ -46,19 +46,9 @@ const fieldClass = 'h-11 rounded-xl border border-brand-line2 bg-brand-card2 px-
                     <span class="text-sm leading-snug">{{ item.label }}</span>
                     <span class="font-display text-xl font-black text-brand-gold">+{{ item.points }}</span>
                 </div>
-            </section>
-
-            <section class="surface-card grid gap-4 p-5 sm:p-6">
-                <h2 class="font-display m-0 text-2xl font-extrabold uppercase">Bônus e conquistas</h2>
-                <template v-if="canEdit">
-                    <div v-for="item in form.bonus" :key="item.id" class="grid gap-3 border-b border-brand-line2 py-3 last:border-0 last:pb-0 sm:grid-cols-[1fr_6rem] sm:items-center">
-                        <input v-model="item.label" required maxlength="160" :class="fieldClass" />
-                        <input v-model.number="item.points" type="number" min="0" max="50" required :class="fieldClass + ' text-center font-display text-xl font-black text-brand-gold'" />
-                    </div>
-                </template>
-                <div v-else v-for="item in bonus" :key="item.id" class="flex items-baseline justify-between gap-4 border-b border-brand-line2 py-3 last:border-0 last:pb-0">
-                    <span class="text-sm leading-snug">{{ item.label }}</span>
-                    <span class="font-display text-xl font-black text-brand-gold">+{{ item.points }}</span>
+                <div class="flex items-baseline justify-between gap-4 border-t border-brand-line2 pt-3">
+                    <span class="text-sm leading-snug">Não usei refeição luxo essa semana</span>
+                    <span class="shrink-0 font-display text-xl font-black text-brand-gold">+5 pontos</span>
                 </div>
             </section>
 

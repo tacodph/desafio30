@@ -51,7 +51,7 @@ defineProps<{
                 <ProgressSummary :days="days" :weeks="weeks" />
             </section>
 
-            <section class="grid gap-4 md:grid-cols-2">
+            <section class="grid gap-4">
                 <div class="surface-card flex flex-col gap-3 p-5">
                     <div class="flex items-center justify-between gap-3">
                         <h2 class="m-0 font-display text-xl font-extrabold uppercase">Pontuação diária</h2>
@@ -61,15 +61,9 @@ defineProps<{
                         <span class="text-sm text-brand-muted">{{ item.label }}</span>
                         <span class="font-display font-black text-brand-gold">+{{ item.points }}</span>
                     </div>
-                </div>
-                <div class="surface-card flex flex-col gap-3 p-5">
-                    <div class="flex items-center justify-between gap-3">
-                        <h2 class="m-0 font-display text-xl font-extrabold uppercase">Bônus e conquistas</h2>
-                        <Link :href="route('pontuacao')" class="shrink-0 text-sm font-bold text-brand-gold hover:underline">Ver regras →</Link>
-                    </div>
-                    <div v-for="item in bonusScores" :key="item.id" class="flex items-baseline justify-between gap-3 border-b border-brand-line2 pb-2 last:border-0 last:pb-0">
-                        <span class="text-sm text-brand-muted">{{ item.label }}</span>
-                        <span class="font-display font-black text-brand-gold">+{{ item.points }}</span>
+                    <div class="flex items-baseline justify-between gap-3 border-t border-brand-line2 pt-2">
+                        <span class="text-sm text-brand-muted">Não usei refeição luxo essa semana</span>
+                        <span class="shrink-0 font-display font-black text-brand-gold">+5 pontos</span>
                     </div>
                 </div>
             </section>

@@ -8,7 +8,7 @@ import { CircleCheck, Maximize2 } from 'lucide-vue-next';
 const materials = [
     {
         title: 'Monte seu prato',
-        image: '/images/alimentacao/monteseuprato.jpeg',
+        image: '/images/alimentacao/pratoComPercentual.png',
         alt: 'Referência para montar o prato com 50% de vegetais, 25% de proteína magra e 25% de carboidrato.',
     },
     {
@@ -171,19 +171,7 @@ const tips = [
                         </ul>
                         <p class="text-base leading-relaxed text-white/85">Carboidrato: arroz e feijão, batata, batata-doce, inhame, macarrão, etc.</p>
                     </div>
-                    <svg viewBox="60 310 375 375" width="375" height="375" class="mx-auto h-auto w-full max-w-md" role="img" aria-label="50% de vegetais, 25% de proteína magra e 25% de carboidrato" overflow="hidden">
-                        <image :href="materials[0].image" width="488" height="1024" />
-                        <g fill="#facc15" stroke="#191919" stroke-width="2">
-                            <rect x="100" y="455" width="90" height="44" rx="13" />
-                            <rect x="295" y="395" width="90" height="44" rx="13" />
-                            <rect x="295" y="555" width="90" height="44" rx="13" />
-                        </g>
-                        <g fill="#101010" font-family="Arial, sans-serif" font-size="30" font-weight="900" text-anchor="middle" dominant-baseline="central">
-                            <text x="145" y="477">50%</text>
-                            <text x="340" y="417">25%</text>
-                            <text x="340" y="577">25%</text>
-                        </g>
-                    </svg>
+                    <img :src="materials[0].image" :alt="materials[0].alt" class="mx-auto h-auto w-full max-w-md rounded-xl" />
                 </div>
                 <aside class="rounded-2xl border border-yellow-400 p-5 text-center">
                     <h3 class="mb-2 flex items-center justify-center gap-2 text-xl font-black uppercase text-yellow-400"><CircleCheck class="size-7 shrink-0" /> Dica da nutri</h3>
