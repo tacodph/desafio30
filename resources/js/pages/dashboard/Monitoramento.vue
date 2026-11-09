@@ -73,12 +73,12 @@ const period = computed(() => `${props.days[0]?.date ?? ''} a ${props.days.at(-1
                     <a href="/cantinho-da-nutri/monitoramento/imprimir" target="_blank" rel="noopener noreferrer" class="rounded-xl border border-yellow-400 px-4 py-3 text-sm font-bold text-yellow-400 hover:bg-yellow-400/10">Versão para preencher à mão</a>
                 </div>
                 <div class="overflow-x-auto pb-2" tabindex="0" role="region" aria-label="Calendário de monitoramento dos 30 dias">
-                    <div class="min-w-[560px]">
-                        <div class="mb-2 grid grid-cols-7 gap-2">
+                    <div class="sm:min-w-[560px]">
+                        <div class="mb-2 hidden grid-cols-7 gap-2 sm:grid">
                             <div v-for="weekday in weekdays" :key="weekday" class="rounded-xl bg-yellow-400 py-3 text-center text-lg font-black uppercase text-black">{{ weekday }}</div>
                         </div>
-                        <div class="grid grid-cols-7 gap-2">
-                            <div v-for="(day, index) in calendar" :key="index" class="min-h-28 rounded-2xl p-3 sm:min-h-32" :class="!day ? 'bg-white/5' : day.day === 1 ? 'bg-emerald-200 text-black' : day.day === 15 ? 'bg-sky-200 text-black' : day.day === days.length ? 'bg-yellow-400 text-black' : 'bg-[#faf8f0] text-black'">
+                        <div class="grid grid-cols-1 gap-2 sm:grid-cols-7">
+                            <div v-for="(day, index) in calendar" :key="index" class="min-h-28 rounded-2xl p-3 sm:min-h-32" :class="!day ? 'hidden bg-white/5 sm:block' : day.day === 1 ? 'bg-emerald-200 text-black' : day.day === 15 ? 'bg-sky-200 text-black' : day.day === days.length ? 'bg-yellow-100 text-black' : 'bg-[#faf8f0] text-black'">
                                 <template v-if="day">
                                     <div class="flex items-start justify-between">
                                         <div><span class="text-3xl font-black leading-none">{{ day.number }}</span><span class="mt-1 block text-xs font-bold uppercase opacity-60">{{ day.month }}</span></div>
@@ -140,7 +140,9 @@ const period = computed(() => `${props.days[0]?.date ?? ''} a ${props.days.at(-1
                         <li v-for="(skills, index) in weeklySkills" :key="index"><span class="font-bold text-yellow-400">Semana {{ index + 1 }}:</span> {{ skills.filter(Boolean).join(', ') || 'Ainda não definida' }}</li>
                     </ul>
                 </div>
-                <p class="mt-5 text-sm text-white/70">Para registrar seus objetivos, acesse <Link href="/atleta/evolucao/dias" class="font-bold text-yellow-400 underline">Evolução → Check in do dia</Link>.</p>
+                <Link href="/atleta/evolucao/dias" class="mt-5 flex min-h-11 w-full items-center justify-center rounded-xl bg-yellow-400 px-5 py-3 text-center text-sm font-bold text-black hover:bg-yellow-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-yellow-400">
+                    Registrar objetivos no check-in do dia
+                </Link>
             </section>
         </main>
     </AppLayout>
