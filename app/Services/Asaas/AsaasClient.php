@@ -30,6 +30,11 @@ class AsaasClient
         return $this->send('GET', '/payments/'.$id);
     }
 
+    public function updatePaymentBillingType(string $id, string $billingType): array
+    {
+        return $this->send('PUT', '/payments/'.$id, ['billingType' => $billingType]);
+    }
+
     public function getBalance(): ?float
     {
         $balance = $this->send('GET', '/finance/balance')['balance'] ?? null;
@@ -49,9 +54,11 @@ class AsaasClient
 
         try {
             /** @var Response $response */
-            $response = $method === 'GET'
-                ? $request->get($path)
-                : $request->post($path, $data);
+            $response = match ($method) {
+                'GET' => $request->get($path),
+                'PUT' => $request->put($path, $data),
+                default => $request->post($path, $data),
+            };
         } catch (ConnectionException $e) {
             Log::warning('Asaas: falha de conexão', ['method' => $method, 'path' => $path]);
 

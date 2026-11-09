@@ -6,10 +6,13 @@ use App\Models\ChallengePayment;
 use App\Models\User;
 use App\Services\Asaas\AsaasClient;
 use App\Services\Asaas\AsaasException;
+use App\Support\ChallengeAccess;
 use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 use Throwable;
 
@@ -21,27 +24,46 @@ class ChallengePaymentService
      * Garante uma cobrança utilizável para o usuário: reaproveita a pendente dentro do prazo
      * e só cria outra se não houver. O CPF só é necessário quando o cliente ainda não existe no Asaas.
      */
-    public function ensureCharge(User $user, ?string $cpf = null): ChallengePayment
+    public function ensureCharge(User $user, ?string $cpf, string $billingType, bool $changeBillingType = false): ChallengePayment
     {
         try {
-            return Cache::lock('asaas-charge-user-'.$user->id, 30)->block(10, function () use ($user, $cpf) {
+            return Cache::lock('asaas-charge-user-'.$user->id, 30)->block(10, function () use ($user, $cpf, $billingType, $changeBillingType) {
                 $user->refresh();
 
                 $existing = $user->payments()->pending()->whereNotNull('asaas_payment_id')->latest('id')->first();
 
                 if ($existing) {
+                    if ($changeBillingType && $existing->billing_type !== $billingType) {
+                        $response = $this->asaas->updatePaymentBillingType($existing->asaas_payment_id, $billingType);
+
+                        return $this->applyStatus($existing, $response);
+                    }
+
                     return $existing;
                 }
 
-                return $this->createCharge($user, $cpf);
+                if ($changeBillingType) {
+                    throw ValidationException::withMessages(['asaas' => 'A cobrança já não está pendente. Atualize a página para conferir o pagamento.']);
+                }
+
+                return $this->createCharge($user, $cpf, $billingType);
             });
         } catch (LockTimeoutException $e) {
             throw new AsaasException('Outra geração de cobrança está em andamento.', previous: $e);
         }
     }
 
-    private function createCharge(User $user, ?string $cpf): ChallengePayment
+    private function createCharge(User $user, ?string $cpf, string $billingType): ChallengePayment
     {
+        $today = Carbon::today(ChallengeAccess::TIMEZONE);
+        $lastDueDate = Carbon::parse(config('desafio.payment_last_due_date'), ChallengeAccess::TIMEZONE);
+
+        if (ChallengeAccess::registrationIsClosed() || $today->gt($lastDueDate)) {
+            throw ValidationException::withMessages(['asaas' => 'O prazo para gerar pagamentos do Desafio da Virada terminou.']);
+        }
+
+        $dueDate = $today->addDays((int) config('desafio.payment_due_days', 3))->min($lastDueDate);
+
         if (! $user->asaas_customer_id) {
             if (! $cpf) {
                 throw new InvalidArgumentException('CPF é obrigatório para criar o cliente no Asaas.');
@@ -66,13 +88,13 @@ class ChallengePaymentService
             'uuid' => (string) Str::uuid(),
             'status' => ChallengePayment::PENDING,
             'value' => config('desafio.price'),
-            'due_date' => today()->addDays((int) config('desafio.payment_due_days', 3)),
+            'due_date' => $dueDate->toDateString(),
         ]);
 
         try {
             $payload = [
                 'customer' => $user->asaas_customer_id,
-                'billingType' => 'UNDEFINED',
+                'billingType' => $billingType,
                 'value' => (float) config('desafio.price'),
                 'dueDate' => $payment->due_date->format('Y-m-d'),
                 'description' => 'Inscrição - Desafio da Virada',

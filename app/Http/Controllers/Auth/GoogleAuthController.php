@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\UserType;
+use App\Support\ChallengeAccess;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\RedirectResponse;
@@ -89,6 +90,10 @@ class GoogleAuthController extends Controller
                 'email_verified_at' => $user->email_verified_at ?? now(),
             ])->save();
         } else {
+            if (ChallengeAccess::registrationIsClosed()) {
+                return to_route('login')->with('status', 'As inscrições para o Desafio da Virada foram encerradas.');
+            }
+
             $name = trim((string) ($profile['name'] ?? ''));
 
             $user = User::create([

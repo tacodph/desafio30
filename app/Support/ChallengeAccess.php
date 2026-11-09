@@ -11,6 +11,11 @@ class ChallengeAccess
 {
     public const TIMEZONE = 'America/Sao_Paulo';
 
+    public static function registrationIsClosed(): bool
+    {
+        return now()->gte(Carbon::parse(config('desafio.registration_closes_at'), self::TIMEZONE));
+    }
+
     public const MODES = ['calendar', 'manual', 'closed'];
 
     public const FEATURES = [

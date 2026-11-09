@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\UserType;
+use App\Support\ChallengeAccess;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,8 +22,12 @@ class RegisteredUserController extends Controller
     /**
      * Show the registration page.
      */
-    public function create(Request $request): Response
+    public function create(Request $request): Response|RedirectResponse
     {
+        if (ChallengeAccess::registrationIsClosed()) {
+            return to_route('login')->with('status', 'As inscrições para o Desafio da Virada foram encerradas.');
+        }
+
         return Inertia::render('auth/Register', [
             'status' => $request->session()->get('status'),
         ]);
@@ -35,6 +40,10 @@ class RegisteredUserController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        if (ChallengeAccess::registrationIsClosed()) {
+            return to_route('login')->with('status', 'As inscrições para o Desafio da Virada foram encerradas.');
+        }
+
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,

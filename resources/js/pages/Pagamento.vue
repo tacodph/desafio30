@@ -13,6 +13,7 @@ const props = defineProps<{
     payment: {
         state: PaymentState;
         dueDate: string | null;
+        billingType: string | null;
     };
 }>();
 
@@ -21,7 +22,9 @@ const asaasError = computed(() => (page.props.errors as Record<string, string> |
 
 const priceLabel = computed(() => props.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }));
 
-const form = useForm({ cpf: '' });
+const form = useForm({ cpf: '', billing_type: props.payment.billingType === 'CREDIT_CARD' ? 'CREDIT_CARD' : 'PIX' });
+const billingMethodLabels: Record<string, string> = { PIX: 'Pix', CREDIT_CARD: 'Cartão de crédito', BOLETO: 'Boleto' };
+const pendingMethodLabel = computed(() => billingMethodLabels[props.payment.billingType ?? ''] ?? 'Forma de pagamento a escolher');
 
 const maskCpf = (value: string) => {
     const d = value.replace(/\D/g, '').slice(0, 11);
@@ -35,7 +38,7 @@ const onCpfInput = (event: Event) => {
     form.cpf = maskCpf((event.target as HTMLInputElement).value);
 };
 
-const submit = () => {
+const submit = (changeBillingType = false) => {
     if (form.processing) return;
 
     // Abre a aba durante o clique para evitar bloqueios de pop-up após a requisição.
@@ -46,7 +49,7 @@ const submit = () => {
         checkout.document.body.textContent = 'Preparando seu pagamento no Asaas. Aguarde…';
     }
 
-    form.post(route('pagamento.store'), {
+    form.transform((data) => ({ ...data, change_billing_type: changeBillingType })).post(route('pagamento.store'), {
         preserveScroll: true,
         onSuccess: () => {
             if (props.payment.state === 'pendente') {
@@ -166,7 +169,17 @@ onBeforeUnmount(() => {
                     <p class="display-title m-0 text-[clamp(48px,8vw,80px)] font-extrabold italic leading-none">{{ priceLabel }}</p>
                     <p class="m-0 text-[20px] font-bold">Menos de R$ 2,70 por dia!</p>
                     <p class="m-0 text-[17px] font-bold leading-snug">Pagamento único para participar dos 30 dias.</p>
-                    <p class="m-0 max-w-[460px] text-[17px] font-semibold leading-snug">Pix, boleto ou cartão. Vence em {{ payment.dueDate }}.</p>
+                    <p class="m-0 max-w-[460px] text-[17px] font-semibold leading-snug">{{ pendingMethodLabel }}. Vence em {{ payment.dueDate }}.</p>
+                    <form class="flex flex-wrap items-end gap-3" @submit.prevent="submit(true)">
+                        <div class="flex flex-col gap-1.5">
+                            <label for="pending-billing-type" class="text-sm font-bold">Trocar forma de pagamento</label>
+                            <select id="pending-billing-type" v-model="form.billing_type" class="rounded-xl border-2 border-brand-ink/20 bg-white px-4 py-3 text-brand-ink">
+                                <option value="PIX">Pix</option>
+                                <option value="CREDIT_CARD">Cartão de crédito</option>
+                            </select>
+                        </div>
+                        <button type="submit" :disabled="form.processing || form.billing_type === payment.billingType" class="rounded-xl bg-brand-ink px-4 py-3 text-sm font-bold text-brand-cream disabled:opacity-60">{{ form.processing ? 'Atualizando…' : 'Atualizar e pagar' }}</button>
+                    </form>
                     <p class="m-0 text-sm font-semibold leading-relaxed">O Asaas abre em outra aba. Se a aba não abriu, clique em Pagar. Esta página acompanha a confirmação automaticamente.</p>
                     <div class="mt-2 flex flex-wrap items-center gap-4">
                         <a
@@ -189,7 +202,7 @@ onBeforeUnmount(() => {
                 </section>
 
                 <!-- Novo / vencido -->
-                <form v-else class="flex flex-col gap-4 rounded-[28px] bg-brand-gold px-7 py-8 text-brand-ink" @submit.prevent="submit">
+                <form v-else class="flex flex-col gap-4 rounded-[28px] bg-brand-gold px-7 py-8 text-brand-ink" @submit.prevent="submit()">
                     <h2 class="m-0 text-sm font-bold uppercase tracking-[2px]">SUA INSCRIÇÃO NO DESAFIO DA VIRADA</h2>
                     <p class="display-title m-0 text-[clamp(48px,8vw,80px)] font-extrabold italic leading-none">{{ priceLabel }}</p>
                     <p class="m-0 text-[20px] font-bold">Menos de R$ 2,70 por dia!</p>
@@ -197,6 +210,15 @@ onBeforeUnmount(() => {
                     <p v-if="payment.state === 'vencido'" class="m-0 max-w-[460px] text-[17px] font-semibold leading-snug">
                         Seu pagamento anterior venceu. Gere um novo para continuar.
                     </p>
+
+                    <div class="flex max-w-[360px] flex-col gap-1.5">
+                        <label for="billing-type" class="text-[15px] font-bold">Forma de pagamento</label>
+                        <select id="billing-type" v-model="form.billing_type" class="rounded-xl border-2 border-brand-ink/20 bg-white px-4 py-3 text-brand-ink">
+                            <option value="PIX">Pix</option>
+                            <option value="CREDIT_CARD">Cartão de crédito</option>
+                        </select>
+                        <InputError :message="form.errors.billing_type" />
+                    </div>
 
                     <div v-if="needsCpf" class="flex max-w-[360px] flex-col gap-1.5">
                         <label for="cpf" class="text-[15px] font-bold">CPF</label>

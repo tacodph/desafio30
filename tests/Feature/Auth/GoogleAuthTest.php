@@ -4,6 +4,7 @@ namespace Tests\Feature\Auth;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
@@ -29,6 +30,8 @@ class GoogleAuthTest extends TestCase
 
     public function test_google_callback_registers_and_logs_in(): void
     {
+        $this->travelTo(Carbon::parse('2026-11-09 09:59:59', 'America/Sao_Paulo'));
+
         $this->fakeGoogle([
             'sub' => 123456789012345678,
             'email' => 'ana@gmail.com',
@@ -51,6 +54,8 @@ class GoogleAuthTest extends TestCase
 
     public function test_google_callback_links_an_existing_email(): void
     {
+        $this->travelTo(Carbon::parse('2026-11-09 10:00:00', 'America/Sao_Paulo'));
+
         $user = User::factory()->create(['email' => 'ana@gmail.com']);
 
         $this->fakeGoogle([

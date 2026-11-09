@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Rules\Cpf;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
@@ -20,6 +21,8 @@ class ChallengePaymentTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        $this->travelTo(Carbon::parse('2026-11-08 12:00:00', 'America/Sao_Paulo'));
 
         config([
             'services.asaas.api_key' => 'chave-de-teste',
@@ -56,7 +59,7 @@ class ChallengePaymentTest extends TestCase
         $user = User::factory()->unpaid()->create();
 
         $this->actingAs($user)
-            ->post(route('pagamento.store'), ['cpf' => self::VALID_CPF, 'value' => 1])
+            ->post(route('pagamento.store'), ['cpf' => self::VALID_CPF, 'billing_type' => 'CREDIT_CARD', 'value' => 1])
             ->assertRedirect(route('pagamento.show', absolute: false));
 
         Http::assertSent(function (Request $request) {
@@ -64,7 +67,8 @@ class ChallengePaymentTest extends TestCase
                 return false;
             }
 
-            return $request['billingType'] === 'UNDEFINED'
+            return $request['billingType'] === 'CREDIT_CARD'
+                && $request['dueDate'] === '2026-11-09'
                 && (float) $request['value'] === 79.90
                 && $request['customer'] === 'cus_123'
                 && $request['description'] === 'Inscrição - Desafio da Virada'
@@ -76,8 +80,46 @@ class ChallengePaymentTest extends TestCase
         $payment = ChallengePayment::query()->firstOrFail();
         $this->assertSame('pay_123', $payment->asaas_payment_id);
         $this->assertSame('79.90', $payment->value);
-        $this->assertSame('UNDEFINED', $payment->billing_type);
+        $this->assertSame('CREDIT_CARD', $payment->billing_type);
         $this->assertSame('cus_123', $user->fresh()->asaas_customer_id);
+    }
+
+    public function test_pending_charge_can_change_to_card_without_creating_another_charge(): void
+    {
+        $this->travelTo(Carbon::parse('2026-11-09 10:00:00', 'America/Sao_Paulo'));
+        $user = User::factory()->unpaid()->create(['asaas_customer_id' => 'cus_123']);
+        $payment = $user->payments()->create([
+            'uuid' => (string) \Illuminate\Support\Str::uuid(),
+            'asaas_payment_id' => 'pay_123',
+            'status' => ChallengePayment::PENDING,
+            'billing_type' => 'PIX',
+            'value' => 79.90,
+            'due_date' => '2026-11-09',
+        ]);
+        Http::fake(['*/payments/pay_123' => Http::response(['status' => 'PENDING', 'billingType' => 'CREDIT_CARD'])]);
+
+        $this->actingAs($user)->post(route('pagamento.store'), [
+            'billing_type' => 'CREDIT_CARD',
+            'change_billing_type' => true,
+        ])->assertRedirect(route('pagamento.show'))->assertSessionHasNoErrors();
+
+        Http::assertSent(fn (Request $request) => $request->method() === 'PUT' && $request->data() === ['billingType' => 'CREDIT_CARD']);
+        Http::assertSentCount(1);
+        $this->assertDatabaseCount('challenge_payments', 1);
+        $this->assertSame('CREDIT_CARD', $payment->fresh()->billing_type);
+    }
+
+    public function test_charge_is_not_created_from_ten_on_november_ninth(): void
+    {
+        $this->travelTo(Carbon::parse('2026-11-09 10:00:00', 'America/Sao_Paulo'));
+        Http::fake();
+
+        $this->actingAs(User::factory()->unpaid()->create())
+            ->post(route('pagamento.store'), ['cpf' => self::VALID_CPF])
+            ->assertSessionHasErrors('asaas');
+
+        Http::assertNothingSent();
+        $this->assertDatabaseCount('challenge_payments', 0);
     }
 
     public function test_inertia_submission_keeps_the_original_tab_on_the_waiting_page(): void

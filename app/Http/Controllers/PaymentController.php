@@ -52,6 +52,7 @@ class PaymentController extends Controller
             'payment' => [
                 'state' => $this->state($user, $latest),
                 'dueDate' => $latest?->due_date?->format('d/m/Y'),
+                'billingType' => $latest?->billing_type,
             ],
         ]);
     }
@@ -68,10 +69,12 @@ class PaymentController extends Controller
 
         $data = $request->validate([
             'cpf' => [Rule::requiredIf(! $user->asaas_customer_id), 'nullable', 'string', new Cpf],
+            'billing_type' => ['sometimes', Rule::in(['PIX', 'CREDIT_CARD'])],
+            'change_billing_type' => ['sometimes', 'boolean'],
         ]);
 
         try {
-            $this->payments->ensureCharge($user, isset($data['cpf']) ? Cpf::digits($data['cpf']) : null);
+            $this->payments->ensureCharge($user, isset($data['cpf']) ? Cpf::digits($data['cpf']) : null, $data['billing_type'] ?? 'PIX', $request->boolean('change_billing_type'));
         } catch (AsaasException $e) {
             return back()->withErrors(['asaas' => $e->userMessage()]);
         }
