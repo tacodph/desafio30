@@ -26,7 +26,7 @@ class PaymentController extends Controller
             return to_route('dashboard');
         }
 
-        if ($user->isCourtesy() || $user->hasExternalChallengePayment()) {
+        if ($user->isCourtesy() || $user->hasExternalChallengePayment() || $user->hasAsaasAttestation()) {
             return to_route('dashboard');
         }
 
@@ -102,7 +102,7 @@ class PaymentController extends Controller
     public function callback(Request $request): RedirectResponse
     {
         $user = $request->user();
-        if ($user->isCourtesy() || $user->hasExternalChallengePayment()) {
+        if ($user->isCourtesy() || $user->hasExternalChallengePayment() || $user->hasAsaasAttestation()) {
             return to_route('dashboard');
         }
         $payment = $user->payments()->latest('id')->first();

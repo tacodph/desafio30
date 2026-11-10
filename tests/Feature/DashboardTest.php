@@ -38,6 +38,66 @@ class DashboardTest extends TestCase
         $this->assertFalse($athlete->fresh()->hasChallengeAccess());
     }
 
+    public function test_asaas_attestation_requires_proof_and_becomes_asaas_payment_after_confirmation(): void
+    {
+        $admin = User::factory()->ofRole(UserRole::Administrador)->create();
+        $athlete = User::factory()->unpaid()->create();
+        $payment = $athlete->payments()->create([
+            'asaas_payment_id' => 'pay_attestation',
+            'status' => ChallengePayment::PENDING,
+            'value' => 79.90,
+            'due_date' => today(),
+        ]);
+        $url = route('admin.users.access', $athlete);
+        $proof = 'https://example.com/comprovantes/57';
+
+        $this->actingAs($admin)->patch($url, ['access_type' => 'asaas_attested'])->assertSessionHasErrors('attestation_url');
+        $this->patch($url, ['access_type' => 'asaas_attested', 'attestation_url' => 'javascript:alert(1)'])->assertSessionHasErrors('attestation_url');
+        $this->patch($url, ['access_type' => 'asaas_attested', 'attestation_url' => $proof])->assertRedirect(route('admin.users'))->assertSessionHasNoErrors();
+
+        $athlete->refresh();
+        $this->assertTrue($athlete->hasChallengeAccess());
+        $this->assertNull($athlete->challenge_paid_at);
+        $this->assertSame('asaas_attested', $athlete->challenge_access_type_code);
+        $this->assertSame($proof, $athlete->asaas_attestation_url);
+        $this->assertSame($admin->id, $athlete->asaas_attested_by);
+        $this->assertArrayNotHasKey('asaas_attestation_url', $athlete->toArray());
+        $this->assertFalse(User::query()->withPendingChallengePayment()->whereKey($athlete->id)->exists());
+        $this->actingAs($athlete)->get(route('pagamento.show'))->assertRedirect(route('dashboard'));
+
+        app(\App\Services\ChallengePaymentService::class)->applyStatus($payment, ['status' => ChallengePayment::RECEIVED, 'billingType' => 'PIX']);
+
+        $athlete->refresh();
+        $this->assertSame('asaas', $athlete->challenge_access_type_code);
+        $this->assertNotNull($athlete->challenge_paid_at);
+        $this->assertSame($proof, $athlete->asaas_attestation_url);
+    }
+
+    public function test_ranking_lists_released_athletes_by_score_and_preserves_ties(): void
+    {
+        $leader = User::factory()->create(['name' => 'Zélia']);
+        $leader->checkins()->create(['day' => 1, 'checked_in' => true, 'movement' => true]);
+        $second = User::factory()->create(['name' => 'Ana']);
+        User::factory()->create(['name' => 'Bia']);
+        User::factory()->unpaid()->create(['name' => 'Sem acesso']);
+        $points = collect(\App\Support\ChallengeSheet::weeks($leader))->sum('total');
+
+        foreach ([UserRole::Administrador, UserRole::Nutricionista] as $role) {
+            $this->actingAs(User::factory()->ofRole($role)->create())
+                ->get(route('equipe.ranking'))->assertOk()
+                ->assertInertia(fn (Assert $page) => $page->component('dashboard/AthleteRanking')
+                    ->has('ranking', 3)
+                    ->where('ranking.0.id', $leader->id)
+                    ->where('ranking.0.points', $points)
+                    ->where('ranking.0.position', 1)
+                    ->where('ranking.1.id', $second->id)
+                    ->where('ranking.1.position', 2)
+                    ->where('ranking.2.position', 2));
+        }
+
+        $this->actingAs($leader)->get(route('equipe.ranking'))->assertForbidden();
+    }
+
     public function test_guests_are_redirected_to_the_login_page(): void
     {
         $this->get('/dashboard')->assertRedirect('/login');

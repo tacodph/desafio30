@@ -18,7 +18,7 @@ interface Props {
     status?: string;
     className?: string;
     paymentInfo: {
-        status: 'novo' | 'pendente' | 'vencido' | 'confirmado' | 'reembolsado' | 'cortesia' | 'externo';
+        status: 'novo' | 'pendente' | 'vencido' | 'confirmado' | 'reembolsado' | 'cortesia' | 'externo' | 'atestado';
         value: number | string | null;
         dueDate: string | null;
     } | null;
@@ -65,6 +65,7 @@ const paymentStatus = (status: NonNullable<Props['paymentInfo']>['status']) =>
         vencido: 'Pagamento vencido',
         confirmado: 'Pagamento confirmado',
         externo: 'Pagamento externo registrado',
+        atestado: 'Acesso liberado por ateste · aguardando confirmação do Asaas',
         reembolsado: 'Pagamento reembolsado',
     })[status];
 
@@ -158,11 +159,11 @@ const paymentValue = (value: number | string | null) => value === null ? 'Não i
                         </div>
                         <div>
                             <dt class="text-sm text-muted-foreground">Vencimento</dt>
-                            <dd class="font-semibold">{{ ['cortesia', 'externo'].includes(props.paymentInfo.status) ? 'Não se aplica' : props.paymentInfo.dueDate ?? 'Ainda não definido' }}</dd>
+                            <dd class="font-semibold">{{ ['cortesia', 'externo', 'atestado'].includes(props.paymentInfo.status) ? 'Não se aplica' : props.paymentInfo.dueDate ?? 'Ainda não definido' }}</dd>
                         </div>
                     </dl>
                     <Link
-                        v-if="!['confirmado', 'cortesia', 'externo'].includes(props.paymentInfo.status)"
+                        v-if="!['confirmado', 'cortesia', 'externo', 'atestado'].includes(props.paymentInfo.status)"
                         :href="route('pagamento.show')"
                         class="mt-4 inline-flex text-sm font-semibold text-primary underline underline-offset-4"
                     >

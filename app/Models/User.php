@@ -44,6 +44,7 @@ class User extends Authenticatable
         'password',
         'remember_token',
         'google_id',
+        'asaas_attestation_url',
     ];
 
     /**
@@ -90,13 +91,18 @@ class User extends Authenticatable
         return $this->belongsTo(ChallengeAccessType::class, 'challenge_access_type_code', 'code');
     }
 
-    public function syncChallengeAccessType(bool $external): void
+    public function syncChallengeAccessType(bool $external, ?bool $attested = null): void
     {
+        $attested ??= $this->hasAsaasAttestation();
+        $confirmedByAsaas = $this->challenge_paid_at !== null && $this->payments()
+            ->whereNotNull('asaas_payment_id')->whereIn('status', ChallengePayment::PAID_STATUSES)->exists();
+
         $this->challenge_access_type_code = match (true) {
             $external => ChallengeAccessType::EXTERNAL,
+            $attested => $confirmedByAsaas ? ChallengeAccessType::ASAAS : ChallengeAccessType::ASAAS_ATTESTED,
             $this->isCourtesy() => ChallengeAccessType::COURTESY,
             $this->challenge_paid_at === null => null,
-            $this->payments()->whereNotNull('asaas_payment_id')->whereIn('status', ChallengePayment::PAID_STATUSES)->exists() => ChallengeAccessType::ASAAS,
+            $confirmedByAsaas => ChallengeAccessType::ASAAS,
             default => ChallengeAccessType::LEGACY,
         };
     }
@@ -106,13 +112,18 @@ class User extends Authenticatable
         return $this->challenge_access_type_code === ChallengeAccessType::EXTERNAL;
     }
 
+    public function hasAsaasAttestation(): bool
+    {
+        return $this->challenge_access_type_code === ChallengeAccessType::ASAAS_ATTESTED;
+    }
+
     public function scopeWithPendingChallengePayment(Builder $query): Builder
     {
         return $query->where('user_type_id', UserType::idFor(UserRole::Atleta))
             ->whereNull('challenge_paid_at')
             ->whereNull('challenge_courtesy_at')
             ->where(fn (Builder $query) => $query->whereNull('challenge_access_type_code')
-                ->orWhere('challenge_access_type_code', '<>', ChallengeAccessType::EXTERNAL))
+                ->orWhereNotIn('challenge_access_type_code', [ChallengeAccessType::EXTERNAL, ChallengeAccessType::ASAAS_ATTESTED]))
             ->whereHas('payments', fn (Builder $payments) => $payments
                 ->where('status', ChallengePayment::PENDING)
                 ->whereNotNull('asaas_payment_id'));
@@ -141,7 +152,7 @@ class User extends Authenticatable
 
     public function hasChallengeAccess(): bool
     {
-        return $this->hasPaidChallenge() || $this->isCourtesy();
+        return $this->hasPaidChallenge() || $this->isCourtesy() || $this->hasAsaasAttestation();
     }
 
     public function checkins(): HasMany

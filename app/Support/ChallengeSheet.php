@@ -242,11 +242,11 @@ class ChallengeSheet
     }
 
     /** @return list<array<string, int|string>> */
-    public static function weeks(User $user): array
+    public static function weeks(User $user, ?array $scores = null): array
     {
         $user->loadMissing(['checkins', 'achievements']);
         $checkins = $user->checkins->keyBy('day');
-        $scores = self::scoreMap();
+        $scores ??= self::scoreMap();
         $rows = [];
 
         foreach (self::WEEKS as $week => [$from, $to]) {

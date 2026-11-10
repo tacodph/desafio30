@@ -321,7 +321,8 @@ class DashboardController extends Controller
 
         return Inertia::render('dashboard/Users', [
             'users' => User::query()->with(['userType:id,name', 'challengeAccessType:code,label'])->orderBy('name')
-                ->get(['id', 'name', 'email', 'user_type_id', 'challenge_paid_at', 'challenge_courtesy_at', 'challenge_access_type_code']),
+                ->get(['id', 'name', 'email', 'user_type_id', 'challenge_paid_at', 'challenge_courtesy_at', 'challenge_access_type_code', 'asaas_attestation_url'])
+                ->makeVisible('asaas_attestation_url'),
             'accessTypes' => ChallengeAccessType::query()->orderBy('label')->get(['code', 'label']),
         ]);
     }
@@ -393,7 +394,10 @@ class DashboardController extends Controller
     {
         $this->abortUnless($request, UserRole::Administrador);
         abort_unless($athlete->isAthlete(), 403);
-        $data = $request->validate(['access_type' => 'required|in:automatic,courtesy,external']);
+        $data = $request->validate([
+            'access_type' => 'required|in:automatic,courtesy,external,asaas_attested',
+            'attestation_url' => 'required_if:access_type,asaas_attested|nullable|url:http,https|max:2048',
+        ]);
 
         DB::transaction(function () use ($athlete, $data, $request) {
             $athlete = User::query()->lockForUpdate()->findOrFail($athlete->id);
@@ -405,7 +409,18 @@ class DashboardController extends Controller
                 $athlete->challenge_courtesy_by = null;
             }
 
-            $athlete->syncChallengeAccessType($data['access_type'] === ChallengeAccessType::EXTERNAL);
+            $wasAttested = $athlete->hasAsaasAttestation();
+            $athlete->syncChallengeAccessType(
+                $data['access_type'] === ChallengeAccessType::EXTERNAL,
+                $data['access_type'] === ChallengeAccessType::ASAAS_ATTESTED,
+            );
+            if ($data['access_type'] === ChallengeAccessType::ASAAS_ATTESTED) {
+                if (! $wasAttested || $athlete->asaas_attestation_url !== $data['attestation_url']) {
+                    $athlete->asaas_attested_at = now();
+                    $athlete->asaas_attested_by = $request->user()->id;
+                }
+                $athlete->asaas_attestation_url = $data['attestation_url'];
+            }
             $athlete->save();
         });
 
@@ -513,6 +528,49 @@ class DashboardController extends Controller
                 ->where('user_type_id', UserType::idFor(UserRole::Atleta))
                 ->orderBy('name')
                 ->get(['id', 'name', 'email']),
+        ]);
+    }
+
+    public function athleteRanking(Request $request): Response
+    {
+        $role = $this->role($request);
+        abort_unless(in_array($role, [UserRole::Administrador, UserRole::Nutricionista], true), 403);
+
+        $scores = ScoreRule::map()->all();
+        $ranking = User::query()
+            ->where('user_type_id', UserType::idFor(UserRole::Atleta))
+            ->where(fn ($query) => $query->whereNotNull('challenge_paid_at')
+                ->orWhereNotNull('challenge_courtesy_at')
+                ->orWhereIn('challenge_access_type_code', [ChallengeAccessType::EXTERNAL, ChallengeAccessType::ASAAS_ATTESTED]))
+            ->with(['checkins:id,user_id,day,checked_in,movement,water,sleep,strength,skill,plus_count', 'achievements:id,user_id,type,achieved_on'])
+            ->get(['id', 'name'])
+            ->map(function (User $athlete) use ($scores) {
+                $weeks = collect(ChallengeSheet::weeks($athlete, $scores));
+
+                return [
+                    'id' => $athlete->id,
+                    'name' => $athlete->name,
+                    'points' => (int) $weeks->sum('total'),
+                    'checkins' => (int) $weeks->sum('checkins'),
+                ];
+            })
+            ->sortBy([['points', 'desc'], ['name', 'asc'], ['id', 'asc']])
+            ->values();
+
+        $position = 0;
+        $previousPoints = null;
+        $ranking = $ranking->map(function (array $athlete, int $index) use (&$position, &$previousPoints) {
+            if ($athlete['points'] !== $previousPoints) {
+                $position = $index + 1;
+                $previousPoints = $athlete['points'];
+            }
+
+            return [...$athlete, 'position' => $position];
+        });
+
+        return Inertia::render('dashboard/AthleteRanking', [
+            'ranking' => $ranking,
+            'canViewProgress' => $role === UserRole::Nutricionista,
         ]);
     }
 

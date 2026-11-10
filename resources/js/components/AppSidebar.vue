@@ -56,6 +56,7 @@ const mainNavItems = computed<NavGroupItem[]>(() => {
             ] },
             { title: 'Usuários', href: '/admin/usuarios', icon: Users },
             { title: 'Check-ins dos atletas', href: '/equipe/check-ins', icon: ClipboardCheck },
+            { title: 'Ranking dos atletas', href: '/equipe/ranking', icon: Trophy },
             { title: 'Conquistas dos atletas', href: '/equipe/conquistas', icon: Trophy },
             { title: 'Alimentação dos atletas', href: '/equipe/alimentacao', icon: Salad },
             { title: 'Pagamentos', href: '/admin/pagamentos', icon: ClipboardCheck },
@@ -166,6 +167,7 @@ const mainNavItems = computed<NavGroupItem[]>(() => {
         items.splice(2, 0, { title: 'Check-ins dos atletas', href: '/equipe/check-ins', icon: ClipboardCheck });
         items.splice(3, 0, { title: 'Conquistas dos atletas', href: '/equipe/conquistas', icon: Trophy });
         items.splice(4, 0, { title: 'Alimentação dos atletas', href: '/equipe/alimentacao', icon: Salad });
+        items.splice(5, 0, { title: 'Ranking dos atletas', href: '/equipe/ranking', icon: Trophy });
     }
 
     return items;
