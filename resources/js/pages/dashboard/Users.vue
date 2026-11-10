@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { computed, reactive, ref } from 'vue';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Administração', href: '/dashboard' },
@@ -12,7 +12,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 type ListedUser = { id: number; name: string; email: string; user_type: { name: string } | null; challenge_courtesy_at: string | null; challenge_paid_at: string | null; challenge_access_type: { code: string; label: string } | null; asaas_attestation_url: string | null };
 
-defineProps<{
+const props = defineProps<{
     users: ListedUser[];
     accessTypes: { code: string; label: string }[];
 }>();
@@ -23,6 +23,31 @@ const proofUrl = ref('');
 const manualAccessTypes = ['courtesy', 'external', 'asaas_attested'];
 const accessLabel = (user: ListedUser) => user.user_type?.name !== 'atleta' ? '—' : user.challenge_access_type?.label ?? (user.challenge_courtesy_at ? 'Cortesia' : user.challenge_paid_at ? 'Acesso legado' : 'Pagamento pendente');
 const accessCode = (user: ListedUser) => user.challenge_access_type?.code ?? (user.challenge_courtesy_at ? 'courtesy' : user.challenge_paid_at ? 'legacy' : 'automatic');
+const filters = reactive({ name: '', email: '', type: '', registration: '', access: '' });
+const releaseLabel = (user: ListedUser) => {
+    if (user.user_type?.name !== 'atleta') return 'Não se aplica';
+    if (accessCode(user) === 'automatic') return 'Sem liberação manual';
+    return accessLabel(user);
+};
+const fields = [
+    { key: 'name', label: 'Nome', value: (user: ListedUser) => user.name, search: true },
+    { key: 'email', label: 'E-mail', value: (user: ListedUser) => user.email, search: true },
+    { key: 'type', label: 'Tipo', value: (user: ListedUser) => user.user_type?.name ?? 'Sem tipo' },
+    { key: 'registration', label: 'Inscrição', value: (user: ListedUser) => user.user_type?.name === 'atleta' ? accessLabel(user) : 'Não se aplica' },
+    { key: 'access', label: 'Tipo de liberação', value: releaseLabel },
+] as const;
+const filterFields = computed(() => fields.map((field) => ({
+    ...field,
+    options: 'search' in field ? [] : [...new Set(props.users.map(field.value))].sort((a, b) => a.localeCompare(b, 'pt-BR')),
+})));
+const normalizeSearch = (value: string) => value.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+const filteredUsers = computed(() => props.users.filter((user) => fields.every((field) => {
+    const filter = filters[field.key];
+    if (!filter) return true;
+
+    const value = field.value(user);
+    return 'search' in field ? normalizeSearch(value).includes(normalizeSearch(filter)) : value === filter;
+})));
 const saveAccess = (user: ListedUser, accessType: string, attestationUrl?: string) => {
     if (busyUser.value !== null) return;
     accessError.value = '';
@@ -68,8 +93,21 @@ const saveAttestation = () => {
 
             <p v-if="accessError && !attestationUser" role="alert" class="text-sm text-red-400">{{ accessError }}</p>
 
+            <div class="surface-card grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 xl:grid-cols-5" role="group" aria-label="Filtros de usuários">
+                <label v-for="field in filterFields" :key="field.key" class="grid gap-1 text-sm font-semibold">
+                    {{ field.label }}
+                    <input v-if="'search' in field" v-model="filters[field.key]" type="search" class="min-w-0 w-full rounded-lg border border-brand-line2 bg-brand-card2 px-3 py-2" />
+                    <select v-else v-model="filters[field.key]" class="min-w-0 w-full rounded-lg border border-brand-line2 bg-brand-card2 px-3 py-2">
+                        <option value="">Todos</option>
+                        <option v-for="option in field.options" :key="option" :value="option">{{ option }}</option>
+                    </select>
+                </label>
+                <button type="button" class="w-fit text-sm font-bold text-brand-gold underline" @click="Object.assign(filters, { name: '', email: '', type: '', registration: '', access: '' })">Limpar filtros</button>
+            </div>
+            <p v-if="!filteredUsers.length" role="status" class="text-sm text-brand-muted">Nenhum usuário encontrado.</p>
+
             <ul class="m-0 flex list-none flex-col gap-3 p-0 md:hidden">
-                <li v-for="user in users" :key="user.id" class="surface-card flex flex-col gap-1 p-4">
+                <li v-for="user in filteredUsers" :key="user.id" class="surface-card flex flex-col gap-1 p-4">
                     <span class="font-semibold">{{ user.name }}</span>
                     <span class="break-all text-sm text-brand-muted">{{ user.email }}</span>
                     <span class="text-xs font-bold uppercase tracking-[2px] text-brand-gold">{{ user.user_type?.name }}</span>
@@ -95,7 +133,7 @@ const saveAttestation = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="user in users" :key="user.id" class="border-t border-brand-line">
+                        <tr v-for="user in filteredUsers" :key="user.id" class="border-t border-brand-line">
                             <td class="px-5 py-4 font-semibold">{{ user.name }}</td>
                             <td class="px-5 py-4 text-brand-muted">{{ user.email }}</td>
                             <td class="px-5 py-4 uppercase">{{ user.user_type?.name }}</td>

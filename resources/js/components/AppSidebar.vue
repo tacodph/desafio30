@@ -4,7 +4,7 @@ import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from '@/components/ui/sidebar';
 import { type NavGroupItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { Apple, BookOpen, CircleHelp, ClipboardCheck, Droplets, Dumbbell, Flag, LayoutGrid, Lightbulb, PartyPopper, Salad, Settings, Star, Trophy, Users, Mail } from 'lucide-vue-next';
+import { BookOpen, CircleHelp, ClipboardCheck, Droplets, Dumbbell, Flag, LayoutGrid, Lightbulb, Mail, PartyPopper, Salad, Settings, Star, Trophy, Users, Wallet } from 'lucide-vue-next';
 import { computed } from 'vue';
 import AppLogo from './AppLogo.vue';
 
@@ -50,23 +50,28 @@ const mainNavItems = computed<NavGroupItem[]>(() => {
     if (role.value === 'administrador') {
         return [
             { title: 'Painel', href: '/dashboard', icon: LayoutGrid },
-            { title: 'Administração', icon: Settings, children: [
-                { title: 'Treinos', href: '/admin/treinos' },
-                { title: 'Dúvidas Frequentes', href: '/admin/duvidas-frequentes' },
+            { title: 'Atletas', icon: Users, children: [
+                { title: 'Usuários', href: '/admin/usuarios' },
+                { title: 'Check-ins dos atletas', href: '/equipe/check-ins' },
+                { title: 'Alimentação dos atletas', href: '/equipe/alimentacao' },
+                { title: 'Ranking dos atletas', href: '/equipe/ranking' },
+                { title: 'Conquistas dos atletas', href: '/equipe/conquistas' },
             ] },
-            { title: 'Usuários', href: '/admin/usuarios', icon: Users },
-            { title: 'Check-ins dos atletas', href: '/equipe/check-ins', icon: ClipboardCheck },
-            { title: 'Ranking dos atletas', href: '/equipe/ranking', icon: Trophy },
-            { title: 'Conquistas dos atletas', href: '/equipe/conquistas', icon: Trophy },
-            { title: 'Alimentação dos atletas', href: '/equipe/alimentacao', icon: Salad },
-            { title: 'Pagamentos', href: '/admin/pagamentos', icon: ClipboardCheck },
-            { title: 'Lembretes de pagamento', href: '/admin/pagamentos/lembretes', icon: Mail },
-            { title: 'Alimentos', href: '/admin/alimentos', icon: Apple },
-            { title: 'Objetivos', href: '/meus-objetivos/alimentacao', icon: Salad },
-            { title: 'Evolução (visualizar)', icon: ClipboardCheck, children: evolutionChildren.value },
-            { title: 'Monte seu Cardápio (visualizar)', href: '/objetivos/alimentacao/compras', icon: Salad },
-            { title: 'Almoço - Monte seu prato (visualizar)', href: '/alimentacao/monte-seu-prato', icon: Salad },
+            { title: 'Financeiro', icon: Wallet, children: [
+                { title: 'Pagamentos', href: '/admin/pagamentos' },
+                { title: 'Lembretes de pagamento', href: '/admin/pagamentos/lembretes' },
+            ] },
+            { title: 'Desafio', icon: Flag, children: [
+                { title: 'Objetivos', href: '/meus-objetivos/alimentacao' },
+                { title: 'Treinos', href: '/admin/treinos' },
+                { title: 'Evolução (visualizar)', children: evolutionChildren.value },
+                { title: 'Pontuação', href: '/pontuacao' },
+                { title: 'Liberações do desafio', href: '/admin/liberacoes' },
+            ] },
             { title: 'Alimentação', icon: Salad, children: [
+                { title: 'Alimentos', href: '/admin/alimentos' },
+                { title: 'Monte seu Cardápio (visualizar)', href: '/objetivos/alimentacao/compras' },
+                { title: 'Almoço - Monte seu prato (visualizar)', href: '/alimentacao/monte-seu-prato' },
                 { title: 'Recado importante da nutri', href: '/alimentacao/recado-da-nutri' },
                 { title: 'Sugestões de refeições reais em consultório', href: '/alimentacao/refeicoes-reais-em-consultorio' },
                 { title: 'Sugestões de jantar', disabled: true },
@@ -78,14 +83,15 @@ const mainNavItems = computed<NavGroupItem[]>(() => {
                 { title: 'Materiais e orientações', href: '/cantinho-da-nutri' },
                 { title: 'Monitoramento 30 dias', href: '/cantinho-da-nutri/monitoramento' },
             ] },
-            { title: 'Pontuação', href: '/pontuacao', icon: Trophy },
-            { title: 'Mensagens', icon: PartyPopper, children: [
+            { title: 'Comunicação', icon: Mail, children: [
                 { title: 'Histórico de emails', href: '/admin/mensagens/emails' },
                 { title: 'Confirmação da inscrição', href: '/admin/boas-vindas' },
                 { title: 'Boas-vindas com vídeo', href: '/admin/mensagens/boas-vindas-video' },
+                { title: 'Dúvidas Frequentes', href: '/admin/duvidas-frequentes' },
             ] },
-            { title: 'Liberações do desafio', href: '/admin/liberacoes', icon: Settings },
-            { title: 'Configurações', href: '/settings/profile', icon: Settings },
+            { title: 'Configurações', icon: Settings, children: [
+                { title: 'Perfil', href: '/settings/profile' },
+            ] },
         ];
     }
 
