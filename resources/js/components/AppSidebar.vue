@@ -12,10 +12,10 @@ const page = usePage<SharedData>();
 const { isMobile, setOpenMobile } = useSidebar();
 
 function closeMobileOnLink(event: MouseEvent) {
-    if (!isMobile.value || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+    if (!isMobile.value || event.button > 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
 
-    const link = event.target instanceof Element ? event.target.closest('a[href]') : null;
-    if (link && link.getAttribute('href') !== '#' && link.getAttribute('target') !== '_blank') {
+    const link = event.composedPath().find((target) => target instanceof HTMLAnchorElement);
+    if (link instanceof HTMLAnchorElement && link.hasAttribute('href') && link.getAttribute('href') !== '#' && link.target !== '_blank') {
         setOpenMobile(false);
     }
 }
@@ -161,7 +161,7 @@ const mainNavItems = computed<NavGroupItem[]>(() => {
 
 <template>
     <Sidebar collapsible="icon" variant="inset">
-        <SidebarHeader @click="closeMobileOnLink">
+        <SidebarHeader @click.capture="closeMobileOnLink">
             <SidebarMenu>
                 <SidebarMenuItem>
                     <SidebarMenuButton size="lg" as-child>
@@ -173,11 +173,11 @@ const mainNavItems = computed<NavGroupItem[]>(() => {
             </SidebarMenu>
         </SidebarHeader>
 
-        <SidebarContent @click="closeMobileOnLink">
+        <SidebarContent @click.capture="closeMobileOnLink">
             <NavMain :items="mainNavItems" :label="menuLabel" />
         </SidebarContent>
 
-        <SidebarFooter @click="closeMobileOnLink">
+        <SidebarFooter @click.capture="closeMobileOnLink">
             <NavMain :items="[{ title: 'Como funciona a alimentação no desafio?', href: '/ajuda/como-funciona-a-alimentacao', icon: CircleHelp }, { title: 'Dúvidas Frequentes', href: '/ajuda/duvidas-frequentes', icon: BookOpen }, { title: 'Suporte', href: '/suporte', icon: Mail }]" label="Ajuda" />
             <NavUser />
         </SidebarFooter>

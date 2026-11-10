@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
+import MealCommentForm from '@/components/MealCommentForm.vue';
 import { handleAccordionClick } from '@/lib/accordionScroll';
 import { Head, Link } from '@inertiajs/vue3';
 import { ChevronDown } from 'lucide-vue-next';
@@ -13,7 +14,7 @@ defineProps<{
     athletes: {
         data: { id: number; name: string; days: {
             id: number; day: number; date: string; achieved: boolean; food: Record<keyof typeof foodLabels, boolean>;
-            foodNote: string; luxuryCount: number; luxuryNote: string; photos: string[];
+            foodNote: string; luxuryCount: number; luxuryNote: string; photos: string[]; mealComment: string | null;
         }[] }[];
         total: number;
         current_page: number;
@@ -21,6 +22,7 @@ defineProps<{
         prev_page_url: string | null;
         next_page_url: string | null;
     };
+    canComment: boolean;
 }>();
 </script>
 
@@ -49,14 +51,21 @@ defineProps<{
                             <h3 class="font-bold">Refeição luxo<span v-if="day.luxuryCount"> · {{ day.luxuryCount }}</span></h3>
                             <p v-if="day.luxuryNote" class="whitespace-pre-line break-words">{{ day.luxuryNote }}</p>
                         </div>
-                        <ul v-if="day.photos.length" class="grid grid-cols-2 gap-3 sm:grid-cols-3" aria-label="Fotos das refeições">
-                            <li v-for="(photo, index) in day.photos" :key="index">
-                                <a v-if="!unavailablePhotos.has(photo)" :href="photo" target="_blank" rel="noopener noreferrer" :aria-label="'Ampliar foto da refeição ' + (index + 1)">
-                                    <img :src="photo" :alt="'Foto da refeição ' + (index + 1)" loading="lazy" class="aspect-square w-full rounded-xl object-cover" @error="unavailablePhotos.add(photo)" />
-                                </a>
-                                <p v-else class="rounded-xl border border-brand-line p-3 text-sm text-brand-muted">Foto indisponível.</p>
-                            </li>
-                        </ul>
+                        <div class="grid items-start gap-4" :class="day.photos.length && (canComment || day.mealComment) ? 'md:grid-cols-2' : ''">
+                            <ul v-if="day.photos.length" class="grid gap-3" :class="day.photos.length > 1 ? 'grid-cols-2' : 'max-w-xs'" aria-label="Fotos das refeições">
+                                <li v-for="(photo, index) in day.photos" :key="index">
+                                    <a v-if="!unavailablePhotos.has(photo)" :href="photo" target="_blank" rel="noopener noreferrer" :aria-label="'Ampliar foto da refeição ' + (index + 1)">
+                                        <img :src="photo" :alt="'Foto da refeição ' + (index + 1)" loading="lazy" class="aspect-square w-full rounded-xl object-cover" @error="unavailablePhotos.add(photo)" />
+                                    </a>
+                                    <p v-else class="rounded-xl border border-brand-line p-3 text-sm text-brand-muted">Foto indisponível.</p>
+                                </li>
+                            </ul>
+                            <MealCommentForm v-if="canComment" :athlete-id="athlete.id" :day="day.day" :comment="day.mealComment" />
+                            <div v-else-if="day.mealComment" class="space-y-2">
+                                <h3 class="text-sm font-bold">Comentário da nutri</h3>
+                                <p class="whitespace-pre-line break-words text-sm">{{ day.mealComment }}</p>
+                            </div>
+                        </div>
                     </article>
                 </div>
             </details>

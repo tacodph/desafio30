@@ -496,7 +496,8 @@ class DashboardController extends Controller
 
     public function athleteMeals(Request $request): Response
     {
-        abort_unless(in_array($this->role($request), [UserRole::Administrador, UserRole::Nutricionista], true), 403);
+        $role = $this->role($request);
+        abort_unless(in_array($role, [UserRole::Administrador, UserRole::Nutricionista], true), 403);
 
         $hasMeal = function ($query) {
             $query->where(function ($query) {
@@ -519,7 +520,7 @@ class DashboardController extends Controller
             ->whereHas('checkins', $hasMeal)
             ->with(['checkins' => function ($query) use ($hasMeal) {
                 $hasMeal($query);
-                $query->select(['id', 'user_id', 'day', 'strength', 'plus_count', 'notes', 'details', 'meal_photo', 'meal_photos'])
+                $query->select(['id', 'user_id', 'day', 'strength', 'plus_count', 'notes', 'details', 'meal_photo', 'meal_photos', 'meal_comment'])
                     ->orderByDesc('day');
             }])
             ->orderBy('name')
@@ -537,6 +538,7 @@ class DashboardController extends Controller
                     'foodNote' => $day->notes['strength'] ?? '',
                     'luxuryCount' => $day->plus_count,
                     'luxuryNote' => $day->notes['plus'] ?? '',
+                    'mealComment' => $day->meal_comment,
                     'photos' => array_map(fn (string $path) => route('equipe.meals.photo', [
                         'checkin' => $day->id,
                         'photo' => basename($path),
@@ -544,7 +546,10 @@ class DashboardController extends Controller
                 ]),
             ]);
 
-        return Inertia::render('dashboard/AthleteMeals', ['athletes' => $athletes]);
+        return Inertia::render('dashboard/AthleteMeals', [
+            'athletes' => $athletes,
+            'canComment' => $role === UserRole::Nutricionista,
+        ]);
     }
 
     public function athleteMealPhoto(Request $request, Checkin $checkin, string $photo): StreamedResponse

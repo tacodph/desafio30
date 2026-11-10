@@ -96,7 +96,7 @@ class DashboardTest extends TestCase
         $athlete->checkins()->create(['day' => 1, 'notes' => ['strength' => 'Almoço planejado', 'plus' => 'Pizza'], 'plus_count' => 1]);
         $athlete->checkins()->create(['day' => 2, 'movement' => true]);
         $checkin = $athlete->checkins()->create(['day' => 3, 'meal_photo' => 'meals/antiga.jpg']);
-        $checkin->forceFill(['meal_photos' => ['meals/nova.png']])->save();
+        $checkin->forceFill(['meal_photos' => ['meals/nova.png'], 'meal_comment' => 'Ótima combinação.'])->save();
         $image = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jNioAAAAASUVORK5CYII=');
         $disk->put('meals/nova.png', $image);
         $photoUrl = route('equipe.meals.photo', ['checkin' => $checkin, 'photo' => 'nova.png'], absolute: false);
@@ -108,9 +108,11 @@ class DashboardTest extends TestCase
                 ->assertOk()
                 ->assertInertia(fn (Assert $page) => $page
                     ->component('dashboard/AthleteMeals')
+                    ->where('canComment', $role === UserRole::Nutricionista)
                     ->where('athletes.total', 1)
                     ->has('athletes.data.0.days', 2)
                     ->where('athletes.data.0.days.0.photos', [route('equipe.meals.photo', ['checkin' => $checkin, 'photo' => 'antiga.jpg'], absolute: false), $photoUrl])
+                    ->where('athletes.data.0.days.0.mealComment', 'Ótima combinação.')
                     ->where('athletes.data.0.days.1.foodNote', 'Almoço planejado')
                     ->where('athletes.data.0.days.1.luxuryCount', 1)
                     ->where('athletes.data.0.days.1.luxuryNote', 'Pizza'));

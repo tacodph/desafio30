@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { cn } from '@/lib/utils';
+import { router } from '@inertiajs/vue3';
 import { useEventListener, useMediaQuery, useVModel } from '@vueuse/core';
 import { TooltipProvider } from 'radix-vue';
-import { computed, ref, type HTMLAttributes, type Ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref, type HTMLAttributes, type Ref } from 'vue';
 import {
     SIDEBAR_COOKIE_MAX_AGE,
     SIDEBAR_COOKIE_NAME,
@@ -46,6 +47,12 @@ function setOpen(value: boolean) {
 function setOpenMobile(value: boolean) {
     openMobile.value = value;
 }
+
+let stopNavigationListener: (() => void) | undefined;
+onMounted(() => {
+    stopNavigationListener = router.on('navigate', () => setOpenMobile(false));
+});
+onUnmounted(() => stopNavigationListener?.());
 
 // Helper to toggle the sidebar.
 function toggleSidebar() {
