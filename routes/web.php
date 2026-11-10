@@ -75,6 +75,7 @@ Route::middleware(['auth', 'verified', 'challenge.paid'])->group(function () {
     Route::get('alimentacao/escolhendo-melhor-fora-de-casa', fn () => Inertia::render('EscolhendoMelhorForaDeCasa'))->middleware('challenge.feature:alimentacao')->name('alimentacao.fora-de-casa');
     Route::get('alimentacao/lidando-com-o-fim-de-semana', fn () => Inertia::render('LidandoComOFimDeSemana'))->middleware('challenge.feature:alimentacao')->name('alimentacao.fim-de-semana');
     Route::get('alimentacao/recado-da-nutri', fn () => Inertia::render('NutriMessage'))->middleware('challenge.feature:alimentacao')->name('alimentacao.recado-da-nutri');
+    Route::get('ajuda/como-funciona-a-alimentacao', fn () => Inertia::render('FoodGuide'))->name('ajuda.alimentacao');
     Route::get('pontuacao', [DashboardController::class, 'scoring'])->name('pontuacao');
     Route::put('pontuacao', [DashboardController::class, 'updateScoring'])->name('pontuacao.update');
     Route::get('meus-objetivos/{goal}', function (string $goal) {

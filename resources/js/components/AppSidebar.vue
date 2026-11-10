@@ -172,7 +172,7 @@ const mainNavItems = computed<NavGroupItem[]>(() => {
         </SidebarContent>
 
         <SidebarFooter @click="closeMobileOnLink">
-            <NavMain :items="[{ title: 'Dúvidas Frequentes', href: '/ajuda/duvidas-frequentes', icon: BookOpen }, { title: 'Suporte', href: '/suporte', icon: Mail }]" label="Ajuda" />
+            <NavMain :items="[{ title: 'Como funciona a alimentação no desafio?', href: '/ajuda/como-funciona-a-alimentacao', icon: CircleHelp }, { title: 'Dúvidas Frequentes', href: '/ajuda/duvidas-frequentes', icon: BookOpen }, { title: 'Suporte', href: '/suporte', icon: Mail }]" label="Ajuda" />
             <NavUser />
         </SidebarFooter>
     </Sidebar>
