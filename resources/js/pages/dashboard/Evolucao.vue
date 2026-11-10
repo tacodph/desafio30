@@ -64,6 +64,7 @@ const props = defineProps<{
     canComment: boolean;
     athleteId: number | null;
     athleteName: string | null;
+    selectedDay?: number | null;
     nutritionistName: string | null;
     scoreRules?: Record<string, number>;
 }>();
@@ -88,7 +89,7 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => [
     { title: 'Evolução', href: '#' },
     { title: tabs.find((item) => item[0] === tab.value)?.[1] ?? 'Dias', href: '#' },
 ]);
-const week = ref(props.currentWeek);
+const week = ref(props.days.find((day) => day.day === props.selectedDay)?.week ?? props.currentWeek);
 const savedWeekSkills = computed(() => (props.weeklySkills[week.value - 1] ?? []).filter(Boolean));
 const needsWeekSkills = computed(() => showAthleteControls.value && savedWeekSkills.value.length === 0);
 const editingWeekSkills = ref(needsWeekSkills.value);
@@ -135,6 +136,9 @@ const dias = useForm({
 let accessTimer: ReturnType<typeof setInterval> | undefined;
 onMounted(() => {
     if (props.canEdit) accessTimer = setInterval(() => router.reload({ only: ['access', 'today', 'currentWeek'] }), 60000);
+    if (props.selectedDay) {
+        void nextTick(() => document.getElementById(`evolution-day-${props.selectedDay}`)?.scrollIntoView({ block: 'start' }));
+    }
 });
 onBeforeUnmount(() => { if (accessTimer) clearInterval(accessTimer); });
 const conquests = [
@@ -172,6 +176,7 @@ const visibleDays = computed(() =>
 
 // Abre só o dia de hoje; se a semana não tem o dia de hoje, abre o primeiro dia dela.
 const openDay = computed(() => {
+    if (props.selectedDay && visibleDays.value.some((item) => item.entry.day === props.selectedDay)) return props.selectedDay;
     if (!needsWeekSkills.value && visibleDays.value.some((item) => item.entry.day === props.today)) return props.today;
 
     return visibleDays.value[0]?.entry.day;
@@ -303,6 +308,7 @@ const saveComment = () => {
                 <DayCard
                     v-for="(item, index) in visibleDays"
                     :key="item.entry.day"
+                    :id="`evolution-day-${item.entry.day}`"
                     :entry="item.entry"
                     :admin-preview="adminPreview"
                     :date="item.info.date"
@@ -403,6 +409,7 @@ const saveComment = () => {
                     >
                         <div class="flex items-start justify-between gap-4">
                             <div class="grid min-w-0 flex-1 gap-1">
+                                <p v-if="canComment && athleteName" class="m-0 break-words text-sm font-bold text-brand-gold">{{ athleteName }}</p>
                                 <p class="m-0 text-xs font-semibold uppercase tracking-[1px] text-brand-muted">{{ formatDate(item.achieved_on) }}</p>
                                 <form v-if="editing === item.id" class="grid gap-2" @submit.prevent="saveEdit(item.id)">
                                     <Input v-model="editForm.detail" />

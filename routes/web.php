@@ -103,6 +103,9 @@ Route::middleware(['auth', 'verified', 'challenge.paid'])->group(function () {
     Route::patch('admin/alimentos/{food}', [DashboardController::class, 'toggleFood'])->name('admin.foods.toggle');
     Route::delete('admin/alimentos/{food}', [DashboardController::class, 'destroyFood'])->name('admin.foods.destroy');
     Route::get('equipe/atletas', [DashboardController::class, 'athletes'])->name('equipe.athletes');
+    Route::get('equipe/check-ins', [DashboardController::class, 'athleteCheckins'])->name('equipe.checkins');
+    Route::get('equipe/conquistas', [DashboardController::class, 'athleteAchievements'])->name('equipe.achievements');
+    Route::get('equipe/alimentacao', [DashboardController::class, 'athleteMeals'])->name('equipe.meals');
     Route::get('equipe/atletas/{athlete}/evolucao', [AthleteProgressController::class, 'showAthlete'])->name('equipe.athlete.progress');
     Route::get('atleta/ponto-de-partida/primeiro-dia', [AthleteProgressController::class, 'firstDay'])->name('athlete.start.first-day');
     Route::post('atleta/ponto-de-partida/primeiro-dia', [AthleteProgressController::class, 'storeFirstDay'])->name('athlete.start.first-day.store');

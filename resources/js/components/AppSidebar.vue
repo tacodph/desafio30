@@ -55,6 +55,9 @@ const mainNavItems = computed<NavGroupItem[]>(() => {
                 { title: 'Dúvidas Frequentes', href: '/admin/duvidas-frequentes' },
             ] },
             { title: 'Usuários', href: '/admin/usuarios', icon: Users },
+            { title: 'Check-ins dos atletas', href: '/equipe/check-ins', icon: ClipboardCheck },
+            { title: 'Conquistas dos atletas', href: '/equipe/conquistas', icon: Trophy },
+            { title: 'Alimentação dos atletas', href: '/equipe/alimentacao', icon: Salad },
             { title: 'Pagamentos', href: '/admin/pagamentos', icon: ClipboardCheck },
             { title: 'Lembretes de pagamento', href: '/admin/pagamentos/lembretes', icon: Mail },
             { title: 'Alimentos', href: '/admin/alimentos', icon: Apple },
@@ -146,6 +149,9 @@ const mainNavItems = computed<NavGroupItem[]>(() => {
 
     if (role.value === 'nutricionista') {
         items.splice(2, 0, { title: 'Pagamentos', href: '/admin/pagamentos', icon: ClipboardCheck });
+        items.splice(2, 0, { title: 'Check-ins dos atletas', href: '/equipe/check-ins', icon: ClipboardCheck });
+        items.splice(3, 0, { title: 'Conquistas dos atletas', href: '/equipe/conquistas', icon: Trophy });
+        items.splice(4, 0, { title: 'Alimentação dos atletas', href: '/equipe/alimentacao', icon: Salad });
     }
 
     return items;

@@ -11,9 +11,12 @@ use App\Models\User;
 use App\Models\UserType;
 use App\Services\Asaas\AsaasClient;
 use App\Services\Asaas\AsaasException;
+use App\Support\ChallengeAccess;
 use App\Support\ChallengeSheet;
+use App\Support\DayLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\DB;
@@ -409,6 +412,133 @@ class DashboardController extends Controller
                 ->orderBy('name')
                 ->get(['id', 'name', 'email']),
         ]);
+    }
+
+    public function athleteCheckins(Request $request): Response
+    {
+        $role = $this->role($request);
+        abort_unless(in_array($role, [UserRole::Administrador, UserRole::Nutricionista], true), 403);
+
+        $completed = fn ($query) => $query->where('checked_in', true);
+        $athletes = User::query()
+            ->select(['id', 'name'])
+            ->where('user_type_id', UserType::idFor(UserRole::Atleta))
+            ->whereHas('checkins', $completed)
+            ->withCount(['checkins as completed_checkins' => $completed])
+            ->withMax(['checkins as last_checkin_day' => $completed], 'day')
+            ->orderByDesc('last_checkin_day')
+            ->orderBy('name')
+            ->orderBy('id')
+            ->paginate(25)
+            ->through(fn (User $athlete) => [
+                'id' => $athlete->id,
+                'name' => $athlete->name,
+                'checkins' => (int) $athlete->completed_checkins,
+                'lastDay' => (int) $athlete->last_checkin_day,
+                'lastDate' => \Illuminate\Support\Carbon::parse(ChallengeSheet::dateForDay((int) $athlete->last_checkin_day))->format('d/m/Y'),
+            ]);
+
+        return Inertia::render('dashboard/AthleteCheckins', [
+            'athletes' => $athletes,
+            'canViewProgress' => $role === UserRole::Nutricionista,
+        ]);
+    }
+
+    public function athleteAchievements(Request $request): Response
+    {
+        $role = $this->role($request);
+        abort_unless(in_array($role, [UserRole::Administrador, UserRole::Nutricionista], true), 403);
+
+        $categories = [
+            'cantinho' => ChallengeSheet::ACHIEVEMENTS['cantinho'][0],
+            'resistido' => ChallengeSheet::ACHIEVEMENTS['resistido'][0],
+            'performance' => ChallengeSheet::ACHIEVEMENTS['performance'][0],
+        ];
+        $category = $request->query('categoria', 'cantinho');
+        abort_unless(is_string($category) && isset($categories[$category]), 404);
+
+        $inCategory = fn ($query) => $query->where('type', $category);
+        $athletes = User::query()
+            ->select(['id', 'name'])
+            ->where('user_type_id', UserType::idFor(UserRole::Atleta))
+            ->whereHas('achievements', $inCategory)
+            ->withCount(['achievements' => $inCategory])
+            ->with(['achievements' => fn ($query) => $inCategory($query)
+                ->select(['id', 'user_id', 'achieved_on', 'detail'])
+                ->orderByDesc('achieved_on')
+                ->orderByDesc('id')])
+            ->orderBy('name')
+            ->orderBy('id')
+            ->paginate(25)
+            ->appends(['categoria' => $category])
+            ->through(fn (User $athlete) => [
+                'id' => $athlete->id,
+                'name' => $athlete->name,
+                'achievements_count' => (int) $athlete->achievements_count,
+                'records' => $athlete->achievements->map(fn ($record) => [
+                    'id' => $record->id,
+                    'detail' => $record->detail,
+                    'date' => $record->achieved_on->format('d/m/Y'),
+                    'day' => ChallengeSheet::dayOn(Carbon::parse($record->achieved_on->toDateString(), ChallengeAccess::TIMEZONE)),
+                ]),
+            ]);
+
+        return Inertia::render('dashboard/AthleteAchievements', [
+            'athletes' => $athletes,
+            'categories' => $categories,
+            'category' => $category,
+            'canViewProgress' => $role === UserRole::Nutricionista,
+        ]);
+    }
+
+    public function athleteMeals(Request $request): Response
+    {
+        abort_unless(in_array($this->role($request), [UserRole::Administrador, UserRole::Nutricionista], true), 403);
+
+        $hasMeal = function ($query) {
+            $query->where(function ($query) {
+                $query->where('strength', true)
+                    ->orWhere('plus_count', '>', 0)
+                    ->orWhere('notes->strength', '<>', '')
+                    ->orWhere('notes->plus', '<>', '')
+                    ->orWhere('meal_photo', '<>', '')
+                    ->orWhereJsonLength('meal_photos', '>', 0);
+
+                foreach (DayLog::FOOD_KEYS as $key) {
+                    $query->orWhere('details->food->'.$key, true);
+                }
+            });
+        };
+
+        $athletes = User::query()
+            ->select(['id', 'name'])
+            ->where('user_type_id', UserType::idFor(UserRole::Atleta))
+            ->whereHas('checkins', $hasMeal)
+            ->with(['checkins' => function ($query) use ($hasMeal) {
+                $hasMeal($query);
+                $query->select(['id', 'user_id', 'day', 'strength', 'plus_count', 'notes', 'details', 'meal_photo', 'meal_photos'])
+                    ->orderByDesc('day');
+            }])
+            ->orderBy('name')
+            ->orderBy('id')
+            ->paginate(15)
+            ->through(fn (User $athlete) => [
+                'id' => $athlete->id,
+                'name' => $athlete->name,
+                'days' => $athlete->checkins->map(fn ($day) => [
+                    'id' => $day->id,
+                    'day' => $day->day,
+                    'date' => \Illuminate\Support\Carbon::parse(ChallengeSheet::dateForDay($day->day))->format('d/m/Y'),
+                    'achieved' => $day->strength,
+                    'food' => DayLog::normalize($day->details)['food'],
+                    'foodNote' => $day->notes['strength'] ?? '',
+                    'luxuryCount' => $day->plus_count,
+                    'luxuryNote' => $day->notes['plus'] ?? '',
+                    'photos' => array_map(fn (string $path) => '/storage/'.$path, $day->mealPhotoPaths()),
+                ]),
+            ]);
+
+        return Inertia::render('dashboard/AthleteMeals', ['athletes' => $athletes]);
     }
 
     private function role(Request $request): UserRole

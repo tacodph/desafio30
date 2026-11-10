@@ -28,6 +28,91 @@ class DashboardTest extends TestCase
         $this->get('/atleta/ponto-de-partida/como-tirar-medidas')->assertRedirect('/login');
     }
 
+    public function test_staff_checkin_list_only_includes_athletes_with_completed_checkins(): void
+    {
+        $athlete = User::factory()->create();
+        $athlete->checkins()->createMany([
+            ['day' => 1, 'checked_in' => true],
+            ['day' => 2, 'checked_in' => true],
+            ['day' => 3, 'checked_in' => false],
+        ]);
+        $other = User::factory()->create();
+        $other->checkins()->create(['day' => 1, 'checked_in' => false]);
+
+        foreach ([UserRole::Administrador, UserRole::Nutricionista] as $role) {
+            $this->actingAs(User::factory()->ofRole($role)->create())
+                ->get('/equipe/check-ins')
+                ->assertOk()
+                ->assertInertia(fn (Assert $page) => $page
+                    ->component('dashboard/AthleteCheckins')
+                    ->where('canViewProgress', $role === UserRole::Nutricionista)
+                    ->where('athletes.total', 1)
+                    ->where('athletes.data.0.id', $athlete->id)
+                    ->where('athletes.data.0.checkins', 2)
+                    ->where('athletes.data.0.lastDay', 2));
+        }
+
+        $this->actingAs($athlete)->get('/equipe/check-ins')->assertForbidden();
+    }
+
+    public function test_staff_achievement_list_filters_athletes_and_counts_by_category(): void
+    {
+        $athlete = User::factory()->create();
+        $other = User::factory()->create();
+        $athlete->achievements()->createMany([
+            ['type' => 'performance', 'achieved_on' => '2026-11-09', 'detail' => 'Treino concluído'],
+            ['type' => 'cantinho', 'achieved_on' => '2026-11-09', 'detail' => 'Uma vitória'],
+        ]);
+        $other->achievements()->create(['type' => 'resistido', 'achieved_on' => '2026-11-09', 'detail' => 'Uma escolha']);
+
+        foreach ([UserRole::Administrador, UserRole::Nutricionista] as $role) {
+            $this->actingAs(User::factory()->ofRole($role)->create())
+                ->get('/equipe/conquistas?categoria=performance')
+                ->assertOk()
+                ->assertInertia(fn (Assert $page) => $page
+                    ->component('dashboard/AthleteAchievements')
+                    ->where('category', 'performance')
+                    ->where('athletes.total', 1)
+                    ->where('athletes.data.0.id', $athlete->id)
+                    ->where('athletes.data.0.achievements_count', 1)
+                    ->has('athletes.data.0.records', 1)
+                    ->where('athletes.data.0.records.0.detail', 'Treino concluído')
+                    ->where('athletes.data.0.records.0.date', '09/11/2026')
+                    ->where('athletes.data.0.records.0.day', 1));
+        }
+
+        $this->get(route('equipe.athlete.progress', ['athlete' => $athlete->id, 'dia' => 1]))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->component('dashboard/Evolucao')->where('selectedDay', 1));
+
+        $this->actingAs($athlete)->get('/equipe/conquistas')->assertForbidden();
+    }
+
+    public function test_staff_meal_list_includes_notes_luxury_meals_and_photo_only_days(): void
+    {
+        $athlete = User::factory()->create();
+        $athlete->checkins()->create(['day' => 1, 'notes' => ['strength' => 'Almoço planejado', 'plus' => 'Pizza'], 'plus_count' => 1]);
+        $athlete->checkins()->create(['day' => 2, 'movement' => true]);
+        $athlete->checkins()->create(['day' => 3, 'meal_photo' => 'meals/antiga.jpg'])->forceFill(['meal_photos' => ['meals/nova.jpg']])->save();
+        User::factory()->create()->checkins()->create(['day' => 1, 'water' => true]);
+
+        foreach ([UserRole::Administrador, UserRole::Nutricionista] as $role) {
+            $this->actingAs(User::factory()->ofRole($role)->create())
+                ->get('/equipe/alimentacao')
+                ->assertOk()
+                ->assertInertia(fn (Assert $page) => $page
+                    ->component('dashboard/AthleteMeals')
+                    ->where('athletes.total', 1)
+                    ->has('athletes.data.0.days', 2)
+                    ->where('athletes.data.0.days.0.photos', ['/storage/meals/antiga.jpg', '/storage/meals/nova.jpg'])
+                    ->where('athletes.data.0.days.1.foodNote', 'Almoço planejado')
+                    ->where('athletes.data.0.days.1.luxuryCount', 1)
+                    ->where('athletes.data.0.days.1.luxuryNote', 'Pizza'));
+        }
+
+        $this->actingAs($athlete)->get('/equipe/alimentacao')->assertForbidden();
+    }
+
     public function test_a_logged_in_user_can_open_the_scoring_page(): void
     {
         $this->actingAs(User::factory()->create())

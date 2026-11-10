@@ -263,7 +263,9 @@ class AthleteProgressController extends Controller
         abort_unless(UserRole::from($request->user()->userType->name) === UserRole::Nutricionista, 403);
         abort_unless($athlete->userType->name === UserRole::Atleta->value, 404);
 
-        return $this->page($athlete, false, true);
+        $day = $request->integer('dia');
+
+        return $this->page($athlete, false, true)->with('selectedDay', $day >= 1 && $day <= ChallengeSheet::TOTAL_DAYS ? $day : null);
     }
 
     public function updateGoals(Request $request): RedirectResponse

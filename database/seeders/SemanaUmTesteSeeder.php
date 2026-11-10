@@ -10,6 +10,7 @@ use App\Support\ChallengeSheet;
 use App\Support\DayLog;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 
 class SemanaUmTesteSeeder extends Seeder
@@ -66,6 +67,14 @@ class SemanaUmTesteSeeder extends Seeder
                 ['Dança', 35, 2700, 8.0, true, false, 'Almoço em família'],
             ];
 
+            $mealNotes = [
+                1 => 'Frango grelhado, arroz, feijão e salada no almoço.',
+                3 => 'Organizei as refeições da semana e deixei os legumes preparados.',
+                6 => 'Mantive as refeições planejadas e comi pizza com amigos no jantar.',
+            ];
+            $mealPhotos = [1 => 'self-service.png', 3 => 'pratoComPercentual.png'];
+            $disk = Storage::disk('public');
+
             foreach ($week as $index => [$workout, $minutes, $water, $sleep, $noFastFood, $noSweet, $luxuryMeal]) {
                 $details = DayLog::normalize([
                     'workouts' => [['type' => $workout, 'minutes' => $minutes]],
@@ -80,18 +89,42 @@ class SemanaUmTesteSeeder extends Seeder
                     'skill' => $skill,
                 ]);
 
-                $athlete->checkins()->updateOrCreate(['day' => $index + 1], [
+                $day = $index + 1;
+                $checkin = $athlete->checkins()->updateOrCreate(['day' => $day], [
                     ...DayLog::achieved($details, $profile),
                     'checked_in' => true,
                     'details' => $details,
                     'plus_count' => (int) ($luxuryMeal !== null),
-                    'notes' => ['plus' => $luxuryMeal ?? ''],
+                    'notes' => ['strength' => $mealNotes[$day] ?? '', 'plus' => $luxuryMeal ?? ''],
                 ]);
+
+                if (isset($mealPhotos[$day])) {
+                    $filename = $mealPhotos[$day];
+                    $path = 'meals/seed-semana1-'.$filename;
+                    $contents = file_get_contents(public_path('images/alimentacao/'.$filename));
+                    if ($contents === false || ! $disk->put($path, $contents)) {
+                        throw new RuntimeException('Não foi possível gravar a foto de refeição de teste.');
+                    }
+
+                    $checkin->forceFill(['meal_photos' => [$path]])->save();
+                }
+            }
+
+            foreach ([
+                ['cantinho', 1, 'Preparei meu almoço e consegui seguir o planejamento.'],
+                ['resistido', 3, 'Recusei o refrigerante e escolhi água.'],
+                ['performance', 4, 'Completei o treino funcional de 45 minutos.'],
+                ['cantinho', 7, 'Planejei as compras para a próxima semana.'],
+            ] as [$type, $day, $detail]) {
+                $athlete->achievements()->updateOrCreate(
+                    ['type' => $type, 'achieved_on' => ChallengeSheet::dateForDay($day)],
+                    ['detail' => $detail],
+                );
             }
         });
 
         $this->command?->info(sprintf(
-            'Check-ins de %s a %s gravados para %s.',
+            'Check-ins, conquistas, refeições luxo e fotos de %s a %s gravados para %s.',
             ChallengeSheet::dateForDay(1),
             ChallengeSheet::dateForDay(7),
             $email,
