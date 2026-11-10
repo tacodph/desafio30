@@ -15,6 +15,7 @@ export interface NavItem {
     icon?: LucideIcon;
     isActive?: boolean;
     disabled?: boolean;
+    highlighted?: boolean;
     children?: NavGroupItem[];
 }
 

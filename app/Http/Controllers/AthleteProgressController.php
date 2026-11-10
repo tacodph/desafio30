@@ -17,7 +17,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -146,8 +145,8 @@ class AthleteProgressController extends Controller
                     'hip' => 'nullable|numeric|between:40,200',
                 ];
 
-                foreach (self::START_PHOTOS as $key => $label) {
-                    $rules[$key] = [Rule::requiredIf(empty($photos[$key])), 'nullable', 'image', 'max:5120'];
+                foreach (array_keys(self::START_PHOTOS) as $key) {
+                    $rules[$key] = ['nullable', 'image', 'max:5120'];
                 }
 
                 $data = $request->validate($rules, [], self::START_PHOTOS);

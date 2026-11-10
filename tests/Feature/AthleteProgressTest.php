@@ -234,7 +234,8 @@ class AthleteProgressTest extends TestCase
         $this->assertNotNull($athlete->fresh()->welcome_acknowledged_at);
         $this->get('/atleta/boas-vindas')->assertRedirect('/dashboard');
         $this->get('/dashboard')->assertRedirect('/atleta/ponto-de-partida/primeiro-dia');
-        $this->post('/atleta/ponto-de-partida/primeiro-dia')->assertSessionHasErrors(['photo_front', 'photo_side', 'photo_back']);
+        $this->post('/atleta/ponto-de-partida/primeiro-dia')->assertSessionHasNoErrors()->assertRedirect('/atleta/ponto-de-partida/metas');
+        $this->assertSame([], $athlete->fresh()->athleteProfile->start_photos);
 
         $this->actingAs($athlete)
             ->post('/atleta/ponto-de-partida/primeiro-dia', [

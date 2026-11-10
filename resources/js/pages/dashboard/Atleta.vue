@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
+import NutriMessage from '@/components/NutriMessage.vue';
 import ProgressSummary from '@/components/ProgressSummary.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/vue3';
@@ -40,6 +41,8 @@ defineProps<{
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-6 p-4 md:p-6">
+            <NutriMessage />
+
             <section class="surface-card flex flex-col gap-5 p-5 sm:p-6">
                 <div class="flex flex-wrap items-end justify-between gap-3">
                     <div>

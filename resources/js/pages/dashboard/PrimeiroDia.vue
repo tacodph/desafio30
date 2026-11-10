@@ -58,7 +58,7 @@ const fieldClass = 'h-11 rounded-xl border border-brand-line2 bg-brand-card2 px-
                 <div class="eyebrow">{{ firstAccess ? 'Passo 1 de 2 · ponto de partida' : 'Ponto de partida' }}</div>
                 <h1 class="display-title text-[clamp(36px,5vw,56px)]">Primeiro dia</h1>
                 <p class="m-0 text-brand-muted">
-                    Registre suas medidas e as três fotos do início do desafio para acompanhar sua evolução até o dia 30.
+                    Registre suas medidas e, se quiser, fotos do início do desafio para acompanhar sua evolução até o dia 30.
                 </p>
             </div>
 
@@ -88,7 +88,7 @@ const fieldClass = 'h-11 rounded-xl border border-brand-line2 bg-brand-card2 px-
                 <fieldset class="grid gap-3">
                     <legend class="mb-2 text-sm font-semibold">Fotos do início do desafio</legend>
                     <p class="text-sm text-brand-muted">
-                        Envie uma foto de frente, uma de lado e uma de costas.
+                        As fotos são opcionais. Você pode enviar fotos de frente, de lado e de costas.
                         <Link :href="route('athlete.start.measures-guide')" class="font-semibold text-brand-gold underline">Veja os exemplos no material de apoio.</Link>
                     </p>
                     <div class="grid gap-3 sm:grid-cols-3">
@@ -100,7 +100,7 @@ const fieldClass = 'h-11 rounded-xl border border-brand-line2 bg-brand-card2 px-
                                 :alt="'Foto inicial · ' + position.label"
                                 class="h-40 w-full rounded-lg object-contain"
                             />
-                            <input type="file" accept="image/*" :required="!baseline.startPhotos?.[position.key]" class="w-full text-sm font-normal text-brand-muted" @change="onPhoto(position.key, $event)" />
+                            <input type="file" accept="image/*" class="w-full text-sm font-normal text-brand-muted" @change="onPhoto(position.key, $event)" />
                             <InputError :message="form.errors[position.key]" />
                         </label>
                     </div>

@@ -49,7 +49,7 @@ const hasActiveChild = (item: NavGroupItem): boolean => item.children?.some((chi
                         <span>{{ item.title }}</span>
                         <LockKeyhole class="ml-auto size-3.5" aria-hidden="true" />
                     </SidebarMenuButton>
-                    <SidebarMenuButton v-else as-child :is-active="item.href === page.url">
+                    <SidebarMenuButton v-else as-child :is-active="item.href === page.url" :class="{ 'bg-brand-gold font-bold text-brand-ink hover:bg-yellow-300 hover:text-brand-ink active:bg-yellow-300 active:text-brand-ink data-[active=true]:bg-brand-gold data-[active=true]:text-brand-ink [&>svg]:text-brand-ink': item.highlighted }">
                         <Link :href="item.href ?? '#'">
                             <component v-if="item.icon" :is="item.icon" />
                             <span>{{ item.title }}</span>

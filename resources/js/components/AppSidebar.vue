@@ -1,14 +1,25 @@
 <script setup lang="ts">
 import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
-import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
+import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from '@/components/ui/sidebar';
 import { type NavGroupItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { Apple, BookOpen, ClipboardCheck, Droplets, Dumbbell, Flag, LayoutGrid, Lightbulb, PartyPopper, Salad, Settings, Star, Trophy, Users, Mail } from 'lucide-vue-next';
+import { Apple, BookOpen, CircleHelp, ClipboardCheck, Droplets, Dumbbell, Flag, LayoutGrid, Lightbulb, PartyPopper, Salad, Settings, Star, Trophy, Users, Mail } from 'lucide-vue-next';
 import { computed } from 'vue';
 import AppLogo from './AppLogo.vue';
 
 const page = usePage<SharedData>();
+const { isMobile, setOpenMobile } = useSidebar();
+
+function closeMobileOnLink(event: MouseEvent) {
+    if (!isMobile.value || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+
+    const link = event.target instanceof Element ? event.target.closest('a[href]') : null;
+    if (link && link.getAttribute('href') !== '#' && link.getAttribute('target') !== '_blank') {
+        setOpenMobile(false);
+    }
+}
+
 const role = computed(() => page.props.auth.user?.user_type?.name ?? 'atleta');
 
 const menuLabel = computed(() => {
@@ -52,6 +63,7 @@ const mainNavItems = computed<NavGroupItem[]>(() => {
             { title: 'Monte seu Cardápio (visualizar)', href: '/objetivos/alimentacao/compras', icon: Salad },
             { title: 'Almoço - Monte seu prato (visualizar)', href: '/alimentacao/monte-seu-prato', icon: Salad },
             { title: 'Alimentação', icon: Salad, children: [
+                { title: 'Recado importante da nutri', href: '/alimentacao/recado-da-nutri' },
                 { title: 'Escolhendo melhor fora de casa', href: '/alimentacao/escolhendo-melhor-fora-de-casa' },
                 { title: 'Lidando com o fim de semana', href: '/alimentacao/lidando-com-o-fim-de-semana' },
             ] },
@@ -73,10 +85,10 @@ const mainNavItems = computed<NavGroupItem[]>(() => {
 
     if (role.value === 'atleta') {
         return [
+            { title: 'Como funciona a plataforma', href: '/atleta/boas-vindas/plataforma', icon: CircleHelp, highlighted: true },
             { title: 'Painel', href: '/dashboard', icon: LayoutGrid },
             { title: 'Boas-vindas', icon: PartyPopper, children: [
                 { title: 'Mensagem de boas-vindas com vídeo', href: '/atleta/boas-vindas/video' },
-                { title: 'Como funciona a plataforma', href: '/atleta/boas-vindas/plataforma' },
                 { title: 'Entenda os objetivos', href: '/atleta/boas-vindas/objetivos' },
                 { title: 'O desafio não termina em 30 dias.', href: '/atleta/boas-vindas/aproveitar-melhor' },
                 { title: 'Tutoriais', children: [
@@ -97,6 +109,7 @@ const mainNavItems = computed<NavGroupItem[]>(() => {
                 children: evolutionChildren.value,
             },
             { title: 'Alimentação', icon: Salad, children: [
+                { title: 'Recado importante da nutri', href: '/alimentacao/recado-da-nutri', disabled: !page.props.evolutionAccess?.pages.alimentacao },
                 { title: 'Lista de compras inteligente', href: '/objetivos/alimentacao/compras', disabled: !page.props.evolutionAccess?.pages.shopping },
                 { title: 'Almoço - Monte seu prato', href: '/alimentacao/monte-seu-prato', disabled: !page.props.evolutionAccess?.pages.alimentacao },
                 { title: 'Escolhendo melhor fora de casa', href: '/alimentacao/escolhendo-melhor-fora-de-casa', disabled: !page.props.evolutionAccess?.pages.alimentacao },
@@ -142,7 +155,7 @@ const mainNavItems = computed<NavGroupItem[]>(() => {
 
 <template>
     <Sidebar collapsible="icon" variant="inset">
-        <SidebarHeader>
+        <SidebarHeader @click="closeMobileOnLink">
             <SidebarMenu>
                 <SidebarMenuItem>
                     <SidebarMenuButton size="lg" as-child>
@@ -154,11 +167,11 @@ const mainNavItems = computed<NavGroupItem[]>(() => {
             </SidebarMenu>
         </SidebarHeader>
 
-        <SidebarContent>
+        <SidebarContent @click="closeMobileOnLink">
             <NavMain :items="mainNavItems" :label="menuLabel" />
         </SidebarContent>
 
-        <SidebarFooter>
+        <SidebarFooter @click="closeMobileOnLink">
             <NavMain :items="[{ title: 'Dúvidas Frequentes', href: '/ajuda/duvidas-frequentes', icon: BookOpen }, { title: 'Suporte', href: '/suporte', icon: Mail }]" label="Ajuda" />
             <NavUser />
         </SidebarFooter>
