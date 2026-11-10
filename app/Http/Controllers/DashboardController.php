@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\UserRole;
 use App\Models\ChallengePayment;
+use App\Models\Checkin;
 use App\Models\Food;
 use App\Models\FoodGroup;
 use App\Models\ScoreRule;
@@ -20,8 +21,10 @@ use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DashboardController extends Controller
 {
@@ -534,11 +537,26 @@ class DashboardController extends Controller
                     'foodNote' => $day->notes['strength'] ?? '',
                     'luxuryCount' => $day->plus_count,
                     'luxuryNote' => $day->notes['plus'] ?? '',
-                    'photos' => array_map(fn (string $path) => '/storage/'.$path, $day->mealPhotoPaths()),
+                    'photos' => array_map(fn (string $path) => route('equipe.meals.photo', [
+                        'checkin' => $day->id,
+                        'photo' => basename($path),
+                    ], absolute: false), $day->mealPhotoPaths()),
                 ]),
             ]);
 
         return Inertia::render('dashboard/AthleteMeals', ['athletes' => $athletes]);
+    }
+
+    public function athleteMealPhoto(Request $request, Checkin $checkin, string $photo): StreamedResponse
+    {
+        abort_unless(in_array($this->role($request), [UserRole::Administrador, UserRole::Nutricionista], true), 403);
+        abort_unless($checkin->user?->isAthlete(), 404);
+
+        $path = collect($checkin->mealPhotoPaths())->first(fn (string $path) => basename($path) === $photo);
+        $disk = Storage::disk('public');
+        abort_unless($path && $disk->exists($path), 404);
+
+        return $disk->response($path, $photo, ['Cache-Control' => 'private, no-store', 'X-Content-Type-Options' => 'nosniff']);
     }
 
     private function role(Request $request): UserRole

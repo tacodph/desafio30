@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Models\UserType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
@@ -90,10 +91,15 @@ class DashboardTest extends TestCase
 
     public function test_staff_meal_list_includes_notes_luxury_meals_and_photo_only_days(): void
     {
+        $disk = Storage::fake('public');
         $athlete = User::factory()->create();
         $athlete->checkins()->create(['day' => 1, 'notes' => ['strength' => 'Almoço planejado', 'plus' => 'Pizza'], 'plus_count' => 1]);
         $athlete->checkins()->create(['day' => 2, 'movement' => true]);
-        $athlete->checkins()->create(['day' => 3, 'meal_photo' => 'meals/antiga.jpg'])->forceFill(['meal_photos' => ['meals/nova.jpg']])->save();
+        $checkin = $athlete->checkins()->create(['day' => 3, 'meal_photo' => 'meals/antiga.jpg']);
+        $checkin->forceFill(['meal_photos' => ['meals/nova.png']])->save();
+        $image = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jNioAAAAASUVORK5CYII=');
+        $disk->put('meals/nova.png', $image);
+        $photoUrl = route('equipe.meals.photo', ['checkin' => $checkin, 'photo' => 'nova.png'], absolute: false);
         User::factory()->create()->checkins()->create(['day' => 1, 'water' => true]);
 
         foreach ([UserRole::Administrador, UserRole::Nutricionista] as $role) {
@@ -104,13 +110,15 @@ class DashboardTest extends TestCase
                     ->component('dashboard/AthleteMeals')
                     ->where('athletes.total', 1)
                     ->has('athletes.data.0.days', 2)
-                    ->where('athletes.data.0.days.0.photos', ['/storage/meals/antiga.jpg', '/storage/meals/nova.jpg'])
+                    ->where('athletes.data.0.days.0.photos', [route('equipe.meals.photo', ['checkin' => $checkin, 'photo' => 'antiga.jpg'], absolute: false), $photoUrl])
                     ->where('athletes.data.0.days.1.foodNote', 'Almoço planejado')
                     ->where('athletes.data.0.days.1.luxuryCount', 1)
                     ->where('athletes.data.0.days.1.luxuryNote', 'Pizza'));
+            $this->assertSame($image, $this->get($photoUrl)->assertOk()->assertHeader('Content-Type', 'image/png')->streamedContent());
         }
 
         $this->actingAs($athlete)->get('/equipe/alimentacao')->assertForbidden();
+        $this->get($photoUrl)->assertForbidden();
     }
 
     public function test_a_logged_in_user_can_open_the_scoring_page(): void

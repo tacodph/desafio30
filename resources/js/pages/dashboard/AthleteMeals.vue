@@ -3,8 +3,10 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { handleAccordionClick } from '@/lib/accordionScroll';
 import { Head, Link } from '@inertiajs/vue3';
 import { ChevronDown } from 'lucide-vue-next';
+import { reactive } from 'vue';
 
 const title = 'Alimentação dos atletas';
+const unavailablePhotos = reactive(new Set<string>());
 const foodLabels = { no_alcohol: 'Sem álcool', no_fast_food: 'Sem fast food', no_sweet: 'Sem doces', luxury: 'Refeição luxo no planejamento' };
 
 defineProps<{
@@ -49,9 +51,10 @@ defineProps<{
                         </div>
                         <ul v-if="day.photos.length" class="grid grid-cols-2 gap-3 sm:grid-cols-3" aria-label="Fotos das refeições">
                             <li v-for="(photo, index) in day.photos" :key="index">
-                                <a :href="photo" target="_blank" rel="noopener noreferrer" :aria-label="'Ampliar foto da refeição ' + (index + 1)">
-                                    <img :src="photo" :alt="'Foto da refeição ' + (index + 1)" loading="lazy" class="aspect-square w-full rounded-xl object-cover" />
+                                <a v-if="!unavailablePhotos.has(photo)" :href="photo" target="_blank" rel="noopener noreferrer" :aria-label="'Ampliar foto da refeição ' + (index + 1)">
+                                    <img :src="photo" :alt="'Foto da refeição ' + (index + 1)" loading="lazy" class="aspect-square w-full rounded-xl object-cover" @error="unavailablePhotos.add(photo)" />
                                 </a>
+                                <p v-else class="rounded-xl border border-brand-line p-3 text-sm text-brand-muted">Foto indisponível.</p>
                             </li>
                         </ul>
                     </article>

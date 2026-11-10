@@ -106,6 +106,7 @@ Route::middleware(['auth', 'verified', 'challenge.paid'])->group(function () {
     Route::get('equipe/check-ins', [DashboardController::class, 'athleteCheckins'])->name('equipe.checkins');
     Route::get('equipe/conquistas', [DashboardController::class, 'athleteAchievements'])->name('equipe.achievements');
     Route::get('equipe/alimentacao', [DashboardController::class, 'athleteMeals'])->name('equipe.meals');
+    Route::get('equipe/alimentacao/fotos/{checkin}/{photo}', [DashboardController::class, 'athleteMealPhoto'])->whereNumber('checkin')->name('equipe.meals.photo');
     Route::get('equipe/atletas/{athlete}/evolucao', [AthleteProgressController::class, 'showAthlete'])->name('equipe.athlete.progress');
     Route::get('atleta/ponto-de-partida/primeiro-dia', [AthleteProgressController::class, 'firstDay'])->name('athlete.start.first-day');
     Route::post('atleta/ponto-de-partida/primeiro-dia', [AthleteProgressController::class, 'storeFirstDay'])->name('athlete.start.first-day.store');
