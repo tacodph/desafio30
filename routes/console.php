@@ -8,4 +8,4 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-Schedule::command('desafio:reconcile-payments')->everyFifteenMinutes()->withoutOverlapping();
+Schedule::command('desafio:reconcile-payments --scheduled')->everyFifteenMinutes()->withoutOverlapping(15);

@@ -25,6 +25,25 @@ class AthleteProgressTest extends TestCase
         });
     }
 
+    public function test_consultation_meals_unlock_seven_days_after_first_challenge_access(): void
+    {
+        $this->freezeSecond();
+        $athlete = User::factory()->create();
+        $url = route('alimentacao.refeicoes-reais');
+
+        $this->actingAs($athlete)->get($url)->assertForbidden();
+        $firstAccess = $athlete->fresh()->first_challenge_access_at;
+        $this->assertNotNull($firstAccess);
+
+        $this->travelTo($firstAccess->copy()->addDays(7)->subSecond());
+        $this->get($url)->assertForbidden();
+
+        $this->travelTo($firstAccess->copy()->addDays(7));
+        $this->get($url)->assertOk()->assertInertia(fn (Assert $page) => $page
+            ->component('ConsultationMeals')->where('consultationMealsUnlocked', true));
+        $this->assertTrue($firstAccess->equalTo($athlete->fresh()->first_challenge_access_at));
+    }
+
     public function test_challenge_has_thirty_days_and_rejects_day_thirty_one(): void
     {
         $athlete = $this->startedAthlete();
@@ -256,6 +275,10 @@ class AthleteProgressTest extends TestCase
         $this->assertSame('80.0', $profile->waist);
         $this->assertCount(3, $profile->start_photos);
         Storage::disk('public')->assertExists(array_values($profile->start_photos));
+        $photoUrl = route('athlete.start.photo', ['position' => 'photo_front'], absolute: false);
+        $this->actingAs($athlete->fresh())->get('/atleta/ponto-de-partida/primeiro-dia')
+            ->assertInertia(fn (Assert $page) => $page->where('baseline.startPhotos.photo_front', $photoUrl));
+        $this->get($photoUrl)->assertOk()->assertHeader('Content-Type', 'image/jpeg');
 
         $this->actingAs($athlete)->get('/dashboard')->assertRedirect('/atleta/ponto-de-partida/metas');
 
@@ -521,8 +544,20 @@ class AthleteProgressTest extends TestCase
         $this->post('/atleta/dias/2/foto-treino', ['photo' => \Illuminate\Http\UploadedFile::fake()->image('outro.png')]);
         \Illuminate\Support\Facades\Storage::disk('public')->assertMissing($first);
 
+        $checkin = $athlete->checkins()->where('day', 2)->firstOrFail();
+        $photoUrl = route('evolution.workout.photo', ['checkin' => $checkin, 'v' => basename($checkin->workout_photo)], absolute: false);
+
         $this->get('/atleta/evolucao/dias')
-            ->assertInertia(fn (Assert $page) => $page->where('days.1.saved', false)->where('days.1.workout_photo', fn ($url) => str_starts_with($url, '/storage/workouts/')));
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->where('days.1.saved', false)->where('days.1.workout_photo', $photoUrl));
+        $this->get($photoUrl)->assertOk()->assertHeader('Content-Type', 'image/png');
+        $this->actingAs(User::factory()->ofRole(UserRole::Nutricionista)->create())
+            ->get(route('equipe.athlete.progress', $athlete))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->where('days.1.workout_photo', $photoUrl));
+        $this->get($photoUrl)->assertOk()->assertHeader('Content-Type', 'image/png');
+        $this->actingAs(User::factory()->create())->get($photoUrl)->assertForbidden();
+        $this->actingAs($athlete);
 
         $this->post('/atleta/dias/2/foto-treino', ['photo' => \Illuminate\Http\UploadedFile::fake()->create('x.pdf', 10)])->assertSessionHasErrors('photo');
 
@@ -552,10 +587,13 @@ class AthleteProgressTest extends TestCase
 
         $this->post('/atleta/dias/2/foto-refeicao', ['photo' => \Illuminate\Http\UploadedFile::fake()->image('outro.png')]);
         $disk->assertExists([$legacy, $first]);
+        $checkin = $athlete->checkins()->where('day', 2)->firstOrFail();
+        $legacyUrl = route('equipe.meals.photo', ['checkin' => $checkin, 'photo' => basename($legacy)], absolute: false);
 
         $this->get('/atleta/evolucao/dias')
             ->assertInertia(fn (Assert $page) => $page->has('days.1.meal_photos', 3)
-                ->where('days.1.meal_photos.0.url', '/storage/'.$legacy));
+                ->where('days.1.meal_photos.0.url', $legacyUrl));
+        $this->get($legacyUrl)->assertOk();
 
         $this->post('/atleta/dias/2/foto-refeicao', ['photo' => \Illuminate\Http\UploadedFile::fake()->create('x.pdf', 10)])->assertSessionHasErrors('photo');
 
@@ -569,10 +607,13 @@ class AthleteProgressTest extends TestCase
                 ->where('canEdit', false)
                 ->where('athleteId', $athlete->id)
                 ->has('days.1.meal_photos', 3)
-                ->where('days.1.meal_photos.0.url', '/storage/'.$legacy));
+                ->where('days.1.meal_photos.0.url', $legacyUrl));
 
+        $this->get($legacyUrl)->assertOk();
         $this->put("/equipe/atletas/{$athlete->id}/dias/2/comentario-refeicao", ['comment' => 'Prato colorido, mandou bem!'])
             ->assertRedirect();
+        $reactionUrl = route('equipe.athlete.meal.reaction', ['athlete' => $athlete, 'day' => 2]);
+        $this->put($reactionUrl, ['reaction' => '👏'])->assertRedirect()->assertSessionHasNoErrors();
 
         $this->assertDatabaseHas('checkins', [
             'user_id' => $athlete->id,
@@ -584,7 +625,12 @@ class AthleteProgressTest extends TestCase
 
         $this->actingAs($athlete)
             ->get('/atleta/evolucao/dias')
-            ->assertInertia(fn (Assert $page) => $page->where('days.1.meal_comment', 'Prato colorido, mandou bem!'));
+            ->assertInertia(fn (Assert $page) => $page->where('days.1.meal_comment', 'Prato colorido, mandou bem!')->where('days.1.meal_reaction', '👏'));
+
+        $this->put($reactionUrl, ['reaction' => null])->assertForbidden();
+        $this->actingAs($nutri)->put($reactionUrl, ['reaction' => null])->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertNull($checkin->fresh()->meal_reaction);
+        $this->actingAs($athlete);
 
         $this->put("/equipe/atletas/{$athlete->id}/dias/2/comentario-refeicao", ['comment' => 'Não pode'])
             ->assertForbidden();
@@ -601,6 +647,27 @@ class AthleteProgressTest extends TestCase
             ->put("/equipe/atletas/{$athlete->id}/dias/2/comentario-refeicao", ['comment' => 'Coach'])
             ->assertForbidden();
     }
+    public function test_nutritionist_can_react_independently_to_each_photo_and_checkin(): void
+    {
+        $athlete = $this->startedAthlete();
+        $checkin = $athlete->checkins()->create([
+            'day' => 1, 'checked_in' => true, 'meal_photo' => 'meals/lunch.jpg', 'workout_photo' => 'workouts/gym.jpg',
+        ]);
+        $checkin->forceFill(['meal_photos' => ['meals/dinner.jpg']])->save();
+        $url = route('equipe.athlete.checkin.reaction', ['athlete' => $athlete, 'day' => 1]);
+
+        $this->actingAs($athlete)->put($url, ['target' => 'checkin', 'reaction' => '❤️'])->assertForbidden();
+        $this->actingAs(User::factory()->ofRole(UserRole::Nutricionista)->create());
+        $this->put($url, ['target' => 'meal:missing.jpg', 'reaction' => '👏'])->assertNotFound();
+
+        foreach (['checkin' => '❤️', 'meal:lunch.jpg' => '👏', 'meal:dinner.jpg' => '🙌', 'workout:gym.jpg' => '🔥'] as $target => $reaction) {
+            $this->put($url, ['target' => $target, 'reaction' => $reaction])->assertRedirect()->assertSessionHasNoErrors();
+        }
+
+        $this->put($url, ['target' => 'meal:lunch.jpg', 'reaction' => null])->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertEquals(['checkin' => '❤️', 'meal:dinner.jpg' => '🙌', 'workout:gym.jpg' => '🔥'], $checkin->fresh()->reactions);
+    }
+
     public function test_a_single_day_can_be_saved_alone_and_then_comes_back_locked(): void
     {
         $athlete = $this->startedAthlete();

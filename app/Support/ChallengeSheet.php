@@ -150,12 +150,15 @@ class ChallengeSheet
                 'plus_count' => (int) ($checkin?->plus_count ?? 0),
                 'details' => self::detailsFor($checkin),
                 'saved' => self::hasEntry($checkin),
-                'workout_photo' => $checkin?->workout_photo ? '/storage/'.$checkin->workout_photo : null,
+                'workout_photo' => $checkin?->workout_photo ? route('evolution.workout.photo', ['checkin' => $checkin->id, 'v' => basename($checkin->workout_photo)], absolute: false) : null,
+                'workout_photo_id' => $checkin?->workout_photo ? basename($checkin->workout_photo) : null,
+                'reactions' => (object) ($checkin?->reactions ?? []),
                 'meal_photos' => array_map(fn (string $path) => [
                     'id' => basename($path),
-                    'url' => '/storage/'.$path,
+                    'url' => route('equipe.meals.photo', ['checkin' => $checkin->id, 'photo' => basename($path)], absolute: false),
                 ], $checkin?->mealPhotoPaths() ?? []),
                 'meal_comment' => $checkin?->meal_comment ?? '',
+                'meal_reaction' => $checkin?->meal_reaction,
                 'notes' => array_merge([
                     'movement' => '',
                     'water' => '',

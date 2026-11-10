@@ -27,7 +27,9 @@ class ProfileController extends Controller
             $latestPayment = $user->payments()->latest('id')->first();
             $status = 'novo';
 
-            if ($user->isCourtesy()) {
+            if ($user->hasExternalChallengePayment()) {
+                $status = 'externo';
+            } elseif ($user->isCourtesy()) {
                 $status = 'cortesia';
             } elseif ($user->hasPaidChallenge()) {
                 $status = 'confirmado';
@@ -43,8 +45,8 @@ class ProfileController extends Controller
 
             $paymentInfo = [
                 'status' => $status,
-                'value' => $user->isCourtesy() ? 0 : ($latestPayment?->value ?? config('desafio.price')),
-                'dueDate' => $user->isCourtesy() ? null : $latestPayment?->due_date?->format('d/m/Y'),
+                'value' => $status === 'externo' ? null : ($user->isCourtesy() ? 0 : ($latestPayment?->value ?? config('desafio.price'))),
+                'dueDate' => in_array($status, ['cortesia', 'externo'], true) ? null : $latestPayment?->due_date?->format('d/m/Y'),
             ];
         }
 

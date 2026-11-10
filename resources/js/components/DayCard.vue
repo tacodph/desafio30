@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import CheckinReaction from '@/components/CheckinReaction.vue';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { achieved, dayPoints, workoutMinutes, type Achieved, type DayDetails, type DayGoals } from '@/data/dayLog';
@@ -21,8 +22,11 @@ const props = withDefaults(
         weekday: string;
         goals: DayGoals;
         photo?: string | null;
+        workoutPhotoId?: string | null;
+        reactions?: Record<string, string>;
         mealPhotos?: { id: string; url: string }[];
         mealComment?: string | null;
+        mealReaction?: string | null;
         saved: boolean;
         workoutTypes: string[];
         weekSkills: string[];
@@ -40,6 +44,7 @@ const props = withDefaults(
 const weekdayLabels: Record<string, string> = { dom: 'domingo', seg: 'segunda', ter: 'terça', qua: 'quarta', qui: 'quinta', sex: 'sexta', sáb: 'sábado' };
 
 const open = ref(props.defaultOpen ?? false);
+const unavailablePhotos = ref(new Set<string>());
 
 type GoalKey = keyof Achieved | 'plus' | 'notes';
 
@@ -316,6 +321,7 @@ const chipClass = (active: boolean) =>
         <p v-if="lockedReason" class="m-0 text-xs text-brand-muted">{{ lockedReason }}</p>
         <div v-show="open" class="grid gap-3">
             <slot name="before-check-in" />
+            <CheckinReaction v-if="entry.checked_in" :athlete-id="canComment ? athleteId : null" :day="entry.day" target="checkin" :reaction="reactions?.checkin" label="Check-in do dia" />
             <fieldset :disabled="!canEdit || !editing" class="m-0 grid min-w-0 gap-3 border-0 p-0" :class="editing ? '' : 'pointer-events-none opacity-80'">
             <!-- Habilidade -->
             <section class="grid gap-3 rounded-xl border px-3 py-3" :class="[canEdit ? 'pointer-events-auto' : '', done.skill ? 'border-brand-gold bg-brand-gold/10' : 'border-brand-line2']">
@@ -377,10 +383,6 @@ const chipClass = (active: boolean) =>
                         <Camera class="size-4" /> {{ uploading ? 'Enviando...' : photo ? 'Trocar foto' : 'Adicionar foto' }}
                     </button>
                     <input ref="photoInput" type="file" accept="image/*" class="hidden" @change="sendPhoto" />
-                </div>
-                <div v-if="photo" class="relative w-fit">
-                    <img :src="photo" alt="Foto do treino" class="max-h-48 max-w-full rounded-lg border border-brand-line2 object-cover" />
-                    <button v-if="showAthleteControls" type="button" class="absolute right-1.5 top-1.5 rounded-full bg-brand-ink/80 p-1.5 text-brand-cream" aria-label="Remover foto do treino" @click="removePhoto"><X class="size-4" /></button>
                 </div>
                 <p v-if="photoError" class="m-0 text-xs text-red-400">{{ photoError }}</p>
                 <label v-if="minutes < goals.movement_minutes || entry.details.manual.movement" class="flex min-h-9 items-center gap-2.5 text-xs text-brand-muted">
@@ -466,16 +468,9 @@ const chipClass = (active: boolean) =>
                     </button>
                 </div>
                 <input ref="mealInput" type="file" accept="image/*" multiple class="hidden" @change="sendMealPhotos" />
-                <div v-if="mealPhotos?.length" class="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                    <div v-for="(photo, index) in mealPhotos" :key="photo.id" class="relative">
-                        <img :src="photo.url" :alt="'Foto da refeição ' + (index + 1)" loading="lazy" class="aspect-square w-full rounded-lg border border-brand-line2 object-cover" />
-                        <button v-if="showAthleteControls" type="button" class="absolute right-1.5 top-1.5 rounded-full bg-brand-ink/80 p-1.5 text-brand-cream disabled:opacity-60" :disabled="mealUploading" :aria-label="'Remover foto da refeição ' + (index + 1)" @click="removeMealPhoto(photo.id)">
-                            <X class="size-4" />
-                        </button>
-                    </div>
-                </div>
-                <p v-else-if="canComment" class="m-0 text-xs text-brand-muted">Ainda sem fotos da refeição neste dia.</p>
+                <p v-if="!mealPhotos?.length && canComment" class="m-0 text-xs text-brand-muted">Ainda sem fotos da refeição neste dia.</p>
                 <p v-if="mealError" class="m-0 text-xs text-red-400">{{ mealError }}</p>
+                <p v-if="mealReaction" class="m-0 text-sm font-semibold">Reação da nutri {{ mealReaction }}</p>
                 <p v-if="mealComment && !canComment" class="m-0 text-sm leading-relaxed text-brand-muted">
                     <span class="font-semibold text-brand-cream">Nutri · </span>{{ mealComment }}
                 </p>
@@ -501,6 +496,28 @@ const chipClass = (active: boolean) =>
                     {{ saving === 'notes' ? 'Salvando…' : 'Salvar observação' }}
                 </button>
             </fieldset>
+
+            <section v-if="photo || mealPhotos?.length" class="grid gap-3 rounded-xl border border-brand-line2 p-3">
+                <h3 class="text-sm font-semibold">Fotos do dia</h3>
+                <div v-if="photo" class="w-fit space-y-2">
+                    <div class="relative">
+                        <img v-if="!unavailablePhotos.has(photo)" :src="photo" alt="Foto do treino" class="max-h-48 max-w-full rounded-lg border border-brand-line2 object-cover" @error="unavailablePhotos.add(photo)" />
+                        <p v-else class="rounded-lg border border-brand-line2 p-3 pr-10 text-sm text-brand-muted">Foto do treino indisponível.</p>
+                        <button v-if="showAthleteControls" type="button" :disabled="!canEdit || !editing" class="absolute right-1.5 top-1.5 rounded-full bg-brand-ink/80 p-1.5 text-brand-cream disabled:opacity-60" aria-label="Remover foto do treino" @click="removePhoto"><X class="size-4" /></button>
+                    </div>
+                    <CheckinReaction v-if="workoutPhotoId" :athlete-id="canComment ? athleteId : null" :day="entry.day" :target="`workout:${workoutPhotoId}`" :reaction="reactions?.[`workout:${workoutPhotoId}`]" label="Foto do treino" />
+                </div>
+                <div v-if="mealPhotos?.length" class="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    <div v-for="(mealPhoto, index) in mealPhotos" :key="mealPhoto.id" class="space-y-2">
+                        <div class="relative">
+                            <img v-if="!unavailablePhotos.has(mealPhoto.url)" :src="mealPhoto.url" :alt="`Foto da refeição ${index + 1}`" loading="lazy" class="aspect-square w-full rounded-lg border border-brand-line2 object-cover" @error="unavailablePhotos.add(mealPhoto.url)" />
+                            <p v-else class="rounded-lg border border-brand-line2 p-3 pr-10 text-sm text-brand-muted">Foto da refeição indisponível.</p>
+                            <button v-if="showAthleteControls" type="button" :disabled="!canEdit || !editing || mealUploading" class="absolute right-1.5 top-1.5 rounded-full bg-brand-ink/80 p-1.5 text-brand-cream disabled:opacity-60" :aria-label="`Remover foto da refeição ${index + 1}`" @click="removeMealPhoto(mealPhoto.id)"><X class="size-4" /></button>
+                        </div>
+                        <CheckinReaction :athlete-id="canComment ? athleteId : null" :day="entry.day" :target="`meal:${mealPhoto.id}`" :reaction="reactions?.[`meal:${mealPhoto.id}`]" :label="`Foto da refeição ${index + 1}`" />
+                    </div>
+                </div>
+            </section>
 
             <section v-if="canComment" class="grid gap-2 rounded-xl border border-brand-line2 px-3 py-3">
                 <p class="m-0 text-sm font-semibold text-brand-cream">Avaliação da refeição</p>

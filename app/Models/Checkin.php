@@ -37,6 +37,7 @@ class Checkin extends Model
             'notes' => 'array',
             'details' => 'array',
             'meal_photos' => 'array',
+            'reactions' => 'array',
         ];
     }
 

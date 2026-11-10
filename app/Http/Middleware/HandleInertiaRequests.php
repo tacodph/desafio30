@@ -58,6 +58,7 @@ class HandleInertiaRequests extends Middleware
                     )->all(),
                 ];
             },
+            'consultationMealsUnlocked' => fn () => $request->user()?->canViewConsultationMeals() ?? false,
             'accessNotice' => fn () => $request->session()->get('access_notice'),
             'showReleaseWelcome' => fn () => ! $request->user()?->release_welcome_acknowledged_at
                 && \App\Support\ReleaseWelcome::available($request->user()),

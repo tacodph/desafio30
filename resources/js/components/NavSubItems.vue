@@ -24,6 +24,23 @@ const active = (item: NavGroupItem): boolean => Boolean(item.href && (page.url =
                     <CollapsibleContent><NavSubItems :items="item.children" /></CollapsibleContent>
                 </SidebarMenuSubItem>
             </Collapsible>
+            <Collapsible v-else-if="item.disabled && item.lockedPreview" as-child>
+                <SidebarMenuSubItem>
+                    <CollapsibleTrigger as-child>
+                        <SidebarMenuSubButton as="button" type="button" title="Ver prévia do conteúdo bloqueado">
+                            <span>{{ item.title }}</span><LockKeyhole class="ml-auto size-3.5 shrink-0" aria-hidden="true" />
+                        </SidebarMenuSubButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                        <div class="my-2 space-y-2 rounded-xl bg-brand-card2 p-3 text-sm text-brand-cream">
+                            <p class="font-black uppercase text-brand-gold">{{ item.lockedPreview.title }}</p>
+                            <p class="font-bold">{{ item.lockedPreview.subtitle }}</p>
+                            <p class="leading-relaxed">{{ item.lockedPreview.description }}</p>
+                            <p class="text-xs font-bold uppercase text-brand-gold">{{ item.lockedPreview.footer }}</p>
+                        </div>
+                    </CollapsibleContent>
+                </SidebarMenuSubItem>
+            </Collapsible>
             <SidebarMenuSubItem v-else>
                 <SidebarMenuSubButton v-if="item.disabled" as="button" type="button" disabled aria-disabled="true" title="Acesso ainda não liberado" class="opacity-50">
                     <span>{{ item.title }}</span><LockKeyhole class="ml-auto size-3.5" aria-hidden="true" />

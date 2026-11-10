@@ -165,14 +165,11 @@ class ChallengePaymentService
 
             $payment->save();
 
-            $user = $payment->user;
-
-            if ($paid && ! $user->challenge_paid_at) {
-                $user->forceFill(['challenge_paid_at' => now()])->save();
-            }
-
-            if ($status === ChallengePayment::REFUNDED && $user->challenge_paid_at) {
-                $user->forceFill(['challenge_paid_at' => null])->save();
+            if ($paid || $status === ChallengePayment::REFUNDED) {
+                $user = $payment->user()->lockForUpdate()->firstOrFail();
+                $user->challenge_paid_at = $paid ? ($user->challenge_paid_at ?? now()) : null;
+                $user->syncChallengeAccessType($user->hasExternalChallengePayment());
+                $user->save();
             }
 
             return $payment;

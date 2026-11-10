@@ -21,8 +21,11 @@ type Day = {
     plus_count: number;
     details: DayDetails;
     workout_photo: string | null;
+    workout_photo_id: string | null;
+    reactions: Record<string, string>;
     meal_photos: { id: string; url: string }[];
     meal_comment: string;
+    meal_reaction: string | null;
     saved: boolean;
     notes: Record<string, string>;
     points: number;
@@ -315,8 +318,11 @@ const saveComment = () => {
                     :weekday="item.info.weekday"
                     :goals="goals"
                     :photo="item.info.workout_photo"
+                    :workout-photo-id="item.info.workout_photo_id"
+                    :reactions="item.info.reactions"
                     :meal-photos="item.info.meal_photos"
                     :meal-comment="item.info.meal_comment"
+                    :meal-reaction="item.info.meal_reaction"
                     :saved="item.info.saved"
                     :workout-types="workoutTypes"
                     :week-skills="weeklySkills[item.info.week - 1] ?? []"

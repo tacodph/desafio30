@@ -8,6 +8,30 @@ html {
 }
 
 @layer base {
+    * {
+        scrollbar-width: thin;
+        scrollbar-color: hsl(var(--primary) / 0.68) hsl(var(--muted));
+    }
+
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: hsl(var(--muted));
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: hsl(var(--primary) / 0.68);
+        border: 1px solid hsl(var(--muted));
+        border-radius: 999px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: hsl(var(--primary));
+    }
+
     :root {
         --background: 30 11% 7%;
         --foreground: 38 35% 94%;

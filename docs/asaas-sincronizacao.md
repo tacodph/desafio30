@@ -2,6 +2,8 @@
 
 O painel usa os registros locais de challenge_payments. Webhooks autenticados atualizam esses registros pela API do Asaas. A reconciliação agendada é a recuperação quando um evento não chega ou não é processado.
 
+Em **Pagamentos**, o painel mostra os horários da última conferência com resposta do Asaas, da execução agendada e dos webhooks recebidos e processados. O botão **Sincronizar agora**, disponível ao administrador, envia a conferência à fila sem esperar pelo próximo horário do agendador. A página acompanha o resultado enquanto a solicitação estiver ativa. Se ela ficar na fila, confira se o worker está rodando. Se a última execução agendada não avançar, confira o cron com `php artisan schedule:list` e os logs do servidor.
+
 ## Recuperar registros em produção
 
 Após publicar a correção, execute na pasta do projeto no servidor:

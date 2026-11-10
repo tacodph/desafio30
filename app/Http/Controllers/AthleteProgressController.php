@@ -21,6 +21,7 @@ use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 use RuntimeException;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
 
 class AthleteProgressController extends Controller
@@ -114,10 +115,24 @@ class AthleteProgressController extends Controller
                 'waist' => $profile?->waist ?? '',
                 'abdomen' => $profile?->abdomen ?? '',
                 'hip' => $profile?->hip ?? '',
-                'photo' => $profile?->photo ? '/storage/'.$profile->photo : null,
-                'startPhotos' => array_map(fn (string $path) => Storage::disk('public')->url($path), $profile?->start_photos ?? []),
+                'photo' => $profile?->photo ? route('athlete.start.photo', ['position' => 'legacy'], absolute: false) : null,
+                'startPhotos' => collect($profile?->start_photos ?? [])->map(fn ($path, $position) => $path
+                    ? route('athlete.start.photo', ['position' => $position], absolute: false)
+                    : null)->all(),
             ],
         ]);
+    }
+
+    public function firstDayPhoto(Request $request, string $position): StreamedResponse
+    {
+        $this->abortUnlessAthlete($request);
+
+        $profile = $request->user()->athleteProfile;
+        $path = $position === 'legacy' ? $profile?->photo : ($profile?->start_photos[$position] ?? null);
+        $disk = Storage::disk('public');
+        abort_unless($path && $disk->exists($path), 404);
+
+        return $disk->response($path, basename($path), ['Cache-Control' => 'private, no-store', 'X-Content-Type-Options' => 'nosniff']);
     }
 
     public function storeFirstDay(Request $request): RedirectResponse
@@ -603,6 +618,53 @@ class AthleteProgressController extends Controller
         $checkin = Checkin::query()->firstOrNew(['user_id' => $athlete->id, 'day' => $day]);
         $checkin->meal_comment = $data['comment'];
         $checkin->save();
+
+        return back();
+    }
+
+    public function reactToMeal(Request $request, User $athlete, int $day): RedirectResponse
+    {
+        abort_unless($request->user()->userType->name === UserRole::Nutricionista->value, 403);
+        abort_unless($athlete->isAthlete() && $day >= 1 && $day <= ChallengeSheet::TOTAL_DAYS, 404);
+
+        $data = $request->validate(['reaction' => ['present', 'nullable', \Illuminate\Validation\Rule::in(['❤️', '👏', '🙌', '🔥'])]]);
+        $checkin = $athlete->checkins()->where('day', $day)->firstOrFail();
+        $checkin->meal_reaction = $data['reaction'];
+        $checkin->save();
+
+        return back();
+    }
+
+    public function reactToCheckin(Request $request, User $athlete, int $day): RedirectResponse
+    {
+        abort_unless($request->user()->userType->name === UserRole::Nutricionista->value, 403);
+        abort_unless($athlete->isAthlete() && $day >= 1 && $day <= ChallengeSheet::TOTAL_DAYS, 404);
+
+        $data = $request->validate([
+            'target' => 'required|string|max:255',
+            'reaction' => ['present', 'nullable', \Illuminate\Validation\Rule::in(['❤️', '👏', '🙌', '🔥'])],
+        ]);
+
+        DB::transaction(function () use ($athlete, $day, $data) {
+            $checkin = $athlete->checkins()->where('day', $day)->lockForUpdate()->firstOrFail();
+            $targets = array_map(fn (string $path) => 'meal:'.basename($path), $checkin->mealPhotoPaths());
+            if ($checkin->workout_photo) {
+                $targets[] = 'workout:'.basename($checkin->workout_photo);
+            }
+            if ($checkin->checked_in) {
+                $targets[] = 'checkin';
+            }
+            abort_unless(in_array($data['target'], $targets, true), 404);
+
+            $reactions = $checkin->reactions ?? [];
+            if ($data['reaction'] === null) {
+                unset($reactions[$data['target']]);
+            } else {
+                $reactions[$data['target']] = $data['reaction'];
+            }
+            $checkin->reactions = $reactions;
+            $checkin->save();
+        });
 
         return back();
     }

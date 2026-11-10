@@ -18,6 +18,26 @@ class DashboardTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_admin_can_record_external_payment_without_overwriting_existing_release_data(): void
+    {
+        $athlete = User::factory()->unpaid()->create();
+        $url = route('admin.users.access', $athlete);
+
+        $this->actingAs(User::factory()->create())->patch($url, ['access_type' => 'external'])->assertForbidden();
+        $this->actingAs(User::factory()->ofRole(UserRole::Administrador)->create())
+            ->patch($url, ['access_type' => 'external'])->assertRedirect(route('admin.users'));
+
+        $this->assertTrue($athlete->fresh()->hasChallengeAccess());
+        $this->assertSame('external', $athlete->fresh()->challengeAccessType->code);
+        $this->assertNull($athlete->fresh()->challenge_paid_at);
+
+        $this->patch($url, ['access_type' => 'courtesy'])->assertRedirect();
+        $this->assertTrue($athlete->fresh()->hasChallengeAccess());
+        $this->assertSame('courtesy', $athlete->fresh()->challengeAccessType->code);
+        $this->patch($url, ['access_type' => 'automatic'])->assertRedirect();
+        $this->assertFalse($athlete->fresh()->hasChallengeAccess());
+    }
+
     public function test_guests_are_redirected_to_the_login_page(): void
     {
         $this->get('/dashboard')->assertRedirect('/login');
@@ -120,7 +140,7 @@ class DashboardTest extends TestCase
         }
 
         $this->actingAs($athlete)->get('/equipe/alimentacao')->assertForbidden();
-        $this->get($photoUrl)->assertForbidden();
+        $this->actingAs(User::factory()->create())->get($photoUrl)->assertForbidden();
     }
 
     public function test_a_logged_in_user_can_open_the_scoring_page(): void

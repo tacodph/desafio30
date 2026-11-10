@@ -15,8 +15,16 @@ class EnsureChallengePaid
     {
         $user = $request->user();
 
-        if ($user && $user->isAthlete() && ! $user->hasChallengeAccess()) {
-            return redirect()->route('pagamento.show');
+        if ($user?->isAthlete()) {
+            if (! $user->hasChallengeAccess()) {
+                return redirect()->route('pagamento.show');
+            }
+
+            if ($user->first_challenge_access_at === null) {
+                $user->newQuery()->whereKey($user->id)->whereNull('first_challenge_access_at')
+                    ->update(['first_challenge_access_at' => now()]);
+                $user->first_challenge_access_at = $user->newQuery()->whereKey($user->id)->value('first_challenge_access_at');
+            }
         }
 
         return $next($request);

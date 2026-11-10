@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
+import CheckinReaction from '@/components/CheckinReaction.vue';
 import { Head, Link } from '@inertiajs/vue3';
 
 const title = 'Check-ins dos atletas';
 
 defineProps<{
     athletes: {
-        data: { id: number; name: string; checkins: number; lastDay: number; lastDate: string }[];
+        data: { id: number; name: string; checkins: number; lastDay: number; lastDate: string; days: { day: number; date: string; reaction: string | null }[] }[];
         total: number;
         current_page: number;
         last_page: number;
@@ -35,6 +36,15 @@ defineProps<{
                         <span class="text-sm font-bold text-brand-gold">{{ athlete.checkins }} {{ athlete.checkins === 1 ? 'check-in' : 'check-ins' }}</span>
                         <Link v-if="canViewProgress" :href="route('equipe.athlete.progress', athlete.id)" class="text-sm font-bold underline">Ver evolução</Link>
                     </div>
+                    <details class="w-full rounded-xl border border-brand-line p-3">
+                        <summary class="cursor-pointer text-sm font-bold text-brand-gold">Ver check-ins</summary>
+                        <ul class="mt-2 divide-y divide-brand-line">
+                            <li v-for="day in athlete.days" :key="day.day" class="flex flex-wrap items-center justify-between gap-2 py-3">
+                                <span class="text-sm font-semibold">Dia {{ day.day }} · {{ day.date }}</span>
+                                <CheckinReaction :athlete-id="canViewProgress ? athlete.id : null" :day="day.day" target="checkin" :reaction="day.reaction" :label="`Check-in do dia ${day.day}`" />
+                            </li>
+                        </ul>
+                    </details>
                 </li>
             </ul>
             <p v-else class="surface-card p-5 text-brand-muted">Nenhum atleta registrou check-in até agora.</p>

@@ -80,9 +80,11 @@ class CourtesyAthleteTest extends TestCase
 
     public function test_public_registration_cannot_grant_itself_courtesy(): void
     {
+        $this->travelTo(\Illuminate\Support\Carbon::parse('2026-11-09 09:59:59', 'America/Sao_Paulo'));
         $data = $this->registration();
         $data['challenge_courtesy_at'] = now()->toDateTimeString();
         $data['challenge_paid_at'] = now()->toDateTimeString();
+        $data['challenge_access_type_code'] = 'external';
         $this->post('/register', $data)->assertRedirect(route('pagamento.show', absolute: false));
         $athlete = User::where('email', 'cortesia@example.com')->firstOrFail();
         $this->assertFalse($athlete->hasChallengeAccess());

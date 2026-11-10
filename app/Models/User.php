@@ -58,6 +58,7 @@ class User extends Authenticatable
             'challenge_paid_at' => 'datetime',
             'challenge_early_access' => 'boolean',
             'welcome_acknowledged_at' => 'datetime',
+            'first_challenge_access_at' => 'datetime',
             'release_welcome_acknowledged_at' => 'datetime',
             'challenge_courtesy_at' => 'datetime',
             'password' => 'hashed',
@@ -84,11 +85,34 @@ class User extends Authenticatable
         return $this->hasMany(ChallengePayment::class);
     }
 
+    public function challengeAccessType(): BelongsTo
+    {
+        return $this->belongsTo(ChallengeAccessType::class, 'challenge_access_type_code', 'code');
+    }
+
+    public function syncChallengeAccessType(bool $external): void
+    {
+        $this->challenge_access_type_code = match (true) {
+            $external => ChallengeAccessType::EXTERNAL,
+            $this->isCourtesy() => ChallengeAccessType::COURTESY,
+            $this->challenge_paid_at === null => null,
+            $this->payments()->whereNotNull('asaas_payment_id')->whereIn('status', ChallengePayment::PAID_STATUSES)->exists() => ChallengeAccessType::ASAAS,
+            default => ChallengeAccessType::LEGACY,
+        };
+    }
+
+    public function hasExternalChallengePayment(): bool
+    {
+        return $this->challenge_access_type_code === ChallengeAccessType::EXTERNAL;
+    }
+
     public function scopeWithPendingChallengePayment(Builder $query): Builder
     {
         return $query->where('user_type_id', UserType::idFor(UserRole::Atleta))
             ->whereNull('challenge_paid_at')
             ->whereNull('challenge_courtesy_at')
+            ->where(fn (Builder $query) => $query->whereNull('challenge_access_type_code')
+                ->orWhere('challenge_access_type_code', '<>', ChallengeAccessType::EXTERNAL))
             ->whereHas('payments', fn (Builder $payments) => $payments
                 ->where('status', ChallengePayment::PENDING)
                 ->whereNotNull('asaas_payment_id'));
@@ -99,9 +123,15 @@ class User extends Authenticatable
         return $this->user_type_id === UserType::idFor(UserRole::Atleta);
     }
 
+    public function canViewConsultationMeals(): bool
+    {
+        return $this->userType?->name === UserRole::Administrador->value
+            || ($this->isAthlete() && $this->first_challenge_access_at?->copy()->addDays(7)->lte(now()) === true);
+    }
+
     public function hasPaidChallenge(): bool
     {
-        return $this->challenge_paid_at !== null;
+        return $this->challenge_paid_at !== null || $this->hasExternalChallengePayment();
     }
 
     public function isCourtesy(): bool

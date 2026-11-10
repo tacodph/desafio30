@@ -18,8 +18,8 @@ interface Props {
     status?: string;
     className?: string;
     paymentInfo: {
-        status: 'novo' | 'pendente' | 'vencido' | 'confirmado' | 'reembolsado' | 'cortesia';
-        value: number | string;
+        status: 'novo' | 'pendente' | 'vencido' | 'confirmado' | 'reembolsado' | 'cortesia' | 'externo';
+        value: number | string | null;
         dueDate: string | null;
     } | null;
 }
@@ -64,10 +64,11 @@ const paymentStatus = (status: NonNullable<Props['paymentInfo']>['status']) =>
         pendente: 'Aguardando pagamento',
         vencido: 'Pagamento vencido',
         confirmado: 'Pagamento confirmado',
+        externo: 'Pagamento externo registrado',
         reembolsado: 'Pagamento reembolsado',
     })[status];
 
-const paymentValue = (value: number | string) => Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const paymentValue = (value: number | string | null) => value === null ? 'Não informado' : Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 </script>
 
 <template>
@@ -157,11 +158,11 @@ const paymentValue = (value: number | string) => Number(value).toLocaleString('p
                         </div>
                         <div>
                             <dt class="text-sm text-muted-foreground">Vencimento</dt>
-                            <dd class="font-semibold">{{ props.paymentInfo.status === 'cortesia' ? 'Não se aplica' : props.paymentInfo.dueDate ?? 'Ainda não definido' }}</dd>
+                            <dd class="font-semibold">{{ ['cortesia', 'externo'].includes(props.paymentInfo.status) ? 'Não se aplica' : props.paymentInfo.dueDate ?? 'Ainda não definido' }}</dd>
                         </div>
                     </dl>
                     <Link
-                        v-if="!['confirmado', 'cortesia'].includes(props.paymentInfo.status)"
+                        v-if="!['confirmado', 'cortesia', 'externo'].includes(props.paymentInfo.status)"
                         :href="route('pagamento.show')"
                         class="mt-4 inline-flex text-sm font-semibold text-primary underline underline-offset-4"
                     >

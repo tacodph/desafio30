@@ -3,7 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Enums\UserRole;
+use App\Jobs\ReconcileAsaasPayments;
+use App\Models\AsaasSyncRun;
+use App\Models\AsaasWebhookEvent;
 use App\Models\ChallengePayment;
+use App\Models\ChallengeAccessType;
 use App\Models\Checkin;
 use App\Models\Food;
 use App\Models\FoodGroup;
@@ -21,10 +25,12 @@ use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Throwable;
 
 class DashboardController extends Controller
 {
@@ -155,6 +161,7 @@ class DashboardController extends Controller
         $today = today('America/Sao_Paulo')->toDateString();
 
         $filters = $request->validate([
+            'athlete' => ['nullable', 'string', 'max:255'],
             'status' => ['nullable', 'string', 'max:64'],
             'billing_type' => ['nullable', 'string', 'max:64'],
             'due_from' => ['nullable', 'date_format:Y-m-d'],
@@ -162,6 +169,11 @@ class DashboardController extends Controller
         ]);
 
         $payments = ChallengePayment::query();
+
+        if (filled($filters['athlete'] ?? null)) {
+            $search = '%'.$filters['athlete'].'%';
+            $payments->whereHas('user', fn ($query) => $query->whereLike('name', $search)->orWhereLike('email', $search));
+        }
 
         if ($status = $filters['status'] ?? null) {
             $payments->where('status', $status);
@@ -186,6 +198,8 @@ class DashboardController extends Controller
             'statusSummary' => fn () => $this->paymentSummary('status'),
             'billingTypeSummary' => fn () => $this->paymentSummary('billing_type'),
             'canViewBalance' => $canViewBalance,
+            'asaasSync' => fn () => $this->asaasSyncStatus(),
+            'syncNotice' => $request->session()->get('asaas_sync_notice'),
             'accountBalance' => $canViewBalance ? Inertia::defer(function () use ($asaas) {
                 try {
                     return $asaas->getBalance();
@@ -223,6 +237,60 @@ class DashboardController extends Controller
         ]);
     }
 
+    public function syncPayments(Request $request): RedirectResponse
+    {
+        $this->abortUnless($request, UserRole::Administrador);
+
+        $run = Cache::lock('asaas-sync-request', 10)->get(function () {
+            if (AsaasSyncRun::query()->whereIn('status', ['queued', 'running'])->where('updated_at', '>=', now()->subMinutes(15))->exists()) {
+                return null;
+            }
+
+            return AsaasSyncRun::create(['source' => 'manual', 'status' => 'queued']);
+        });
+
+        if (! $run) {
+            return back()->with('asaas_sync_notice', 'Já existe uma sincronização solicitada ou em andamento.');
+        }
+
+        try {
+            ReconcileAsaasPayments::dispatch($run->id);
+        } catch (Throwable $error) {
+            $run->update(['status' => 'failed', 'finished_at' => now()]);
+            report($error);
+
+            return back()->with('asaas_sync_notice', 'Não foi possível iniciar a sincronização.');
+        }
+
+        return back()->with('asaas_sync_notice', 'Sincronização solicitada. O painel acompanha o resultado.');
+    }
+
+    private function asaasSyncStatus(): array
+    {
+        $activeRun = AsaasSyncRun::query()->whereIn('status', ['queued', 'running'])
+            ->where('updated_at', '>=', now()->subMinutes(15))->latest('id')->first();
+        $latest = $activeRun ?? AsaasSyncRun::query()->latest('id')->first();
+        $scheduled = AsaasSyncRun::query()->where('source', 'scheduled')->latest('id')->first();
+        $success = AsaasSyncRun::query()->whereIn('status', ['completed', 'partial'])->whereColumn('checked', '>', 'failed')->latest('finished_at')->first();
+        $format = fn ($date) => $date?->copy()->setTimezone(ChallengeAccess::TIMEZONE)->format('d/m/Y H:i:s');
+        $active = $activeRun !== null;
+
+        return [
+            'lastSuccessful' => $format($success?->finished_at),
+            'lastScheduled' => $format($scheduled?->started_at),
+            'lastWebhookReceived' => $format(AsaasWebhookEvent::query()->latest('id')->first()?->created_at),
+            'lastWebhookProcessed' => $format(AsaasWebhookEvent::query()->whereNotNull('processed_at')->latest('processed_at')->first()?->processed_at),
+            'active' => (bool) $active,
+            'latest' => $latest ? [
+                'status' => ! $active && in_array($latest->status, ['queued', 'running'], true) ? 'stale' : $latest->status,
+                'source' => $latest->source,
+                'at' => $format($latest->finished_at ?? $latest->started_at ?? $latest->created_at),
+                'checked' => $latest->checked,
+                'failed' => $latest->failed,
+            ] : null,
+        ];
+    }
+
     private function paymentSummary(string $column): array
     {
         $group = $column === 'billing_type' ? "COALESCE(billing_type, 'UNDEFINED')" : 'status';
@@ -252,7 +320,9 @@ class DashboardController extends Controller
         $this->abortUnless($request, UserRole::Administrador);
 
         return Inertia::render('dashboard/Users', [
-            'users' => User::query()->with('userType:id,name')->orderBy('name')->get(['id', 'name', 'email', 'user_type_id', 'challenge_paid_at', 'challenge_courtesy_at']),
+            'users' => User::query()->with(['userType:id,name', 'challengeAccessType:code,label'])->orderBy('name')
+                ->get(['id', 'name', 'email', 'user_type_id', 'challenge_paid_at', 'challenge_courtesy_at', 'challenge_access_type_code']),
+            'accessTypes' => ChallengeAccessType::query()->orderBy('label')->get(['code', 'label']),
         ]);
     }
 
@@ -293,6 +363,7 @@ class DashboardController extends Controller
                 'email_verified_at' => now(),
                 'challenge_courtesy_at' => $courtesy ? now() : null,
                 'challenge_courtesy_by' => $courtesy ? $request->user()->id : null,
+                'challenge_access_type_code' => $courtesy ? ChallengeAccessType::COURTESY : null,
             ])->save();
         });
 
@@ -305,10 +376,38 @@ class DashboardController extends Controller
         abort_unless($athlete->isAthlete(), 403);
         $data = $request->validate(['courtesy' => 'required|boolean']);
         $grant = (bool) $data['courtesy'];
-        $athlete->forceFill([
-            'challenge_courtesy_at' => $grant ? ($athlete->challenge_courtesy_at ?? now()) : null,
-            'challenge_courtesy_by' => $grant ? ($athlete->challenge_courtesy_by ?? $request->user()->id) : null,
-        ])->save();
+        DB::transaction(function () use ($athlete, $grant, $request) {
+            $athlete = User::query()->lockForUpdate()->findOrFail($athlete->id);
+            $athlete->forceFill([
+                'challenge_courtesy_at' => $grant ? ($athlete->challenge_courtesy_at ?? now()) : null,
+                'challenge_courtesy_by' => $grant ? ($athlete->challenge_courtesy_by ?? $request->user()->id) : null,
+            ]);
+            $athlete->syncChallengeAccessType($athlete->hasExternalChallengePayment());
+            $athlete->save();
+        });
+
+        return to_route('admin.users');
+    }
+
+    public function updateManualAccess(Request $request, User $athlete): RedirectResponse
+    {
+        $this->abortUnless($request, UserRole::Administrador);
+        abort_unless($athlete->isAthlete(), 403);
+        $data = $request->validate(['access_type' => 'required|in:automatic,courtesy,external']);
+
+        DB::transaction(function () use ($athlete, $data, $request) {
+            $athlete = User::query()->lockForUpdate()->findOrFail($athlete->id);
+            if ($data['access_type'] === ChallengeAccessType::COURTESY) {
+                $athlete->challenge_courtesy_at ??= now();
+                $athlete->challenge_courtesy_by ??= $request->user()->id;
+            } elseif ($data['access_type'] === 'automatic') {
+                $athlete->challenge_courtesy_at = null;
+                $athlete->challenge_courtesy_by = null;
+            }
+
+            $athlete->syncChallengeAccessType($data['access_type'] === ChallengeAccessType::EXTERNAL);
+            $athlete->save();
+        });
 
         return to_route('admin.users');
     }
@@ -429,6 +528,7 @@ class DashboardController extends Controller
             ->whereHas('checkins', $completed)
             ->withCount(['checkins as completed_checkins' => $completed])
             ->withMax(['checkins as last_checkin_day' => $completed], 'day')
+            ->with(['checkins' => fn ($query) => $completed($query)->select(['id', 'user_id', 'day', 'reactions'])->orderByDesc('day')])
             ->orderByDesc('last_checkin_day')
             ->orderBy('name')
             ->orderBy('id')
@@ -439,6 +539,11 @@ class DashboardController extends Controller
                 'checkins' => (int) $athlete->completed_checkins,
                 'lastDay' => (int) $athlete->last_checkin_day,
                 'lastDate' => \Illuminate\Support\Carbon::parse(ChallengeSheet::dateForDay((int) $athlete->last_checkin_day))->format('d/m/Y'),
+                'days' => $athlete->checkins->map(fn (Checkin $day) => [
+                    'day' => $day->day,
+                    'date' => Carbon::parse(ChallengeSheet::dateForDay($day->day))->format('d/m/Y'),
+                    'reaction' => $day->reactions['checkin'] ?? null,
+                ]),
             ]);
 
         return Inertia::render('dashboard/AthleteCheckins', [
@@ -503,10 +608,16 @@ class DashboardController extends Controller
             $query->where(function ($query) {
                 $query->where('strength', true)
                     ->orWhere('plus_count', '>', 0)
-                    ->orWhere('notes->strength', '<>', '')
-                    ->orWhere('notes->plus', '<>', '')
                     ->orWhere('meal_photo', '<>', '')
                     ->orWhereJsonLength('meal_photos', '>', 0);
+
+                foreach (['strength', 'plus'] as $key) {
+                    if ($query->getConnection()->getDriverName() === 'pgsql') {
+                        $query->orWhereRaw("(NULLIF(BTRIM(notes::text), '')::jsonb ->> ?) <> ?", [$key, '']);
+                    } else {
+                        $query->orWhere('notes->'.$key, '<>', '');
+                    }
+                }
 
                 foreach (DayLog::FOOD_KEYS as $key) {
                     $query->orWhere('details->food->'.$key, true);
@@ -520,7 +631,7 @@ class DashboardController extends Controller
             ->whereHas('checkins', $hasMeal)
             ->with(['checkins' => function ($query) use ($hasMeal) {
                 $hasMeal($query);
-                $query->select(['id', 'user_id', 'day', 'strength', 'plus_count', 'notes', 'details', 'meal_photo', 'meal_photos', 'meal_comment'])
+                $query->select(['id', 'user_id', 'day', 'strength', 'plus_count', 'notes', 'details', 'meal_photo', 'meal_photos', 'meal_comment', 'meal_reaction', 'reactions'])
                     ->orderByDesc('day');
             }])
             ->orderBy('name')
@@ -539,10 +650,15 @@ class DashboardController extends Controller
                     'luxuryCount' => $day->plus_count,
                     'luxuryNote' => $day->notes['plus'] ?? '',
                     'mealComment' => $day->meal_comment,
+                    'mealReaction' => $day->meal_reaction,
                     'photos' => array_map(fn (string $path) => route('equipe.meals.photo', [
                         'checkin' => $day->id,
                         'photo' => basename($path),
                     ], absolute: false), $day->mealPhotoPaths()),
+                    'photoReactions' => array_map(fn (string $path) => [
+                        'target' => 'meal:'.basename($path),
+                        'reaction' => $day->reactions['meal:'.basename($path)] ?? null,
+                    ], $day->mealPhotoPaths()),
                 ]),
             ]);
 
@@ -554,14 +670,33 @@ class DashboardController extends Controller
 
     public function athleteMealPhoto(Request $request, Checkin $checkin, string $photo): StreamedResponse
     {
-        abort_unless(in_array($this->role($request), [UserRole::Administrador, UserRole::Nutricionista], true), 403);
-        abort_unless($checkin->user?->isAthlete(), 404);
-
+        $this->authorizeCheckinPhoto($request, $checkin);
         $path = collect($checkin->mealPhotoPaths())->first(fn (string $path) => basename($path) === $photo);
+
+        return $this->checkinPhotoResponse($path);
+    }
+
+    public function athleteWorkoutPhoto(Request $request, Checkin $checkin): StreamedResponse
+    {
+        $this->authorizeCheckinPhoto($request, $checkin);
+
+        return $this->checkinPhotoResponse($checkin->workout_photo);
+    }
+
+    private function authorizeCheckinPhoto(Request $request, Checkin $checkin): void
+    {
+        $role = $this->role($request);
+        $ownsPhoto = $role === UserRole::Atleta && (int) $checkin->user_id === (int) $request->user()->id;
+        abort_unless($ownsPhoto || in_array($role, [UserRole::Administrador, UserRole::Nutricionista], true), 403);
+        abort_unless($checkin->user?->isAthlete(), 404);
+    }
+
+    private function checkinPhotoResponse(?string $path): StreamedResponse
+    {
         $disk = Storage::disk('public');
         abort_unless($path && $disk->exists($path), 404);
 
-        return $disk->response($path, $photo, ['Cache-Control' => 'private, no-store', 'X-Content-Type-Options' => 'nosniff']);
+        return $disk->response($path, basename($path), ['Cache-Control' => 'private, no-store', 'X-Content-Type-Options' => 'nosniff']);
     }
 
     private function role(Request $request): UserRole

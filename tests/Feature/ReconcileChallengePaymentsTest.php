@@ -2,10 +2,15 @@
 
 namespace Tests\Feature;
 
+use App\Enums\UserRole;
+use App\Jobs\ReconcileAsaasPayments;
+use App\Models\AsaasSyncRun;
 use App\Models\ChallengePayment;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class ReconcileChallengePaymentsTest extends TestCase
@@ -29,6 +34,32 @@ class ReconcileChallengePaymentsTest extends TestCase
             'due_date' => today()->subDays(40),
             'created_at' => now()->subDays(60),
         ]);
+    }
+
+    public function test_admin_can_request_sync_and_see_its_result_in_the_panel(): void
+    {
+        Queue::fake();
+        Http::fake(['*/payments/*' => Http::response(['status' => 'RECEIVED', 'billingType' => 'PIX'])]);
+        $payment = $this->payment('pay_manual', 'PENDING', 'PIX');
+
+        $this->actingAs(User::factory()->ofRole(UserRole::Nutricionista)->create())
+            ->post(route('admin.payments.sync'))->assertForbidden();
+        $this->actingAs(User::factory()->ofRole(UserRole::Administrador)->create());
+        $this->from(route('admin.payments'))->post(route('admin.payments.sync'))->assertRedirect(route('admin.payments'));
+        $this->post(route('admin.payments.sync'))->assertRedirect();
+        Queue::assertPushed(ReconcileAsaasPayments::class, 1);
+
+        $run = AsaasSyncRun::query()->sole();
+        $this->assertSame('queued', $run->status);
+        (new ReconcileAsaasPayments($run->id))->handle();
+
+        $this->assertSame('RECEIVED', $payment->fresh()->status);
+        $this->get(route('admin.payments'))->assertInertia(fn (Assert $page) => $page
+            ->where('asaasSync.latest.status', 'completed')
+            ->where('asaasSync.latest.checked', 1)
+            ->where('asaasSync.latest.failed', 0)
+            ->where('asaasSync.active', false)
+            ->where('asaasSync.lastSuccessful', fn ($value) => is_string($value) && $value !== ''));
     }
 
     public function test_reconciliation_recovers_old_overdue_confirmed_and_undefined_payments(): void

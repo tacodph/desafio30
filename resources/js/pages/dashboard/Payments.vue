@@ -2,7 +2,7 @@
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ref, watch } from 'vue';
+import { onMounted, onUnmounted, ref, watch } from 'vue';
 import { CircleAlert, CircleCheck, Clock, CreditCard } from 'lucide-vue-next';
 
 type PaymentRecord = {
@@ -31,7 +31,7 @@ type PaymentSummary = {
     amount: number;
 };
 
-type PaymentFilters = Partial<Record<'status' | 'billing_type' | 'due_from' | 'due_to', string | null>>;
+type PaymentFilters = Partial<Record<'athlete' | 'status' | 'billing_type' | 'due_from' | 'due_to', string | null>>;
 
 const props = defineProps<{
     filters: PaymentFilters;
@@ -39,6 +39,15 @@ const props = defineProps<{
     billingTypeSummary: PaymentSummary[];
     canViewBalance: boolean;
     accountBalance?: number | null;
+    syncNotice: string | null;
+    asaasSync: {
+        lastSuccessful: string | null;
+        lastScheduled: string | null;
+        lastWebhookReceived: string | null;
+        lastWebhookProcessed: string | null;
+        active: boolean;
+        latest: { status: string; source: string; at: string; checked: number; failed: number } | null;
+    };
     payments: {
         data: PaymentRecord[];
         links: PaginationLink[];
@@ -54,6 +63,27 @@ const applyFilters = () => {
     const query = Object.fromEntries(Object.entries(filterForm.value).filter(([, value]) => value));
     router.get(route('admin.payments'), query, { preserveScroll: true });
 };
+
+const syncing = ref(false);
+const syncNow = () => router.post(route('admin.payments.sync'), {}, {
+    preserveScroll: true,
+    onStart: () => { syncing.value = true; },
+    onFinish: () => { syncing.value = false; },
+});
+const syncStatuses: Record<string, string> = {
+    queued: 'Na fila', running: 'Em andamento', completed: 'Concluída', partial: 'Concluída com falhas',
+    failed: 'Falhou', skipped: 'Já havia uma sincronização em andamento', stale: 'Sem retorno da execução',
+};
+const syncSources: Record<string, string> = { scheduled: 'Agendada', manual: 'Manual', console: 'Terminal' };
+let syncPoll: ReturnType<typeof setInterval> | undefined;
+onMounted(() => {
+    syncPoll = setInterval(() => {
+        if (props.asaasSync.active && !syncing.value && !document.hidden) {
+            router.reload({ only: ['asaasSync', 'payments', 'statusSummary', 'billingTypeSummary'] });
+        }
+    }, 5000);
+});
+onUnmounted(() => { if (syncPoll) clearInterval(syncPoll); });
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Painel', href: '/dashboard' },
@@ -114,6 +144,27 @@ const money = (value: string | number) => Number(value).toLocaleString('pt-BR', 
                 <p class="max-w-xl text-brand-muted">Cobranças de inscrição registradas para os atletas do desafio.</p>
             </div>
 
+            <section class="surface-card space-y-4 p-5" aria-labelledby="asaas-sync-title">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <h2 id="asaas-sync-title" class="text-lg font-semibold">Sincronização com o Asaas</h2>
+                    <button v-if="canViewBalance" type="button" :disabled="syncing || asaasSync.active" class="rounded-xl bg-brand-gold px-4 py-2 text-sm font-bold text-brand-ink disabled:opacity-60" @click="syncNow">
+                        {{ syncing || asaasSync.active ? 'Sincronização em andamento…' : 'Sincronizar agora' }}
+                    </button>
+                </div>
+                <p v-if="syncNotice" role="status" class="text-sm text-brand-gold">{{ syncNotice }}</p>
+                <dl class="grid gap-3 text-sm sm:grid-cols-2">
+                    <div><dt class="text-brand-muted">Última conferência com resposta do Asaas</dt><dd class="font-bold">{{ asaasSync.lastSuccessful ?? 'Sem conferência registrada' }}</dd></div>
+                    <div><dt class="text-brand-muted">Última execução agendada</dt><dd class="font-bold">{{ asaasSync.lastScheduled ?? 'Sem execução registrada' }}</dd></div>
+                    <div><dt class="text-brand-muted">Último webhook recebido</dt><dd class="font-bold">{{ asaasSync.lastWebhookReceived ?? 'Nenhum registrado' }}</dd></div>
+                    <div><dt class="text-brand-muted">Último webhook processado</dt><dd class="font-bold">{{ asaasSync.lastWebhookProcessed ?? 'Nenhum registrado' }}</dd></div>
+                </dl>
+                <p v-if="asaasSync.latest" class="text-sm text-brand-muted">
+                    {{ syncSources[asaasSync.latest.source] }} · {{ syncStatuses[asaasSync.latest.status] }} · {{ asaasSync.latest.at }} (Brasília)
+                    <span v-if="['completed', 'partial', 'failed'].includes(asaasSync.latest.status)"> · {{ asaasSync.latest.checked }} conferidas, {{ asaasSync.latest.failed }} falhas</span>
+                </p>
+                <p class="text-xs text-brand-muted">A conferência automática é agendada a cada 15 minutos. Solicitações manuais entram na fila imediatamente.</p>
+            </section>
+
             <div class="grid items-start gap-4 md:grid-cols-2">
                 <section
                     v-for="summary in [
@@ -159,6 +210,10 @@ const money = (value: string | number) => Number(value).toLocaleString('pt-BR', 
                     <p class="text-sm text-brand-muted">Os cards acima mostram os totais gerais.</p>
                 </div>
                 <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    <label class="flex min-w-0 flex-col gap-1 text-sm sm:col-span-2 xl:col-span-4">
+                        Atleta
+                        <input v-model="filterForm.athlete" type="search" maxlength="255" placeholder="Nome ou e-mail do atleta" class="rounded-lg border border-brand-line2 bg-brand-card2 px-3 py-2" />
+                    </label>
                     <label class="flex min-w-0 flex-col gap-1 text-sm">
                         Status
                         <select v-model="filterForm.status" class="rounded-lg border border-brand-line2 bg-brand-card2 px-3 py-2">

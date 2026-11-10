@@ -67,6 +67,8 @@ const mainNavItems = computed<NavGroupItem[]>(() => {
             { title: 'Almoço - Monte seu prato (visualizar)', href: '/alimentacao/monte-seu-prato', icon: Salad },
             { title: 'Alimentação', icon: Salad, children: [
                 { title: 'Recado importante da nutri', href: '/alimentacao/recado-da-nutri' },
+                { title: 'Sugestões de refeições reais em consultório', href: '/alimentacao/refeicoes-reais-em-consultorio' },
+                { title: 'Sugestões de jantar', disabled: true },
                 { title: 'Escolhendo melhor fora de casa', href: '/alimentacao/escolhendo-melhor-fora-de-casa' },
                 { title: 'Lidando com o fim de semana', href: '/alimentacao/lidando-com-o-fim-de-semana' },
             ] },
@@ -113,6 +115,18 @@ const mainNavItems = computed<NavGroupItem[]>(() => {
             },
             { title: 'Alimentação', icon: Salad, children: [
                 { title: 'Recado importante da nutri', href: '/alimentacao/recado-da-nutri', disabled: !page.props.evolutionAccess?.pages.alimentacao },
+                {
+                    title: 'Sugestões de refeições reais em consultório',
+                    href: '/alimentacao/refeicoes-reais-em-consultorio',
+                    disabled: !page.props.consultationMealsUnlocked || !page.props.evolutionAccess?.pages.alimentacao,
+                    lockedPreview: !page.props.consultationMealsUnlocked ? {
+                        title: 'Na prática, é assim!',
+                        subtitle: 'Diários reais, escolhas reais.',
+                        description: 'Veja registros compartilhados por pacientes na rotina alimentar. São exemplos reais de como organizar refeições, combinar alimentos e fazer boas escolhas no dia a dia.',
+                        footer: 'Conteúdo liberado ao completar 7 dias do primeiro acesso',
+                    } : undefined,
+                },
+                { title: 'Sugestões de jantar', disabled: true },
                 { title: 'Lista de compras inteligente', href: '/objetivos/alimentacao/compras', disabled: !page.props.evolutionAccess?.pages.shopping },
                 { title: 'Almoço - Monte seu prato', href: '/alimentacao/monte-seu-prato', disabled: !page.props.evolutionAccess?.pages.alimentacao },
                 { title: 'Escolhendo melhor fora de casa', href: '/alimentacao/escolhendo-melhor-fora-de-casa', disabled: !page.props.evolutionAccess?.pages.alimentacao },

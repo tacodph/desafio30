@@ -75,6 +75,11 @@ Route::middleware(['auth', 'verified', 'challenge.paid'])->group(function () {
     Route::get('alimentacao/escolhendo-melhor-fora-de-casa', fn () => Inertia::render('EscolhendoMelhorForaDeCasa'))->middleware('challenge.feature:alimentacao')->name('alimentacao.fora-de-casa');
     Route::get('alimentacao/lidando-com-o-fim-de-semana', fn () => Inertia::render('LidandoComOFimDeSemana'))->middleware('challenge.feature:alimentacao')->name('alimentacao.fim-de-semana');
     Route::get('alimentacao/recado-da-nutri', fn () => Inertia::render('NutriMessage'))->middleware('challenge.feature:alimentacao')->name('alimentacao.recado-da-nutri');
+    Route::get('alimentacao/refeicoes-reais-em-consultorio', function (\Illuminate\Http\Request $request) {
+        abort_unless($request->user()->canViewConsultationMeals(), 403, 'As sugestões são liberadas sete dias após o primeiro acesso ao desafio.');
+
+        return Inertia::render('ConsultationMeals');
+    })->middleware('challenge.feature:alimentacao')->name('alimentacao.refeicoes-reais');
     Route::get('ajuda/como-funciona-a-alimentacao', fn () => Inertia::render('FoodGuide'))->name('ajuda.alimentacao');
     Route::get('pontuacao', [DashboardController::class, 'scoring'])->name('pontuacao');
     Route::put('pontuacao', [DashboardController::class, 'updateScoring'])->name('pontuacao.update');
@@ -93,8 +98,10 @@ Route::middleware(['auth', 'verified', 'challenge.paid'])->group(function () {
     Route::get('admin/pagamentos/lembretes', [\App\Http\Controllers\PaymentReminderController::class, 'show'])->name('admin.payment-reminders');
     Route::post('admin/pagamentos/lembretes', [\App\Http\Controllers\PaymentReminderController::class, 'store'])->middleware('throttle:6,1')->name('admin.payment-reminders.store');
     Route::get('admin/pagamentos', [DashboardController::class, 'payments'])->name('admin.payments');
+    Route::post('admin/pagamentos/sincronizar', [DashboardController::class, 'syncPayments'])->middleware('throttle:3,1')->name('admin.payments.sync');
     Route::get('admin/usuarios/novo', [DashboardController::class, 'createUser'])->name('admin.users.create');
     Route::patch('admin/usuarios/{athlete}/cortesia', [DashboardController::class, 'updateCourtesy'])->name('admin.users.courtesy');
+    Route::patch('admin/usuarios/{athlete}/liberacao', [DashboardController::class, 'updateManualAccess'])->name('admin.users.access');
     Route::post('admin/usuarios', [DashboardController::class, 'storeUser'])->name('admin.users.store');
     Route::get('admin/treinos', [\App\Http\Controllers\WorkoutTypeController::class, 'index'])->name('admin.workout-types');
     Route::post('admin/treinos', [\App\Http\Controllers\WorkoutTypeController::class, 'store'])->name('admin.workout-types.store');
@@ -107,8 +114,10 @@ Route::middleware(['auth', 'verified', 'challenge.paid'])->group(function () {
     Route::get('equipe/conquistas', [DashboardController::class, 'athleteAchievements'])->name('equipe.achievements');
     Route::get('equipe/alimentacao', [DashboardController::class, 'athleteMeals'])->name('equipe.meals');
     Route::get('equipe/alimentacao/fotos/{checkin}/{photo}', [DashboardController::class, 'athleteMealPhoto'])->whereNumber('checkin')->name('equipe.meals.photo');
+    Route::get('evolucao/fotos/treino/{checkin}', [DashboardController::class, 'athleteWorkoutPhoto'])->whereNumber('checkin')->name('evolution.workout.photo');
     Route::get('equipe/atletas/{athlete}/evolucao', [AthleteProgressController::class, 'showAthlete'])->name('equipe.athlete.progress');
     Route::get('atleta/ponto-de-partida/primeiro-dia', [AthleteProgressController::class, 'firstDay'])->name('athlete.start.first-day');
+    Route::get('atleta/ponto-de-partida/primeiro-dia/fotos/{position}', [AthleteProgressController::class, 'firstDayPhoto'])->whereIn('position', ['photo_front', 'photo_side', 'photo_back', 'legacy'])->name('athlete.start.photo');
     Route::post('atleta/ponto-de-partida/primeiro-dia', [AthleteProgressController::class, 'storeFirstDay'])->name('athlete.start.first-day.store');
     Route::get('atleta/ponto-de-partida/como-tirar-medidas', fn () => Inertia::render('dashboard/ComoTirarMedidas'))->name('athlete.start.measures-guide');
     Route::get('atleta/ponto-de-partida/metas', [AthleteProgressController::class, 'goals'])->name('athlete.start.goals');
@@ -140,6 +149,8 @@ Route::middleware(['auth', 'verified', 'challenge.paid'])->group(function () {
     Route::post('atleta/dias/{day}/foto-refeicao', [AthleteProgressController::class, 'storeMealPhoto'])->whereNumber('day')->name('athlete.days.meal.store');
     Route::delete('atleta/dias/{day}/foto-refeicao/{photo?}', [AthleteProgressController::class, 'destroyMealPhoto'])->whereNumber('day')->name('athlete.days.meal.destroy');
     Route::put('equipe/atletas/{athlete}/dias/{day}/comentario-refeicao', [AthleteProgressController::class, 'commentMeal'])->whereNumber('day')->name('equipe.athlete.meal.comment');
+    Route::put('equipe/atletas/{athlete}/dias/{day}/reacao-refeicao', [AthleteProgressController::class, 'reactToMeal'])->whereNumber('day')->name('equipe.athlete.meal.reaction');
+    Route::put('equipe/atletas/{athlete}/dias/{day}/reacao', [AthleteProgressController::class, 'reactToCheckin'])->whereNumber('day')->name('equipe.athlete.checkin.reaction');
     Route::post('atleta/conquistas', [AthleteProgressController::class, 'storeAchievement'])->name('athlete.achievements.store');
     Route::put('atleta/conquistas/{achievement}', [AthleteProgressController::class, 'updateAchievement'])->name('athlete.achievements.update');
     Route::put('atleta/conquistas/{achievement}/comentario', [AthleteProgressController::class, 'commentAchievement'])->name('athlete.achievements.comment');

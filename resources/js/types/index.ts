@@ -15,6 +15,7 @@ export interface NavItem {
     icon?: LucideIcon;
     isActive?: boolean;
     disabled?: boolean;
+    lockedPreview?: { title: string; subtitle: string; description: string; footer: string };
     highlighted?: boolean;
     children?: NavGroupItem[];
 }
@@ -24,6 +25,7 @@ export interface NavGroupItem extends Omit<NavItem, 'href'> {
 }
 
 export interface SharedData {
+    consultationMealsUnlocked?: boolean;
     evolutionAccess?: { releaseDate: string; pages: Record<string, boolean> } | null;
     name: string;
     quote: { message: string; author: string };
