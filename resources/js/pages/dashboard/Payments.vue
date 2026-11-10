@@ -9,6 +9,7 @@ type PaymentRecord = {
     id: number;
     athlete: string | null;
     email: string | null;
+    accessCode: string | null;
     asaasPaymentId: string | null;
     status: string;
     isPastDue: boolean;
@@ -31,10 +32,12 @@ type PaymentSummary = {
     amount: number;
 };
 
-type PaymentFilters = Partial<Record<'athlete' | 'status' | 'billing_type' | 'due_from' | 'due_to', string | null>>;
+type PaymentFilters = Partial<Record<'athlete' | 'registration' | 'release_type' | 'status' | 'billing_type' | 'due_from' | 'due_to', string | null>>;
 
 const props = defineProps<{
     filters: PaymentFilters;
+    registrationOptions: Record<string, string>;
+    releaseOptions: Record<string, string>;
     statusSummary: PaymentSummary[];
     billingTypeSummary: PaymentSummary[];
     canViewBalance: boolean;
@@ -215,6 +218,20 @@ const money = (value: string | number) => Number(value).toLocaleString('pt-BR', 
                         <input v-model="filterForm.athlete" type="search" maxlength="255" placeholder="Nome ou e-mail do atleta" class="rounded-lg border border-brand-line2 bg-brand-card2 px-3 py-2" />
                     </label>
                     <label class="flex min-w-0 flex-col gap-1 text-sm">
+                        Inscrição
+                        <select v-model="filterForm.registration" class="rounded-lg border border-brand-line2 bg-brand-card2 px-3 py-2">
+                            <option :value="undefined">Todas as inscrições</option>
+                            <option v-for="(label, code) in registrationOptions" :key="code" :value="code">{{ label }}</option>
+                        </select>
+                    </label>
+                    <label class="flex min-w-0 flex-col gap-1 text-sm">
+                        Tipo de liberação
+                        <select v-model="filterForm.release_type" class="rounded-lg border border-brand-line2 bg-brand-card2 px-3 py-2">
+                            <option :value="undefined">Todos os tipos</option>
+                            <option v-for="(label, code) in releaseOptions" :key="code" :value="code">{{ label }}</option>
+                        </select>
+                    </label>
+                    <label class="flex min-w-0 flex-col gap-1 text-sm">
                         Status
                         <select v-model="filterForm.status" class="rounded-lg border border-brand-line2 bg-brand-card2 px-3 py-2">
                             <option :value="undefined">Todos os status</option>
@@ -254,6 +271,8 @@ const money = (value: string | number) => Number(value).toLocaleString('pt-BR', 
                     <thead class="text-[13px] uppercase tracking-[2px] text-brand-muted-2">
                         <tr>
                             <th class="px-5 py-4 font-bold">Atleta</th>
+                            <th class="px-5 py-4 font-bold">Inscrição</th>
+                            <th class="px-5 py-4 font-bold">Tipo de liberação</th>
                             <th class="px-5 py-4 font-bold">ID Asaas</th>
                             <th class="px-5 py-4 font-bold">Status</th>
                             <th class="px-5 py-4 font-bold">Forma</th>
@@ -268,6 +287,8 @@ const money = (value: string | number) => Number(value).toLocaleString('pt-BR', 
                                 <div class="font-semibold">{{ payment.athlete ?? 'Conta removida' }}</div>
                                 <div class="text-brand-muted">{{ payment.email ?? '—' }}</div>
                             </td>
+                            <td class="px-5 py-4">{{ payment.accessCode ? registrationOptions[payment.accessCode] ?? '—' : '—' }}</td>
+                            <td class="px-5 py-4">{{ payment.accessCode ? releaseOptions[payment.accessCode] ?? '—' : '—' }}</td>
                             <td class="px-5 py-4 font-mono text-xs text-brand-muted">{{ payment.asaasPaymentId ?? '—' }}</td>
                             <td class="px-5 py-4">
                                 <div class="flex items-center gap-2">
@@ -286,7 +307,7 @@ const money = (value: string | number) => Number(value).toLocaleString('pt-BR', 
                             <td class="px-5 py-4">{{ payment.confirmedAt ?? '—' }}</td>
                         </tr>
                         <tr v-if="payments.data.length === 0">
-                            <td colspan="7" class="px-5 py-10 text-center text-brand-muted">Nenhuma cobrança encontrada.</td>
+                            <td colspan="9" class="px-5 py-10 text-center text-brand-muted">Nenhuma cobrança encontrada.</td>
                         </tr>
                     </tbody>
                 </table>

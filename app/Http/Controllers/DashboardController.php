@@ -159,9 +159,14 @@ class DashboardController extends Controller
 
         $canViewBalance = $role === UserRole::Administrador;
         $today = today('America/Sao_Paulo')->toDateString();
+        $registrationOptions = ChallengeAccessType::query()->orderBy('label')->pluck('label', 'code')->all();
+        $registrationOptions += ['legacy' => 'Acesso legado', 'courtesy' => 'Cortesia', 'automatic' => 'Pagamento pendente'];
+        $releaseOptions = array_replace($registrationOptions, ['automatic' => 'Sem liberação manual']);
 
         $filters = $request->validate([
             'athlete' => ['nullable', 'string', 'max:255'],
+            'registration' => ['nullable', 'string', 'in:'.implode(',', array_keys($registrationOptions))],
+            'release_type' => ['nullable', 'string', 'in:'.implode(',', array_keys($releaseOptions))],
             'status' => ['nullable', 'string', 'max:64'],
             'billing_type' => ['nullable', 'string', 'max:64'],
             'due_from' => ['nullable', 'date_format:Y-m-d'],
@@ -177,6 +182,15 @@ class DashboardController extends Controller
 
         if ($status = $filters['status'] ?? null) {
             $payments->where('status', $status);
+        }
+
+        foreach (['registration', 'release_type'] as $field) {
+            if ($code = $filters[$field] ?? null) {
+                $payments->whereHas('user', fn ($query) => $query->whereRaw(
+                    'COALESCE(challenge_access_type_code, CASE WHEN challenge_courtesy_at IS NOT NULL THEN ? WHEN challenge_paid_at IS NOT NULL THEN ? ELSE ? END) = ?',
+                    [ChallengeAccessType::COURTESY, ChallengeAccessType::LEGACY, 'automatic', $code],
+                ));
+            }
         }
 
         if (($filters['billing_type'] ?? null) === 'UNDEFINED') {
@@ -195,6 +209,8 @@ class DashboardController extends Controller
 
         return Inertia::render('dashboard/Payments', [
             'filters' => $filters,
+            'registrationOptions' => $registrationOptions,
+            'releaseOptions' => $releaseOptions,
             'statusSummary' => fn () => $this->paymentSummary('status'),
             'billingTypeSummary' => fn () => $this->paymentSummary('billing_type'),
             'canViewBalance' => $canViewBalance,
@@ -207,7 +223,7 @@ class DashboardController extends Controller
                     return null;
                 }
             }) : null,
-            'payments' => $payments->with('user:id,name,email')
+            'payments' => $payments->with('user:id,name,email,challenge_access_type_code,challenge_courtesy_at,challenge_paid_at')
                 ->latest('id')
                 ->paginate(25, [
                     'id',
@@ -225,6 +241,9 @@ class DashboardController extends Controller
                     'id' => $payment->id,
                     'athlete' => $payment->user?->name,
                     'email' => $payment->user?->email,
+                    'accessCode' => $payment->user ? ($payment->user->challenge_access_type_code
+                        ?? ($payment->user->challenge_courtesy_at ? ChallengeAccessType::COURTESY
+                            : ($payment->user->challenge_paid_at ? ChallengeAccessType::LEGACY : 'automatic'))) : null,
                     'asaasPaymentId' => $payment->asaas_payment_id,
                     'status' => $payment->status,
                     'isPastDue' => $payment->due_date !== null && $payment->due_date->toDateString() < $today,
