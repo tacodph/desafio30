@@ -76,9 +76,42 @@ class DashboardController extends Controller
 
         return Inertia::render('dashboard/Equipe', [
             'athleteCount' => User::query()->where('user_type_id', UserType::idFor(UserRole::Atleta))->count(),
+            'checkinOverview' => $role === UserRole::Nutricionista ? fn () => $this->checkinOverview() : null,
             'paymentOverview' => $role === UserRole::Nutricionista ? fn () => $this->paymentOverview() : null,
             'dailyPayments' => $role === UserRole::Nutricionista ? fn () => $this->dailyPayments() : null,
         ]);
+    }
+
+    private function checkinOverview(): array
+    {
+        $checkins = Checkin::query()->whereHas('user', fn ($query) => $query
+            ->where('user_type_id', UserType::idFor(UserRole::Atleta)));
+        $completed = (clone $checkins)->where('checked_in', true);
+        $pending = (clone $checkins)
+            ->where(fn ($query) => $query->where('meal_photo', '<>', '')->orWhereJsonLength('meal_photos', '>', 0))
+            ->where(fn ($query) => $query->whereNull('meal_comment')->orWhere('meal_comment', ''));
+
+        return [
+            'total' => (clone $completed)->count(),
+            'today' => (clone $completed)->where('day', ChallengeSheet::dayOn(today(ChallengeAccess::TIMEZONE)))->count(),
+            'athletes' => (clone $completed)->distinct()->count('user_id'),
+            'pending' => (clone $pending)->count(),
+            'meals' => $pending->with('user:id,name')->orderBy('day')->orderBy('id')->limit(8)
+                ->get(['id', 'user_id', 'day', 'meal_photo', 'meal_photos', 'meal_comment', 'meal_reaction'])
+                ->map(fn (Checkin $checkin) => [
+                    'id' => $checkin->id,
+                    'athleteId' => $checkin->user_id,
+                    'athlete' => $checkin->user->name,
+                    'day' => $checkin->day,
+                    'date' => Carbon::parse(ChallengeSheet::dateForDay($checkin->day))->format('d/m/Y'),
+                    'comment' => $checkin->meal_comment,
+                    'reaction' => $checkin->meal_reaction,
+                    'photos' => array_map(fn (string $path) => route('equipe.meals.photo', [
+                        'checkin' => $checkin->id,
+                        'photo' => basename($path),
+                    ], absolute: false), $checkin->mealPhotoPaths()),
+                ])->all(),
+        ];
     }
 
     private function dailyPayments(): array
@@ -649,7 +682,7 @@ class DashboardController extends Controller
             ->whereHas('achievements', $inCategory)
             ->withCount(['achievements' => $inCategory])
             ->with(['achievements' => fn ($query) => $inCategory($query)
-                ->select(['id', 'user_id', 'achieved_on', 'detail'])
+                ->select(['id', 'user_id', 'achieved_on', 'detail', 'comment', 'emotion', 'nutritionist'])
                 ->orderByDesc('achieved_on')
                 ->orderByDesc('id')])
             ->orderBy('name')
@@ -663,6 +696,9 @@ class DashboardController extends Controller
                 'records' => $athlete->achievements->map(fn ($record) => [
                     'id' => $record->id,
                     'detail' => $record->detail,
+                    'comment' => $record->comment,
+                    'emotion' => $record->emotion,
+                    'nutritionist' => $record->nutritionist,
                     'date' => $record->achieved_on->format('d/m/Y'),
                     'day' => ChallengeSheet::dayOn(Carbon::parse($record->achieved_on->toDateString(), ChallengeAccess::TIMEZONE)),
                 ]),

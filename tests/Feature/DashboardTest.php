@@ -11,12 +11,61 @@ use App\Models\UserType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Carbon;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class DashboardTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_nutritionist_dashboard_summarizes_checkins_and_pending_meal_comments(): void
+    {
+        $this->travelTo(Carbon::parse('2026-11-11 12:00:00', 'America/Sao_Paulo'));
+        $athlete = User::factory()->create();
+        $athlete->checkins()->create(['day' => 1, 'checked_in' => true, 'meal_photo' => 'meals/legacy.jpg']);
+        $athlete->checkins()->create(['day' => 2])->forceFill(['meal_photos' => ['meals/new.jpg']])->save();
+        $athlete->checkins()->create(['day' => 3, 'checked_in' => true, 'meal_photo' => 'meals/reviewed.jpg', 'meal_comment' => 'Ótimo!']);
+        $staff = User::factory()->ofRole(UserRole::Nutricionista)->create();
+        $staff->checkins()->create(['day' => 3, 'checked_in' => true, 'meal_photo' => 'meals/staff.jpg']);
+
+        $this->actingAs($staff)->get('/dashboard')->assertInertia(fn (Assert $page) => $page
+            ->where('checkinOverview.total', 2)
+            ->where('checkinOverview.today', 1)
+            ->where('checkinOverview.athletes', 1)
+            ->where('checkinOverview.pending', 2)
+            ->has('checkinOverview.meals', 2)
+            ->where('checkinOverview.meals.0.day', 1)
+            ->where('checkinOverview.meals.0.athleteId', $athlete->id)
+            ->has('checkinOverview.meals.0.photos', 1));
+
+        $this->from('/dashboard')->put(route('equipe.athlete.meal.comment', ['athlete' => $athlete->id, 'day' => 1]), ['comment' => 'Boa refeição!'])
+            ->assertRedirect('/dashboard');
+        $this->get('/dashboard')->assertInertia(fn (Assert $page) => $page
+            ->where('checkinOverview.pending', 1)
+            ->where('checkinOverview.meals.0.day', 2));
+        $this->actingAs(User::factory()->ofRole(UserRole::Coach)->create())->get('/dashboard')
+            ->assertInertia(fn (Assert $page) => $page->where('checkinOverview', null));
+    }
+
+    public function test_nutritionist_can_comment_from_all_team_achievement_categories(): void
+    {
+        $athlete = User::factory()->create();
+        $nutri = User::factory()->ofRole(UserRole::Nutricionista)->create();
+        foreach (['cantinho', 'resistido', 'performance'] as $category) {
+            $achievement = $athlete->achievements()->create([
+                'type' => $category, 'achieved_on' => '2026-11-09', 'detail' => 'Minha conquista',
+            ]);
+            $url = route('equipe.achievements', ['categoria' => $category]);
+            $this->actingAs($nutri)->from($url)->put(route('athlete.achievements.comment', $achievement), [
+                'comment' => 'Parabéns pela conquista!', 'emotion' => '👏',
+            ])->assertRedirect($url);
+            $this->get($url)->assertInertia(fn (Assert $page) => $page
+                ->where('athletes.data.0.records.0.comment', 'Parabéns pela conquista!')
+                ->where('athletes.data.0.records.0.emotion', '👏')
+                ->where('athletes.data.0.records.0.nutritionist', $nutri->name));
+        }
+    }
 
     public function test_admin_can_record_external_payment_without_overwriting_existing_release_data(): void
     {
