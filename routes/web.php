@@ -130,6 +130,7 @@ Route::middleware(['auth', 'verified', 'challenge.paid'])->group(function () {
     Route::get('atleta/boas-vindas/tutoriais/tela-inicial', [AthleteProgressController::class, 'homeScreenTutorial'])->name('athlete.tutorial.home-screen');
     Route::post('atleta/boas-vindas', [AthleteProgressController::class, 'acknowledgeWelcome'])->name('athlete.welcome.acknowledge');
     Route::post('atleta/boas-vindas/liberacao', [AthleteProgressController::class, 'acknowledgeReleaseWelcome'])->name('athlete.release-welcome.acknowledge');
+    Route::post('atleta/refeicoes/{checkin}/aviso', [\App\Http\Controllers\MealCommentNoticeController::class, 'store'])->whereNumber('checkin')->name('athlete.meal-comment-notice');
     Route::redirect('atleta/evolucao/metas', '/atleta/ponto-de-partida/metas');
     Route::redirect('atleta/evolucao', '/atleta/evolucao/dias')->name('athlete.progress');
     Route::get('atleta/evolucao/{tab}', [AthleteProgressController::class, 'show'])

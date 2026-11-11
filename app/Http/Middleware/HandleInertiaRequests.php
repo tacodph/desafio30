@@ -59,6 +59,21 @@ class HandleInertiaRequests extends Middleware
                 ];
             },
             'consultationMealsUnlocked' => fn () => $request->user()?->canViewConsultationMeals() ?? false,
+            'mealCommentNotices' => function () use ($request) {
+                if (! $request->user()?->isAthlete()) {
+                    return null;
+                }
+
+                return [
+                    'token' => csrf_token(),
+                    'checkins' => $request->user()->checkins()
+                        ->whereIn('id', $request->session()->get('meal_comment_notice_ids', []))
+                        ->whereNotNull('meal_comment')
+                        ->where('meal_comment', '!=', '')
+                        ->whereNull('meal_comment_notice_shown_at')
+                        ->orderBy('day')->get(['id', 'day']),
+                ];
+            },
             'accessNotice' => fn () => $request->session()->get('access_notice'),
             'showReleaseWelcome' => fn () => ! $request->user()?->release_welcome_acknowledged_at
                 && \App\Support\ReleaseWelcome::available($request->user()),

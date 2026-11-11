@@ -25,6 +25,7 @@ export interface NavGroupItem extends Omit<NavItem, 'href'> {
 }
 
 export interface SharedData {
+    mealCommentNotices?: { token: string; checkins: { id: number; day: number }[] } | null;
     consultationMealsUnlocked?: boolean;
     evolutionAccess?: { releaseDate: string; pages: Record<string, boolean> } | null;
     name: string;

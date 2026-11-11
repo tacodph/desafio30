@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { achieved, dayPoints, workoutMinutes, type Achieved, type DayDetails, type DayGoals } from '@/data/dayLog';
 import { router, useForm } from '@inertiajs/vue3';
 import { Camera, ChevronDown, Droplets, Dumbbell, Lightbulb, Moon, Plus, Salad, Star, X } from 'lucide-vue-next';
-import { computed, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 
 type DayForm = {
     day: number;
@@ -208,6 +208,8 @@ const removePhoto = () =>
 
 const mealInput = ref<HTMLInputElement | null>(null);
 const mealUploading = ref(false);
+const mealShareOpen = ref(false);
+const deletingMealPhoto = ref<string | null>(null);
 const mealError = ref('');
 const mealNote = useForm({ comment: props.mealComment ?? '' });
 
@@ -230,6 +232,7 @@ const sendMealPhotos = async (event: Event) => {
         return;
     }
 
+    const previousPhotoCount = props.mealPhotos?.length ?? 0;
     mealUploading.value = true;
     try {
         for (const [index, file] of files.entries()) {
@@ -252,11 +255,22 @@ const sendMealPhotos = async (event: Event) => {
         }
     } finally {
         mealUploading.value = false;
+        await nextTick();
+        if ((props.mealPhotos?.length ?? 0) > previousPhotoCount) mealShareOpen.value = true;
     }
 };
 
-const removeMealPhoto = (photo: string) =>
-    router.delete(route('athlete.days.meal.destroy', { day: props.entry.day, photo }), { preserveState: true, preserveScroll: true });
+const removeMealPhoto = (photo: string) => {
+    if (deletingMealPhoto.value || mealUploading.value) return;
+    mealError.value = '';
+    router.delete(route('athlete.days.meal.destroy', { day: props.entry.day, photo }), {
+        preserveState: true,
+        preserveScroll: true,
+        onStart: () => { deletingMealPhoto.value = photo; },
+        onError: () => { mealError.value = 'Não foi possível excluir a foto. Tente novamente.'; },
+        onFinish: () => { deletingMealPhoto.value = null; },
+    });
+};
 
 const saveMealNote = () => {
     if (!props.athleteId) {
@@ -463,11 +477,22 @@ const chipClass = (active: boolean) =>
                     <span class="leading-relaxed">Meta atingida (Seguiu o planejamento alimentar hoje? Fez as refeições programadas e boas escolhas alimentares ao longo do dia?)</span>
                 </label>
                 <div v-if="showAthleteControls" class="flex flex-wrap items-center gap-x-3 gap-y-1">
-                    <button type="button" class="flex min-h-9 w-fit items-center gap-1.5 text-sm font-semibold text-brand-gold disabled:opacity-60" :disabled="mealUploading" @click="mealInput?.click()">
+                    <button type="button" class="flex min-h-9 w-fit items-center gap-1.5 text-sm font-semibold text-brand-gold disabled:opacity-60" :disabled="mealUploading || deletingMealPhoto !== null" @click="mealInput?.click()">
                         <Camera class="size-4" /> {{ mealUploading ? 'Enviando fotos…' : 'Adicionar foto da refeição (opcional)' }}
                     </button>
                 </div>
                 <input ref="mealInput" type="file" accept="image/*" multiple class="hidden" @change="sendMealPhotos" />
+                <div v-if="!canComment && mealPhotos?.length" class="flex flex-wrap items-start gap-2" aria-label="Fotos da refeição adicionadas">
+                    <div v-for="(mealPhoto, index) in mealPhotos" :key="mealPhoto.id" class="w-[calc((100%_-_0.75rem)/8)] min-w-0 space-y-2 sm:w-[calc((100%_-_1.5rem)/12)]">
+                        <img v-if="!unavailablePhotos.has(mealPhoto.url)" :src="mealPhoto.url" :alt="`Foto da refeição ${index + 1}`" class="aspect-square w-full rounded-lg border border-brand-line2 bg-brand-card2 object-contain" @error="unavailablePhotos.add(mealPhoto.url)" />
+                        <p v-else class="rounded-lg border border-brand-line2 p-3 text-sm text-brand-muted">Foto da refeição indisponível.</p>
+                        <button v-if="showAthleteControls" type="button" :disabled="mealUploading || deletingMealPhoto !== null || adminPreview" class="flex min-h-9 items-center gap-1 rounded-lg border border-brand-line2 px-2 py-1 text-xs font-semibold disabled:opacity-60" :aria-label="`Excluir foto da refeição ${index + 1}`" @click="removeMealPhoto(mealPhoto.id)">
+                            <X class="size-4" aria-hidden="true" />
+                            {{ deletingMealPhoto === mealPhoto.id ? 'Excluindo…' : 'Excluir foto' }}
+                        </button>
+                        <CheckinReaction :day="entry.day" :target="`meal:${mealPhoto.id}`" :reaction="reactions?.[`meal:${mealPhoto.id}`]" :label="`Foto da refeição ${index + 1}`" />
+                    </div>
+                </div>
                 <p v-if="!mealPhotos?.length && canComment" class="m-0 text-xs text-brand-muted">Ainda sem fotos da refeição neste dia.</p>
                 <p v-if="mealError" class="m-0 text-xs text-red-400">{{ mealError }}</p>
                 <p v-if="mealReaction" class="m-0 text-sm font-semibold">Reação da nutri {{ mealReaction }}</p>
@@ -497,7 +522,7 @@ const chipClass = (active: boolean) =>
                 </button>
             </fieldset>
 
-            <section v-if="photo || mealPhotos?.length" class="grid gap-3 rounded-xl border border-brand-line2 p-3">
+            <section v-if="photo || (canComment && mealPhotos?.length)" class="grid gap-3 rounded-xl border border-brand-line2 p-3">
                 <h3 class="text-sm font-semibold">Fotos do dia</h3>
                 <div v-if="photo" class="w-fit space-y-2">
                     <div class="relative">
@@ -507,7 +532,7 @@ const chipClass = (active: boolean) =>
                     </div>
                     <CheckinReaction v-if="workoutPhotoId" :athlete-id="canComment ? athleteId : null" :day="entry.day" :target="`workout:${workoutPhotoId}`" :reaction="reactions?.[`workout:${workoutPhotoId}`]" label="Foto do treino" />
                 </div>
-                <div v-if="mealPhotos?.length" class="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                <div v-if="canComment && mealPhotos?.length" class="grid grid-cols-2 gap-2 sm:grid-cols-3">
                     <div v-for="(mealPhoto, index) in mealPhotos" :key="mealPhoto.id" class="space-y-2">
                         <div class="relative">
                             <img v-if="!unavailablePhotos.has(mealPhoto.url)" :src="mealPhoto.url" :alt="`Foto da refeição ${index + 1}`" loading="lazy" class="aspect-square w-full rounded-lg border border-brand-line2 object-cover" @error="unavailablePhotos.add(mealPhoto.url)" />
@@ -531,6 +556,20 @@ const chipClass = (active: boolean) =>
             <p v-if="saveMessage" role="status" class="m-0 text-sm text-brand-gold">{{ saveMessage }}</p>
             <p v-if="saveError" class="m-0 text-xs text-red-400">{{ saveError }}</p>
         </div>
+
+        <Dialog v-model:open="mealShareOpen">
+            <DialogContent class="max-h-[90dvh] overflow-y-auto rounded-2xl border-brand-gold/30 bg-brand-card p-6 text-brand-cream sm:max-w-lg">
+                <DialogHeader>
+                    <DialogTitle class="pr-6 text-2xl leading-snug text-brand-gold">📸 Sua refeição também pode inspirar alguém!</DialogTitle>
+                    <DialogDescription class="text-brand-muted">Foto da refeição salva no check-in do dia {{ entry.day }}.</DialogDescription>
+                </DialogHeader>
+                <div class="space-y-4 text-base leading-relaxed">
+                    <p>Compartilhe suas escolhas, marque a Nutri no Instagram e use a hashtag <strong>#DesafioDaVirada</strong>.</p>
+                    <p>Vamos trocar ideias, inspirar outras pessoas e mostrar que o básico bem-feito também merece ser compartilhado! ❤️</p>
+                </div>
+                <Button type="button" class="mt-2 w-full" @click="mealShareOpen = false">Entendi ❤️</Button>
+            </DialogContent>
+        </Dialog>
 
         <Dialog v-model:open="cheersOpen">
             <DialogContent class="overflow-hidden border-brand-gold bg-brand-card text-brand-cream sm:max-w-md">
