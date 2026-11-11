@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { achieved, dayPoints, workoutMinutes, type Achieved, type DayDetails, type DayGoals } from '@/data/dayLog';
 import { router, useForm } from '@inertiajs/vue3';
-import { Camera, ChevronDown, Droplets, Dumbbell, Lightbulb, Moon, Plus, Salad, Star, X } from 'lucide-vue-next';
+import { Camera, ChevronDown, Droplets, Dumbbell, Lightbulb, Moon, Plus, Salad, Star, Trash2, X } from 'lucide-vue-next';
 import { computed, nextTick, ref, watch } from 'vue';
 
 type DayForm = {
@@ -97,6 +97,33 @@ const saveGoal = (goal: GoalKey) => {
     );
 };
 
+const removeWorkout = (index: number) => {
+    if (!props.canEdit || props.adminPreview || saving.value) return;
+    const details = JSON.parse(JSON.stringify(props.entry.details)) as DayDetails;
+    details.workouts.splice(index, 1);
+    details.manual.movement = false;
+    saveError.value = '';
+    saveMessage.value = '';
+    router.patch(route('athlete.days.goal.update', { day: props.entry.day, goal: 'movement' }), {
+        details,
+        notes: { ...props.entry.notes },
+    }, {
+        preserveState: true,
+        preserveScroll: true,
+        onStart: () => { saving.value = 'movement'; },
+        onSuccess: () => {
+            props.entry.details.workouts = details.workouts;
+            props.entry.details.manual.movement = false;
+            props.entry.checked_in = true;
+            delete before.movement;
+            cheerFrom.value.movement = achieved(details, props.goals).movement;
+            saveMessage.value = 'Treino excluído.';
+        },
+        onError: (errors) => { saveError.value = Object.values(errors)[0] ?? 'Não foi possível excluir o treino.'; },
+        onFinish: () => { saving.value = null; },
+    });
+};
+
 const GOAL_CHEERS: Record<keyof Achieved, { title: string; line: string }> = {
     movement: { title: 'Treino batido!', line: 'O sofá que lute. Corpo em movimento, ponto na conta.' },
     water: { title: 'Água na meta!', line: 'Hidratação de campeão. A célula agradece o gole.' },
@@ -175,6 +202,7 @@ const toggleGoal = (key: 'movement' | 'water' | 'sleep' | 'strength', checked: b
 // Foto do treino: envia na hora (sem depender do botão "Salvar dias"); preserveState mantém o que já foi digitado.
 const photoInput = ref<HTMLInputElement | null>(null);
 const uploading = ref(false);
+const deletingPhoto = ref(false);
 const photoError = ref('');
 
 const sendPhoto = (event: Event) => {
@@ -203,8 +231,17 @@ const sendPhoto = (event: Event) => {
     );
 };
 
-const removePhoto = () =>
-    router.delete(route('athlete.days.photo.destroy', props.entry.day), { preserveState: true, preserveScroll: true });
+const removePhoto = () => {
+    if (uploading.value || deletingPhoto.value) return;
+    photoError.value = '';
+    router.delete(route('athlete.days.photo.destroy', props.entry.day), {
+        preserveState: true,
+        preserveScroll: true,
+        onStart: () => { deletingPhoto.value = true; },
+        onError: () => { photoError.value = 'Não foi possível excluir a foto do treino.'; },
+        onFinish: () => { deletingPhoto.value = false; },
+    });
+};
 
 const mealInput = ref<HTMLInputElement | null>(null);
 const mealUploading = ref(false);
@@ -374,7 +411,12 @@ const chipClass = (active: boolean) =>
                     <div class="h-full rounded-full bg-brand-gold" :style="{ width: pct(minutes, goals.movement_minutes) }" />
                 </div>
                 <div v-for="(workout, index) in entry.details.workouts" :key="index" class="grid gap-2">
-                    <p class="m-0 text-sm font-semibold text-brand-cream">{{ workout.type }} · {{ workout.minutes || 0 }} min</p>
+                    <div class="flex items-center gap-2">
+                        <p class="m-0 text-sm font-semibold text-brand-cream">{{ workout.type }} · {{ workout.minutes || 0 }} min</p>
+                        <button v-if="editing" type="button" class="inline-flex size-9 shrink-0 items-center justify-center rounded-lg bg-red-600 text-white transition-colors hover:bg-red-700 disabled:opacity-60" :disabled="Boolean(saving) || adminPreview" :aria-label="`Excluir treino ${workout.type} de ${workout.minutes || 0} minutos`" title="Excluir treino" @click="removeWorkout(index)">
+                            <Trash2 class="size-4" aria-hidden="true" />
+                        </button>
+                    </div>
                     <template v-if="editing">
                         <div class="flex flex-wrap gap-1.5">
                             <button v-for="type in workoutTypes" :key="type" type="button" :class="chipClass(workout.type === type)" @click="workout.type = type">{{ type }}</button>
@@ -382,9 +424,6 @@ const chipClass = (active: boolean) =>
                         <div class="flex items-center gap-2">
                             <input v-model.number="workout.minutes" type="number" min="0" max="600" placeholder="min" :class="[fieldClass, 'w-20 shrink-0']" />
                             <span class="text-sm text-brand-muted">min</span>
-                            <button type="button" class="shrink-0 rounded-full p-1.5 text-brand-muted hover:text-brand-cream" aria-label="Remover treino" @click="entry.details.workouts.splice(index, 1)">
-                                <X class="size-4" />
-                            </button>
                         </div>
                         <div class="flex flex-wrap gap-1.5">
                             <button v-for="amount in [15, 30, 45, 60]" :key="amount" type="button" :class="chipClass(false)" @click="addMinutes(index, amount)">+{{ amount }}</button>
@@ -393,10 +432,19 @@ const chipClass = (active: boolean) =>
                 </div>
                 <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
                     <button v-if="showAthleteControls" type="button" class="flex min-h-9 w-fit items-center gap-1.5 text-sm font-semibold text-brand-gold" @click="addWorkout"><Plus class="size-4" /> Adicionar treino</button>
-                    <button v-if="showAthleteControls" type="button" class="flex min-h-9 w-fit items-center gap-1.5 text-sm font-semibold text-brand-gold disabled:opacity-60" :disabled="uploading" @click="photoInput?.click()">
+                    <button v-if="showAthleteControls" type="button" class="flex min-h-9 w-fit items-center gap-1.5 text-sm font-semibold text-brand-gold disabled:opacity-60" :disabled="uploading || deletingPhoto" @click="photoInput?.click()">
                         <Camera class="size-4" /> {{ uploading ? 'Enviando...' : photo ? 'Trocar foto' : 'Adicionar foto' }}
                     </button>
                     <input ref="photoInput" type="file" accept="image/*" class="hidden" @change="sendPhoto" />
+                </div>
+                <div v-if="photo && !canComment" class="w-[calc((100%_-_0.75rem)/8)] space-y-2 sm:w-[calc((100%_-_1.5rem)/12)]">
+                    <img v-if="!unavailablePhotos.has(photo)" :src="photo" alt="Foto do treino adicionada" class="aspect-square w-full rounded-lg border border-brand-line2 bg-brand-card2 object-contain" @error="unavailablePhotos.add(photo)" />
+                    <p v-else class="text-xs text-brand-muted">Foto do treino indisponível.</p>
+                    <button v-if="showAthleteControls" type="button" :disabled="uploading || deletingPhoto || adminPreview" class="inline-flex min-h-9 items-center gap-1 rounded-lg bg-red-600 px-2 py-1 text-xs font-bold text-white hover:bg-red-700 disabled:opacity-60" aria-label="Excluir foto do treino" @click="removePhoto">
+                        <Trash2 class="size-4 shrink-0" aria-hidden="true" />
+                        {{ deletingPhoto ? 'Excluindo…' : 'Excluir foto' }}
+                    </button>
+                    <CheckinReaction v-if="workoutPhotoId" :day="entry.day" :target="`workout:${workoutPhotoId}`" :reaction="reactions?.[`workout:${workoutPhotoId}`]" label="Foto do treino" />
                 </div>
                 <p v-if="photoError" class="m-0 text-xs text-red-400">{{ photoError }}</p>
                 <label v-if="minutes < goals.movement_minutes || entry.details.manual.movement" class="flex min-h-9 items-center gap-2.5 text-xs text-brand-muted">
@@ -522,7 +570,7 @@ const chipClass = (active: boolean) =>
                 </button>
             </fieldset>
 
-            <section v-if="photo || (canComment && mealPhotos?.length)" class="grid gap-3 rounded-xl border border-brand-line2 p-3">
+            <section v-if="canComment && (photo || mealPhotos?.length)" class="grid gap-3 rounded-xl border border-brand-line2 p-3">
                 <h3 class="text-sm font-semibold">Fotos do dia</h3>
                 <div v-if="photo" class="w-fit space-y-2">
                     <div class="relative">
