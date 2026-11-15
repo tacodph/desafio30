@@ -44,6 +44,20 @@ class AthleteProgressTest extends TestCase
         $this->assertTrue($firstAccess->equalTo($athlete->fresh()->first_challenge_access_at));
     }
 
+    public function test_seven_day_content_stays_locked_until_monday_in_brasilia(): void
+    {
+        $athlete = User::factory()->create();
+        $athlete->forceFill(['first_challenge_access_at' => '2026-11-01 00:00:00'])->save();
+
+        $this->travelTo(\Illuminate\Support\Carbon::parse('2026-11-15 23:59:59', \App\Support\ChallengeAccess::TIMEZONE));
+        $this->assertFalse(\App\Support\ChallengeAccess::sevenDayContentIsReleased());
+        $this->actingAs($athlete)->get(route('alimentacao.refeicoes-reais'))->assertForbidden();
+
+        $this->travelTo(\Illuminate\Support\Carbon::parse('2026-11-16 00:00:00', \App\Support\ChallengeAccess::TIMEZONE));
+        $this->assertTrue(\App\Support\ChallengeAccess::sevenDayContentIsReleased());
+        $this->get(route('alimentacao.refeicoes-reais'))->assertOk();
+    }
+
     public function test_challenge_has_thirty_days_and_rejects_day_thirty_one(): void
     {
         $athlete = $this->startedAthlete();

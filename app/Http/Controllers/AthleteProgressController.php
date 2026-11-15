@@ -249,7 +249,7 @@ class AthleteProgressController extends Controller
             'recipeUnlock' => [
                 'requiredDays' => 7,
                 'completedDays' => $completedDays,
-                'unlocked' => ! $user->isAthlete() || $completedDays >= 7,
+                'unlocked' => ! $user->isAthlete() || ($completedDays >= 7 && \App\Support\ChallengeAccess::sevenDayContentIsReleased()),
             ],
         ]);
     }

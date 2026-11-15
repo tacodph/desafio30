@@ -137,7 +137,9 @@ class User extends Authenticatable
     public function canViewConsultationMeals(): bool
     {
         return $this->userType?->name === UserRole::Administrador->value
-            || ($this->isAthlete() && $this->first_challenge_access_at?->copy()->addDays(7)->lte(now()) === true);
+            || ($this->isAthlete()
+                && \App\Support\ChallengeAccess::sevenDayContentIsReleased()
+                && $this->first_challenge_access_at?->copy()->addDays(7)->lte(now()) === true);
     }
 
     public function hasPaidChallenge(): bool
