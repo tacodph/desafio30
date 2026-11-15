@@ -147,8 +147,7 @@ class User extends Authenticatable
 
         return match ($access->modes()['consultation_meals']) {
             'manual' => true,
-            'calendar' => \App\Support\ChallengeAccess::sevenDayContentIsReleased()
-                && $this->first_challenge_access_at?->copy()->addDays(7)->lte(now()) === true,
+            'calendar' => \App\Support\ChallengeAccess::sevenDayContentIsReleased(),
             default => false,
         };
     }

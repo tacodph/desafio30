@@ -25,35 +25,24 @@ class AthleteProgressTest extends TestCase
         });
     }
 
-    public function test_consultation_meals_unlock_seven_days_after_first_challenge_access(): void
+    public function test_consultation_meals_open_today_without_waiting_seven_days(): void
     {
-        $this->freezeSecond();
-        $athlete = User::factory()->create();
-        $url = route('alimentacao.refeicoes-reais');
-
-        $this->actingAs($athlete)->get($url)->assertForbidden();
-        $firstAccess = $athlete->fresh()->first_challenge_access_at;
-        $this->assertNotNull($firstAccess);
-
-        $this->travelTo($firstAccess->copy()->addDays(7)->subSecond());
-        $this->get($url)->assertForbidden();
-
-        $this->travelTo($firstAccess->copy()->addDays(7));
-        $this->get($url)->assertOk()->assertInertia(fn (Assert $page) => $page
-            ->component('ConsultationMeals')->where('consultationMealsUnlocked', true));
-        $this->assertTrue($firstAccess->equalTo($athlete->fresh()->first_challenge_access_at));
+        $this->travelTo(\Illuminate\Support\Carbon::parse('2026-11-15 12:00:00', \App\Support\ChallengeAccess::TIMEZONE));
+        $this->actingAs(User::factory()->create())->get(route('alimentacao.refeicoes-reais'))
+            ->assertOk()->assertInertia(fn (Assert $page) => $page
+                ->component('ConsultationMeals')->where('consultationMealsUnlocked', true));
     }
 
-    public function test_seven_day_content_stays_locked_until_monday_in_brasilia(): void
+    public function test_scheduled_content_opens_on_sunday_in_brasilia(): void
     {
         $athlete = User::factory()->create();
         $athlete->forceFill(['first_challenge_access_at' => '2026-11-01 00:00:00'])->save();
 
-        $this->travelTo(\Illuminate\Support\Carbon::parse('2026-11-15 23:59:59', \App\Support\ChallengeAccess::TIMEZONE));
+        $this->travelTo(\Illuminate\Support\Carbon::parse('2026-11-14 23:59:59', \App\Support\ChallengeAccess::TIMEZONE));
         $this->assertFalse(\App\Support\ChallengeAccess::sevenDayContentIsReleased());
         $this->actingAs($athlete)->get(route('alimentacao.refeicoes-reais'))->assertForbidden();
 
-        $this->travelTo(\Illuminate\Support\Carbon::parse('2026-11-16 00:00:00', \App\Support\ChallengeAccess::TIMEZONE));
+        $this->travelTo(\Illuminate\Support\Carbon::parse('2026-11-15 00:00:00', \App\Support\ChallengeAccess::TIMEZONE));
         $this->assertTrue(\App\Support\ChallengeAccess::sevenDayContentIsReleased());
         $this->get(route('alimentacao.refeicoes-reais'))->assertOk();
     }

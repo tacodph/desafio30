@@ -54,7 +54,7 @@ const steps = [
                     <div class="grid gap-4 md:grid-cols-2">
                         <section class="rounded-3xl border-2 border-yellow-400 p-5">
                             <h2 class="mb-2 flex items-center gap-3 font-display text-2xl font-black italic uppercase leading-tight text-yellow-400"><CalendarDays class="size-10 shrink-0" aria-hidden="true" /> Atenção aos novos materiais!</h2>
-                            <p>Alguns conteúdos serão liberados gradualmente, a partir do <strong class="text-yellow-400">7º dia</strong> do desafio, como sugestões de jantares, lanches saudáveis e receitas.</p>
+                            <p>As sugestões de jantares, lanches saudáveis e receitas estão disponíveis a partir de <strong class="text-yellow-400">15/11</strong>, sem precisar completar sete dias do desafio.</p>
                         </section>
                         <section class="rounded-3xl bg-yellow-400 p-5 text-black">
                             <h2 class="mb-2 flex items-center gap-3 font-display text-2xl font-black italic uppercase leading-tight"><Target class="size-10 shrink-0" aria-hidden="true" /> O objetivo destes 30 dias</h2>

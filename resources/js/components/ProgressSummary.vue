@@ -69,13 +69,6 @@ const weekParts = [
                 </div>
             </div>
 
-            <p class="m-0 rounded-xl border border-brand-line2 bg-brand-card2 px-3 py-2.5 text-sm">
-                <span class="font-display text-2xl font-black text-brand-gold">{{ item.athletes_done }}</span>
-                <span class="text-brand-muted">
-                    de {{ item.athletes_total }} {{ item.athletes_total === 1 ? 'atleta concluiu' : 'atletas concluíram' }} a semana
-                </span>
-            </p>
-
             <dl class="grid grid-cols-2 gap-x-3 gap-y-2">
                 <div v-for="part in weekParts" :key="part.key" class="flex items-baseline justify-between gap-2">
                     <dt class="min-w-0 text-xs text-brand-muted-2">

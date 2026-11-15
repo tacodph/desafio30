@@ -79,7 +79,7 @@ Route::middleware(['auth', 'verified', 'challenge.paid'])->group(function () {
     Route::get('alimentacao/recado-da-nutri', fn () => Inertia::render('NutriMessage'))->name('alimentacao.recado-da-nutri');
     Route::redirect('alimentacao/sugestoes-de-jantar', '/alimentacao/refeicoes-reais-em-consultorio')->name('alimentacao.jantar');
     Route::get('alimentacao/refeicoes-reais-em-consultorio', function (\Illuminate\Http\Request $request) {
-        abort_unless($request->user()->canViewConsultationMeals(), 403, 'Este conteúdo ainda não está liberado para o seu acesso. No calendário, estará disponível a partir de 16/11, após sete dias do primeiro acesso ao desafio.');
+        abort_unless($request->user()->canViewConsultationMeals(), 403, 'Este conteúdo ainda não está liberado para o seu acesso. No calendário, está disponível a partir de 15/11, sem espera de sete dias.');
 
         return Inertia::render('ConsultationMeals');
     })->middleware('challenge.feature:alimentacao')->name('alimentacao.refeicoes-reais');

@@ -129,7 +129,7 @@ const mainNavItems = computed<NavGroupItem[]>(() => {
                         title: 'Na prática, é assim!',
                         subtitle: 'Diários reais, escolhas reais.',
                         description: 'Veja registros compartilhados por pacientes na rotina alimentar. São exemplos reais de como organizar refeições, combinar alimentos e fazer boas escolhas no dia a dia.',
-                        footer: 'Conteúdo sujeito à liberação de acesso. No calendário: a partir de 16/11, após 7 dias do primeiro acesso.',
+                        footer: 'Conteúdo sujeito à liberação de acesso. No calendário: disponível a partir de 15/11.',
                     } : undefined,
                 },
                 { title: 'Lista de compras inteligente', href: '/objetivos/alimentacao/compras', disabled: !page.props.evolutionAccess?.pages.shopping },
