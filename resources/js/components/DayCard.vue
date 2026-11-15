@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import CheckinReaction from '@/components/CheckinReaction.vue';
+import PrivateComments from '@/components/PrivateComments.vue';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { achieved, dayPoints, workoutMinutes, type Achieved, type DayDetails, type DayGoals } from '@/data/dayLog';
@@ -26,6 +27,7 @@ const props = withDefaults(
         reactions?: Record<string, string>;
         mealPhotos?: { id: string; url: string }[];
         mealComment?: string | null;
+        commentOwnerId?: number | null;
         mealReaction?: string | null;
         saved: boolean;
         workoutTypes: string[];
@@ -544,6 +546,7 @@ const chipClass = (active: boolean) =>
                 <p v-if="!mealPhotos?.length && canComment" class="m-0 text-xs text-brand-muted">Ainda sem fotos da refeição neste dia.</p>
                 <p v-if="mealError" class="m-0 text-xs text-red-400">{{ mealError }}</p>
                 <p v-if="mealReaction" class="m-0 text-sm font-semibold">Reação da nutri {{ mealReaction }}</p>
+                <PrivateComments v-if="mealComment && commentOwnerId && !adminPreview" :context="`meal:${commentOwnerId}:${entry.day}`" reply />
                 <p v-if="mealComment && !canComment" class="m-0 text-sm leading-relaxed text-brand-muted">
                     <span class="font-semibold text-brand-cream">Nutri · </span>{{ mealComment }}
                 </p>

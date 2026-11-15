@@ -322,6 +322,7 @@ const saveComment = () => {
                     :reactions="item.info.reactions"
                     :meal-photos="item.info.meal_photos"
                     :meal-comment="item.info.meal_comment"
+                    :comment-owner-id="athleteId ?? $page.props.auth.user?.id"
                     :meal-reaction="item.info.meal_reaction"
                     :saved="item.info.saved"
                     :workout-types="workoutTypes"

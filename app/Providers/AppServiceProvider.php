@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Illuminate\Auth\Events\Login;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -22,6 +23,11 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Event::listen(Login::class, function (Login $event) {
+            DB::table('login_logs')->insert([
+                'user_id' => $event->user->getAuthIdentifier(),
+                'logged_in_at' => now(),
+            ]);
+
             if (! $event->user->isAthlete() || ! request()->hasSession()) {
                 return;
             }

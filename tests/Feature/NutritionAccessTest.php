@@ -18,7 +18,6 @@ class NutritionAccessTest extends TestCase
     private const PAGES = [
         '/cantinho-da-nutri' => 'ComoCombinarAlimentos',
         '/alimentacao/monte-seu-prato' => 'MonteSeuPrato',
-        '/alimentacao/sugestoes-de-jantar' => 'DinnerSuggestions',
         '/objetivos/alimentacao/compras' => 'Compras',
     ];
 

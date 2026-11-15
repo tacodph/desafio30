@@ -29,11 +29,12 @@ class ChallengeAccess
         'resumo' => 'Página de resumo',
         'entries' => 'Lançamentos e fotos dos dias',
         'alimentacao' => 'Alimentação',
+        'consultation_meals' => 'Sugestões de refeições reais - Jantar',
         'shopping' => 'Lista de compras inteligente',
         'nutri' => 'Cantinho da Nutri',
     ];
 
-    public const PAGE_FEATURES = ['dias', 'conquistas', 'resumo', 'shopping', 'alimentacao', 'nutri'];
+    public const PAGE_FEATURES = ['dias', 'conquistas', 'resumo', 'shopping', 'alimentacao', 'nutri', 'consultation_meals'];
 
     private ?array $settings = null;
 
@@ -64,6 +65,10 @@ class ChallengeAccess
 
     public function pageOpen(string $feature): bool
     {
+        if ($feature === 'consultation_meals') {
+            return request()->user()?->canViewConsultationMeals() ?? false;
+        }
+
         if ($feature === 'shopping' && ! $this->pageOpen('alimentacao')) {
             return false;
         }

@@ -136,10 +136,21 @@ class User extends Authenticatable
 
     public function canViewConsultationMeals(): bool
     {
-        return $this->userType?->name === UserRole::Administrador->value
-            || ($this->isAthlete()
-                && \App\Support\ChallengeAccess::sevenDayContentIsReleased()
-                && $this->first_challenge_access_at?->copy()->addDays(7)->lte(now()) === true);
+        if ($this->userType?->name === UserRole::Administrador->value) {
+            return true;
+        }
+
+        $access = app(\App\Support\ChallengeAccess::class);
+        if (! $this->isAthlete() || ! $access->pageOpen('alimentacao')) {
+            return false;
+        }
+
+        return match ($access->modes()['consultation_meals']) {
+            'manual' => true,
+            'calendar' => \App\Support\ChallengeAccess::sevenDayContentIsReleased()
+                && $this->first_challenge_access_at?->copy()->addDays(7)->lte(now()) === true,
+            default => false,
+        };
     }
 
     public function hasPaidChallenge(): bool

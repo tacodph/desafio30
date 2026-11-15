@@ -98,6 +98,7 @@ const restore = () => {
                         <option value="closed">Bloquear</option>
                     </select>
                     <InputError :message="form.errors[('modes.' + key) as keyof typeof form.errors]" />
+                    <p v-if="key === 'consultation_meals'" class="text-sm leading-relaxed text-brand-muted">No calendário, libera a partir de 16/11 após sete dias do primeiro acesso. A liberação manual antecipa esse conteúdo; bloquear impede o acesso dos atletas. A seção Alimentação também precisa estar liberada.</p>
                 </div>
                 <div class="grid max-w-sm gap-2 border-t border-brand-line2 pt-5">
                     <Label for="admin-password">Confirme sua senha de administrador</Label>

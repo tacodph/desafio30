@@ -1,3 +1,7 @@
+<script setup lang="ts">
+import PrivateComments from '@/components/PrivateComments.vue';
+</script>
+
 <template>
     <section class="surface-card flex flex-col gap-4 p-5 sm:p-6" aria-labelledby="nutri-message-title">
         <div class="space-y-2">
@@ -8,5 +12,6 @@
             <source src="/videos/recadoNUtri.mp4" type="video/mp4" />
             <a href="/videos/recadoNUtri.mp4">Abrir o vídeo do recado da nutri</a>
         </video>
+        <PrivateComments context="video:recado-nutri" />
     </section>
 </template>

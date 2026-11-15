@@ -2,6 +2,7 @@
 import AppLayout from '@/layouts/AppLayout.vue';
 import CheckinReaction from '@/components/CheckinReaction.vue';
 import MealCommentForm from '@/components/MealCommentForm.vue';
+import PrivateComments from '@/components/PrivateComments.vue';
 import { handleAccordionClick } from '@/lib/accordionScroll';
 import { Head, Link } from '@inertiajs/vue3';
 import { ChevronDown } from 'lucide-vue-next';
@@ -34,6 +35,10 @@ defineProps<{
         <main class="mx-auto flex w-full max-w-5xl flex-col gap-5 p-4 md:p-6" @click="handleAccordionClick">
             <h1 class="display-title text-4xl text-brand-gold">{{ title }}</h1>
             <p class="text-brand-muted">Consulte os registros de alimentação, refeições luxo e fotos por atleta.</p>
+            <nav class="flex flex-wrap gap-3 text-sm font-bold text-brand-gold" aria-label="Comentários dos vídeos">
+                <Link href="/alimentacao/refeicoes-reais-em-consultorio">Sugestões de refeições reais - Jantar</Link>
+                <Link href="/alimentacao/recado-da-nutri">Comentários do recado da nutri</Link>
+            </nav>
             <details v-for="athlete in athletes.data" :key="athlete.id" name="athlete-meals" class="surface-card group overflow-hidden">
                 <summary class="flex cursor-pointer list-none items-center justify-between gap-3 p-5 [&::-webkit-details-marker]:hidden">
                     <span class="min-w-0 break-words font-bold">{{ athlete.name }}</span>
@@ -41,6 +46,7 @@ defineProps<{
                 </summary>
                 <div class="divide-y divide-brand-line border-t border-brand-line px-5">
                     <article v-for="day in athlete.days" :key="day.id" class="space-y-3 py-4">
+                        <PrivateComments v-if="day.mealComment" :context="`meal:${athlete.id}:${day.day}`" reply />
                         <h2 class="font-bold text-brand-gold">Dia {{ day.day }} · {{ day.date }}</h2>
                         <p v-if="day.achieved" class="text-sm font-semibold">Meta de alimentação atingida</p>
                         <ul v-if="Object.values(day.food).some(Boolean)" class="flex flex-wrap gap-2 text-sm">
