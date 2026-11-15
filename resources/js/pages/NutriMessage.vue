@@ -6,7 +6,7 @@ import { Head } from '@inertiajs/vue3';
 
 <template>
     <Head title="Recado importante da nutri" />
-    <AppLayout :breadcrumbs="[{ title: 'Alimentação', href: '/meus-objetivos/alimentacao' }, { title: 'Recado importante da nutri', href: '/alimentacao/recado-da-nutri' }]">
+    <AppLayout :breadcrumbs="[{ title: 'Boas-vindas', href: '/atleta/boas-vindas/video' }, { title: 'Recado importante da nutri', href: '/alimentacao/recado-da-nutri' }]">
         <main class="mx-auto w-full max-w-4xl p-4 md:p-6">
             <NutriMessage />
         </main>

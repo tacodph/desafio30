@@ -100,6 +100,7 @@ const mainNavItems = computed<NavGroupItem[]>(() => {
             { title: 'Painel', href: '/dashboard', icon: LayoutGrid },
             { title: 'Boas-vindas', icon: PartyPopper, children: [
                 { title: 'Mensagem de boas-vindas com vídeo', href: '/atleta/boas-vindas/video' },
+                { title: 'Recado importante da nutri', href: '/alimentacao/recado-da-nutri' },
                 { title: 'Entenda os objetivos', href: '/atleta/boas-vindas/objetivos' },
                 { title: 'O desafio não termina em 30 dias.', href: '/atleta/boas-vindas/aproveitar-melhor' },
                 { title: 'Tutoriais', children: [
@@ -120,7 +121,6 @@ const mainNavItems = computed<NavGroupItem[]>(() => {
                 children: evolutionChildren.value,
             },
             { title: 'Alimentação', icon: Salad, children: [
-                { title: 'Recado importante da nutri', href: '/alimentacao/recado-da-nutri', disabled: !page.props.evolutionAccess?.pages.alimentacao },
                 {
                     title: 'Sugestões de refeições reais - Jantar',
                     href: '/alimentacao/refeicoes-reais-em-consultorio',

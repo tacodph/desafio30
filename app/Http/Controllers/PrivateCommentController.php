@@ -22,7 +22,7 @@ class PrivateCommentController extends Controller
             $athlete->checkins()->where('day', $matches[2])->whereNotNull('meal_comment')->where('meal_comment', '!=', '')->firstOrFail();
         } else {
             abort_unless(in_array($context, ['video:jantar', 'video:recado-nutri'], true), 404);
-            abort_if($user->isAthlete() && ! app(\App\Support\ChallengeAccess::class)->pageOpen('alimentacao'), 403);
+            abort_if($context === 'video:jantar' && $user->isAthlete() && ! app(\App\Support\ChallengeAccess::class)->pageOpen('alimentacao'), 403);
         }
 
         return $context;
