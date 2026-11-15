@@ -59,6 +59,11 @@ class HandleInertiaRequests extends Middleware
                 ];
             },
             'consultationMealsUnlocked' => fn () => $request->user()?->canViewConsultationMeals() ?? false,
+            'contentReleaseNotice' => function () use ($request) {
+                $pages = \App\Support\ContentReleaseNotice::pages($request);
+
+                return $pages ? ['token' => csrf_token(), 'pages' => $pages] : null;
+            },
             'mealCommentNotices' => function () use ($request) {
                 if (! $request->user()?->isAthlete()) {
                     return null;

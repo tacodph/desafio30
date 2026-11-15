@@ -11,7 +11,7 @@ const claiming = ref(false);
 const handled = new Set<number>();
 
 const showNext = async () => {
-    if (current.value || claiming.value || page.props.showReleaseWelcome === true) return;
+    if (current.value || claiming.value || page.props.showReleaseWelcome === true || page.props.contentReleaseNotice) return;
     const notice = page.props.mealCommentNotices;
     const checkin = notice?.checkins.find((item) => !handled.has(item.id));
     if (!notice || !checkin) return;
@@ -40,7 +40,7 @@ const close = () => {
     void showNext();
 };
 
-watch(() => [page.props.mealCommentNotices, page.props.showReleaseWelcome], () => { void showNext(); }, { immediate: true });
+watch(() => [page.props.mealCommentNotices, page.props.showReleaseWelcome, page.props.contentReleaseNotice], () => { void showNext(); }, { immediate: true });
 </script>
 
 <template>

@@ -62,6 +62,7 @@ Route::middleware('auth')->group(function () {
 Route::post('webhooks/asaas', WebhookController::class)->name('webhooks.asaas');
 
 Route::middleware(['auth', 'verified', 'challenge.paid'])->group(function () {
+    Route::post('atleta/aviso-conteudos-liberados', [\App\Http\Controllers\ContentReleaseNoticeController::class, 'store'])->name('athlete.content-release-notice');
     Route::get('comentarios-privados', [\App\Http\Controllers\PrivateCommentController::class, 'index'])->name('private-comments.index');
     Route::post('comentarios-privados', [\App\Http\Controllers\PrivateCommentController::class, 'store'])->middleware('throttle:20,1')->name('private-comments.store');
     Route::get('dashboard', DashboardController::class)->name('dashboard');

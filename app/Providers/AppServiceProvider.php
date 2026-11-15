@@ -38,6 +38,7 @@ class AppServiceProvider extends ServiceProvider
                 ->whereNull('meal_comment_notice_shown_at')
                 ->orderBy('day')
                 ->pluck('id')->all());
+            request()->session()->put('content_release_notice_pending', true);
         });
     }
 }

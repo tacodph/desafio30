@@ -10,10 +10,9 @@ import { computed, ref } from 'vue';
 const title = 'Sugestões de refeições reais - Jantar';
 const activeGroup = ref('todos');
 const visibleGroups = computed(() => {
-    let number = 0;
     return consultationMealGroups
         .filter((group) => activeGroup.value === 'todos' || group.id === activeGroup.value)
-        .map((group) => ({ ...group, gallery: group.id !== 'outros', meals: group.meals.map((meal) => ({ ...meal, number: ++number })) }));
+        .map((group) => ({ ...group, gallery: group.id !== 'outros' }));
 });
 const totalMeals = consultationMealGroups.reduce((total, group) => total + group.meals.length, 0);
 </script>
@@ -103,12 +102,11 @@ const totalMeals = consultationMealGroups.reduce((total, group) => total + group
                                     </svg>
                                     <img v-else :src="consultationMealImage(meal.id)" :alt="meal.title || 'Bolinhos para congelar'" loading="lazy" decoding="async" class="w-full object-contain" :class="meal.id === 21 ? 'h-auto' : 'aspect-square transition-transform group-hover:scale-105'" />
                                     <span class="absolute bottom-2 right-2 rounded-full bg-black/80 p-2 text-yellow-400"><Maximize2 class="size-4" aria-hidden="true" /></span>
-                                    <span v-if="group.gallery" class="absolute left-2 top-2 flex size-9 items-center justify-center rounded-full bg-yellow-400 text-lg font-black text-black" aria-hidden="true">{{ meal.number }}</span>
                                 </button>
                             </DialogTrigger>
                             <DialogContent class="max-h-[90dvh] max-w-3xl overflow-y-auto border-brand-line2 bg-[#191919] text-white">
                                 <DialogHeader>
-                                    <DialogTitle class="pr-6 text-brand-gold">{{ group.title }} · {{ meal.number }}</DialogTitle>
+                                    <DialogTitle class="pr-6 text-brand-gold">{{ group.title }}</DialogTitle>
                                     <DialogDescription v-if="group.gallery" class="text-brand-muted">Uma ideia de refeição real para inspirar suas combinações.</DialogDescription>
                                     <DialogDescription v-else class="text-brand-muted">{{ meal.sides.join(' ') }}</DialogDescription>
                                 </DialogHeader>
@@ -119,7 +117,6 @@ const totalMeals = consultationMealGroups.reduce((total, group) => total + group
                             </DialogContent>
                         </Dialog>
                         <div v-if="group.id === 'outros'" class="flex w-full items-start gap-3 py-2">
-                            <span class="flex size-10 shrink-0 items-center justify-center rounded-full bg-yellow-400 text-xl font-black text-black" aria-hidden="true">{{ meal.number }}</span>
                             <div class="min-w-0 space-y-2 text-base leading-relaxed">
                                 <h3 v-if="meal.title" class="font-bold">{{ meal.title }}</h3>
                                 <p v-for="description in meal.sides" :key="description">{{ description }}</p>
