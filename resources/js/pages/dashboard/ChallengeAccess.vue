@@ -49,7 +49,7 @@ const restore = () => {
             <div class="flex flex-col gap-3">
                 <div class="eyebrow">Administração · {{ environment }}</div>
                 <h1 class="display-title text-[clamp(36px,5vw,56px)]">Liberações do desafio</h1>
-                <p class="m-0 leading-relaxed text-brand-muted">No calendário normal, as páginas abrem em {{ releaseDate }}. Cada dia aceita lançamentos e fotos somente na sua própria data, de 00h até 23h59, pelo horário de Brasília.</p>
+                <p class="m-0 leading-relaxed text-brand-muted">No calendário normal, as páginas abrem em {{ releaseDate }}. Cada dia aceita lançamentos e fotos desde 00h da sua data até 23h53 do dia seguinte, pelo horário de Brasília.</p>
                 <p class="m-0 text-sm text-brand-muted">Escolha quais recursos seguem o calendário, ficam liberados manualmente ou ficam bloqueados para os atletas. Na visualização administrativa, só o seu perfil tem acesso fora das datas.</p>
             </div>
             <div class="surface-card flex flex-col gap-3 p-5">

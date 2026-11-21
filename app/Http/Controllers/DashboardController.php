@@ -103,7 +103,7 @@ class DashboardController extends Controller
                     'athleteId' => $checkin->user_id,
                     'athlete' => $checkin->user->name,
                     'day' => $checkin->day,
-                    'date' => Carbon::parse(ChallengeSheet::dateForDay($checkin->day))->format('d/m/Y'),
+                    'date' => Carbon::parse(ChallengeSheet::dateForDay($checkin->day, $checkin->user))->format('d/m/Y'),
                     'comment' => $checkin->meal_comment,
                     'reaction' => $checkin->meal_reaction,
                     'photos' => array_map(fn (string $path) => route('equipe.meals.photo', [
@@ -648,10 +648,10 @@ class DashboardController extends Controller
                 'name' => $athlete->name,
                 'checkins' => (int) $athlete->completed_checkins,
                 'lastDay' => (int) $athlete->last_checkin_day,
-                'lastDate' => \Illuminate\Support\Carbon::parse(ChallengeSheet::dateForDay((int) $athlete->last_checkin_day))->format('d/m/Y'),
+                'lastDate' => \Illuminate\Support\Carbon::parse(ChallengeSheet::dateForDay((int) $athlete->last_checkin_day, $athlete))->format('d/m/Y'),
                 'days' => $athlete->checkins->map(fn (Checkin $day) => [
                     'day' => $day->day,
-                    'date' => Carbon::parse(ChallengeSheet::dateForDay($day->day))->format('d/m/Y'),
+                    'date' => Carbon::parse(ChallengeSheet::dateForDay($day->day, $athlete))->format('d/m/Y'),
                     'reaction' => $day->reactions['checkin'] ?? null,
                 ]),
             ]);
@@ -756,7 +756,7 @@ class DashboardController extends Controller
                 'days' => $athlete->checkins->map(fn ($day) => [
                     'id' => $day->id,
                     'day' => $day->day,
-                    'date' => \Illuminate\Support\Carbon::parse(ChallengeSheet::dateForDay($day->day))->format('d/m/Y'),
+                    'date' => \Illuminate\Support\Carbon::parse(ChallengeSheet::dateForDay($day->day, $athlete))->format('d/m/Y'),
                     'achieved' => $day->strength,
                     'food' => DayLog::normalize($day->details)['food'],
                     'foodNote' => $day->notes['strength'] ?? '',

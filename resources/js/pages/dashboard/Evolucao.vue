@@ -94,7 +94,7 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => [
 ]);
 const week = ref(props.days.find((day) => day.day === props.selectedDay)?.week ?? props.currentWeek);
 const savedWeekSkills = computed(() => (props.weeklySkills[week.value - 1] ?? []).filter(Boolean));
-const needsWeekSkills = computed(() => showAthleteControls.value && savedWeekSkills.value.length === 0);
+const needsWeekSkills = computed(() => (!props.goals.enabled || props.goals.enabled.includes('skill')) && showAthleteControls.value && savedWeekSkills.value.length === 0);
 const editingWeekSkills = ref(needsWeekSkills.value);
 const weekSkillForm = useForm({
     week: week.value,
@@ -308,6 +308,7 @@ const saveComment = () => {
                     </button>
                 </div>
                 <InputError :message="dias.errors.days" />
+                <p class="text-sm text-brand-muted">Você pode registrar ou ajustar o check-in de cada dia até 23h53 do dia seguinte, pelo horário de Brasília.</p>
                 <DayCard
                     v-for="(item, index) in visibleDays"
                     :key="item.entry.day"
@@ -329,12 +330,12 @@ const saveComment = () => {
                     :week-skills="weeklySkills[item.info.week - 1] ?? []"
                     :default-open="item.entry.day === openDay"
                     :can-edit="canEdit && access.editableDays.includes(item.entry.day)"
-                    :locked-reason="canEdit && !access.editableDays.includes(item.entry.day) ? 'Lançamentos indisponíveis para esta data.' : undefined"
+                    :locked-reason="canEdit && !access.editableDays.includes(item.entry.day) ? 'Lançamentos disponíveis na data correspondente até 23h53 do dia seguinte (Brasília).' : undefined"
                     :can-comment="canComment"
                     :athlete-id="athleteId"
                     :score-rules="scoreRules"
                 >
-                    <template v-if="showAthleteControls && index === 0" #before-check-in>
+                    <template v-if="showAthleteControls && index === 0 && (!goals.enabled || goals.enabled.includes('skill'))" #before-check-in>
                         <fieldset :disabled="adminPreview" class="m-0 grid min-w-0 gap-3 rounded-xl border border-brand-line2 p-3">
                             <div class="flex flex-wrap items-start justify-between gap-3">
                                 <div>

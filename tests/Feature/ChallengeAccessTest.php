@@ -24,6 +24,7 @@ class ChallengeAccessTest extends TestCase
         $user = User::factory()->create();
         $user->forceFill(['welcome_acknowledged_at' => now()])->save();
         AthleteProfile::create(['user_id' => $user->id, 'welcomed_at' => now(), 'goals_set_at' => now()]);
+        DB::table('challenge_participations')->where('user_id', $user->id)->update(['start_date_confirmed_at' => now()]);
 
         return $user;
     }
@@ -90,18 +91,18 @@ class ChallengeAccessTest extends TestCase
         $this->get('/objetivos/alimentacao/compras')->assertInertia(fn (Assert $page) => $page->component('dashboard/EvolutionLocked'));
     }
 
-    public function test_first_goal_submission_returns_to_dashboard_before_release(): void
+    public function test_first_goal_submission_requires_start_choice_even_before_release(): void
     {
         $this->travelTo(Carbon::parse('2026-11-03 12:00:00', ChallengeAccess::TIMEZONE));
         $user = User::factory()->create();
         $user->forceFill(['welcome_acknowledged_at' => now()])->save();
         AthleteProfile::create(['user_id' => $user->id, 'welcomed_at' => now()]);
         $this->actingAs($user)->put('/atleta/metas', ['movement_level' => 'iniciante', 'water_liters' => 2.5])
-            ->assertRedirect('/dashboard');
+            ->assertRedirect('/atleta/meu-desafio');
         $this->get('/dashboard')->assertInertia(fn (Assert $page) => $page
             ->component('dashboard/Atleta')->where('evolutionAccess.pages.dias', false));
-        $this->get('/atleta/evolucao/dias')->assertRedirect('/dashboard');
-        $this->get('/dashboard')->assertInertia(fn (Assert $page) => $page->has('accessNotice'));
+        $this->get('/atleta/evolucao/dias')->assertRedirect('/atleta/meu-desafio');
+        $this->get('/atleta/meu-desafio')->assertInertia(fn (Assert $page) => $page->where('needsStartChoice', true));
     }
 
     public function test_admin_can_preview_all_pages_without_being_an_athlete_or_opening_them_globally(): void
@@ -161,9 +162,9 @@ class ChallengeAccessTest extends TestCase
                 ->where('access.editableDays', [])->where('access.releaseDate', '08/11/2026'));
     }
 
-    public function test_only_the_corresponding_day_accepts_entries_and_mixed_batches_are_atomic(): void
+    public function test_expired_and_future_days_are_blocked_and_mixed_batches_are_atomic(): void
     {
-        $this->travelTo(Carbon::parse('2026-11-10 12:00:00', ChallengeAccess::TIMEZONE));
+        $this->travelTo(Carbon::parse('2026-11-10 23:54:00', ChallengeAccess::TIMEZONE));
         $this->actingAs($this->athlete())->get('/atleta/evolucao/dias')
             ->assertInertia(fn (Assert $page) => $page->where('access.editableDays', [2]));
         foreach ([1, 3, 30] as $day) {
@@ -176,13 +177,13 @@ class ChallengeAccessTest extends TestCase
         $this->assertDatabaseHas('checkins', ['day' => 2, 'water' => true]);
     }
 
-    public function test_brasilia_midnight_changes_the_editable_day(): void
+    public function test_brasilia_midnight_opens_today_and_keeps_yesterday_editable(): void
     {
         $this->travelTo(Carbon::parse('2026-11-10 02:59:59', 'UTC'));
         $this->assertTrue((new ChallengeAccess)->dayEditable(1));
         $this->assertFalse((new ChallengeAccess)->dayEditable(2));
         $this->travelTo(Carbon::parse('2026-11-10 03:00:00', 'UTC'));
-        $this->assertFalse((new ChallengeAccess)->dayEditable(1));
+        $this->assertTrue((new ChallengeAccess)->dayEditable(1));
         $this->assertTrue((new ChallengeAccess)->dayEditable(2));
     }
 
@@ -202,11 +203,50 @@ class ChallengeAccessTest extends TestCase
         }
     }
 
-    public function test_calendar_expires_after_the_last_day(): void
+    public function test_yesterday_accepts_checkins_and_photos_through_2353_but_not_2354(): void
+    {
+        Storage::fake('public');
+        $this->travelTo(Carbon::parse('2026-11-10 23:53:59', ChallengeAccess::TIMEZONE));
+        $this->actingAs($this->athlete())->get('/atleta/evolucao/dias')->assertInertia(fn (Assert $page) => $page
+            ->where('access.editableDays', [1, 2]));
+        $this->patch('/atleta/dias/1/objetivos/water', ['details' => ['water_ml' => 2500]])
+            ->assertSessionHasNoErrors()->assertRedirect();
+        $this->put('/atleta/dias', ['days' => [['day' => 1, 'water' => true]]])
+            ->assertSessionHasNoErrors()->assertRedirect();
+        $this->post('/atleta/dias/1/foto-refeicao', ['photo' => UploadedFile::fake()->image('jantar.jpg')])
+            ->assertSessionHasNoErrors()->assertRedirect();
+
+        $this->travelTo(Carbon::parse('2026-11-11 02:54:00', 'UTC'));
+        $this->patch('/atleta/dias/1/objetivos/water', ['details' => ['water_ml' => 1000]])->assertSessionHasErrors('days');
+        $this->put('/atleta/dias', ['days' => [['day' => 1]]])->assertSessionHasErrors('days');
+        $this->post('/atleta/dias/1/foto-treino', ['photo' => UploadedFile::fake()->image('treino.jpg')])->assertSessionHasErrors('days');
+        $this->delete('/atleta/dias/1/foto-refeicao')->assertSessionHasErrors('days');
+        $this->assertDatabaseHas('checkins', ['day' => 1, 'water' => true]);
+        $this->assertTrue((new ChallengeAccess)->dayEditable(2));
+    }
+
+    public function test_following_day_deadline_uses_the_athletes_personal_start_date(): void
+    {
+        $user = $this->athlete();
+        DB::table('challenge_participations')->where('user_id', $user->id)->update(['start_date' => '2026-11-20']);
+        $this->travelTo(Carbon::parse('2026-11-21 23:53:59', ChallengeAccess::TIMEZONE));
+        $this->actingAs($user)->get('/atleta/evolucao/dias')->assertInertia(fn (Assert $page) => $page
+            ->where('access.editableDays', [1, 2]));
+        $this->assertTrue((new ChallengeAccess)->dayEditable(1));
+        $this->assertTrue((new ChallengeAccess)->dayEditable(2));
+        $this->assertFalse((new ChallengeAccess)->dayEditable(3));
+        $this->travelTo(Carbon::parse('2026-11-21 23:54:00', ChallengeAccess::TIMEZONE));
+        $this->assertFalse((new ChallengeAccess)->dayEditable(1));
+        $this->assertTrue((new ChallengeAccess)->dayEditable(2));
+    }
+
+    public function test_last_day_remains_editable_until_the_following_evening(): void
     {
         $this->travelTo(Carbon::parse('2026-12-08 23:59:59', ChallengeAccess::TIMEZONE));
         $this->assertTrue((new ChallengeAccess)->dayEditable(30));
-        $this->travelTo(Carbon::parse('2026-12-09 00:00:00', ChallengeAccess::TIMEZONE));
+        $this->travelTo(Carbon::parse('2026-12-09 23:53:59', ChallengeAccess::TIMEZONE));
+        $this->assertTrue((new ChallengeAccess)->dayEditable(30));
+        $this->travelTo(Carbon::parse('2026-12-09 23:54:00', ChallengeAccess::TIMEZONE));
         $this->assertSame([], (new ChallengeAccess)->payload()['editableDays']);
     }
 

@@ -7,7 +7,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AthleteProfile extends Model
 {
+    use \App\Models\Concerns\BelongsToChallenge;
     protected $fillable = [
+        'challenge_id',
         'user_id',
         'movement_level',
         'movement_minutes',

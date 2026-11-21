@@ -25,6 +25,8 @@ export interface NavGroupItem extends Omit<NavItem, 'href'> {
 }
 
 export interface SharedData {
+    currentChallenge?: { id: number; name: string; start_date: string; end_date: string; default_start_date: string; duration_days: number; objectives: string[] } | null;
+    staffChallenges?: { id: number; name: string }[];
     contentReleaseNotice?: { token: string; pages: { title: string; href: string }[] } | null;
     mealCommentNotices?: { token: string; checkins: { id: number; day: number }[] } | null;
     consultationMealsUnlocked?: boolean;

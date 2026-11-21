@@ -3,7 +3,7 @@ import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from '@/components/ui/sidebar';
 import { type NavGroupItem, type SharedData } from '@/types';
-import { Link, usePage } from '@inertiajs/vue3';
+import { Link, router, usePage } from '@inertiajs/vue3';
 import { BookOpen, CircleHelp, ClipboardCheck, Droplets, Dumbbell, Flag, LayoutGrid, Lightbulb, Mail, PartyPopper, Salad, Settings, Star, Trophy, Users, Wallet } from 'lucide-vue-next';
 import { computed } from 'vue';
 import AppLogo from './AppLogo.vue';
@@ -46,7 +46,7 @@ const evolutionChildren = computed(() => {
     ].map((item) => ({ ...item, disabled: !allowed[item.feature] }));
 });
 
-const mainNavItems = computed<NavGroupItem[]>(() => {
+const allNavItems = computed<NavGroupItem[]>(() => {
     if (role.value === 'administrador') {
         return [
             { title: 'Painel', href: '/dashboard', icon: LayoutGrid },
@@ -62,6 +62,7 @@ const mainNavItems = computed<NavGroupItem[]>(() => {
                 { title: 'Lembretes de pagamento', href: '/admin/pagamentos/lembretes' },
             ] },
             { title: 'Desafio', icon: Flag, children: [
+                { title: 'Gerenciar desafios', href: '/admin/desafios' },
                 { title: 'Objetivos', href: '/meus-objetivos/alimentacao' },
                 { title: 'Treinos', href: '/admin/treinos' },
                 { title: 'Evolução (visualizar)', children: evolutionChildren.value },
@@ -99,6 +100,7 @@ const mainNavItems = computed<NavGroupItem[]>(() => {
             { title: 'Como funciona a plataforma', href: '/atleta/boas-vindas/plataforma', icon: CircleHelp, highlighted: true },
             { title: 'Painel', href: '/dashboard', icon: LayoutGrid },
             { title: 'Boas-vindas', icon: PartyPopper, children: [
+                { title: 'Meu desafio e datas', href: '/atleta/meu-desafio' },
                 { title: 'Mensagem de boas-vindas com vídeo', href: '/atleta/boas-vindas/video' },
                 { title: 'Recado importante da nutri', href: '/alimentacao/recado-da-nutri' },
                 { title: 'Entenda os objetivos', href: '/atleta/boas-vindas/objetivos' },
@@ -177,6 +179,11 @@ const mainNavItems = computed<NavGroupItem[]>(() => {
     return items;
 });
 
+const mainNavItems = computed(() => {
+    if (role.value !== 'atleta') return allNavItems.value;
+    const goals: Record<string, string> = { Treino: 'movement', Hidratação: 'water', Habilidade: 'skill', 'Refeição luxo': 'plus' };
+    return allNavItems.value.filter((item) => !goals[item.title] || page.props.currentChallenge?.objectives.includes(goals[item.title]));
+});
 </script>
 
 <template>
@@ -194,6 +201,11 @@ const mainNavItems = computed<NavGroupItem[]>(() => {
         </SidebarHeader>
 
         <SidebarContent @click.capture="closeMobileOnLink">
+            <div v-if="page.props.currentChallenge" class="mx-3 my-2 space-y-2 text-xs text-brand-muted group-data-[collapsible=icon]:hidden">
+                <p class="font-bold text-brand-gold">{{ page.props.currentChallenge.name }}</p>
+                <p>{{ page.props.currentChallenge.start_date.split('-').reverse().join('/') }} a {{ page.props.currentChallenge.end_date.split('-').reverse().join('/') }}</p>
+                <label v-if="page.props.staffChallenges?.length" class="block space-y-1"><span>Desafio em consulta</span><select :value="page.props.currentChallenge.id" class="w-full rounded-lg border border-brand-line2 bg-brand-card2 p-2 text-brand-cream [color-scheme:dark]" @change="router.put(`/equipe/desafios/${($event.target as HTMLSelectElement).value}/visualizar`)"><option v-for="challenge in page.props.staffChallenges" :key="challenge.id" :value="challenge.id">{{ challenge.name }}</option></select></label>
+            </div>
             <NavMain :items="mainNavItems" :label="menuLabel" />
         </SidebarContent>
 

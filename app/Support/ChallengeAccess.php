@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -38,7 +39,12 @@ class ChallengeAccess
 
     private ?array $settings = null;
 
-    private ?\Illuminate\Http\Request $settingsRequest = null;
+    private ?Request $settingsRequest = null;
+
+    public function settingsTable(): string
+    {
+        return ChallengeContext::challenge()->id === 1 ? 'challenge_access_settings' : 'challenge_feature_settings';
+    }
 
     public function modes(): array
     {
@@ -51,8 +57,9 @@ class ChallengeAccess
 
         return $this->settings ??= array_replace(
             array_fill_keys(array_keys(self::FEATURES), 'calendar'),
-            Schema::hasTable('challenge_access_settings')
-                ? DB::table('challenge_access_settings')->pluck('mode', 'feature')
+            Schema::hasTable($this->settingsTable())
+                ? DB::table($this->settingsTable())->when($this->settingsTable() === 'challenge_feature_settings',
+                    fn ($query) => $query->where('challenge_id', ChallengeContext::challenge()->id))->pluck('mode', 'feature')
                     ->map(fn ($mode) => in_array($mode, self::MODES, true) ? $mode : 'calendar')->all()
                 : [],
         );
@@ -60,7 +67,7 @@ class ChallengeAccess
 
     public function releaseDate(): Carbon
     {
-        return Carbon::parse(ChallengeSheet::START, self::TIMEZONE)->subDay()->startOfDay();
+        return Carbon::parse(ChallengeSheet::startDate(), self::TIMEZONE)->subDay()->startOfDay();
     }
 
     public function pageOpen(string $feature): bool
@@ -83,13 +90,16 @@ class ChallengeAccess
 
     public function dayEditable(int $day): bool
     {
-        if ($day < 1 || $day > ChallengeSheet::TOTAL_DAYS || ! $this->pageOpen('dias')) {
+        if ($day < 1 || $day > ChallengeSheet::totalDays() || ! $this->pageOpen('dias')) {
             return false;
         }
 
+        $start = Carbon::parse(ChallengeSheet::dateForDay($day), self::TIMEZONE)->startOfDay();
+        $deadline = $start->copy()->addDay()->setTime(23, 54);
+        $now = Carbon::now(self::TIMEZONE);
+
         return match ($this->modes()['entries']) {
-            'calendar' => Carbon::parse(ChallengeSheet::dateForDay($day), self::TIMEZONE)
-                ->isSameDay(Carbon::now(self::TIMEZONE)),
+            'calendar' => $now->gte($start) && $now->lt($deadline),
             'manual' => true,
             default => false,
         };
@@ -99,7 +109,7 @@ class ChallengeAccess
     {
         if (! $this->dayEditable($day)) {
             throw ValidationException::withMessages([
-                'days' => 'Este dia está bloqueado. Os lançamentos e as fotos só podem ser alterados na data correspondente, pelo horário de Brasília.',
+                'days' => 'Este dia está bloqueado. Os lançamentos e as fotos podem ser alterados a partir da data correspondente até 23h53 do dia seguinte, pelo horário de Brasília.',
             ]);
         }
     }
@@ -112,7 +122,7 @@ class ChallengeAccess
             'pages' => collect(self::PAGE_FEATURES)
                 ->mapWithKeys(fn (string $key) => [$key => $this->pageOpen($key)])->all(),
             'editableDays' => array_values(array_filter(
-                range(1, ChallengeSheet::TOTAL_DAYS), fn (int $day) => $this->dayEditable($day),
+                range(1, ChallengeSheet::totalDays()), fn (int $day) => $this->dayEditable($day),
             )),
             'entryMode' => $this->modes()['entries'],
         ];

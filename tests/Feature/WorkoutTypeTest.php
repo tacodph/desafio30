@@ -29,6 +29,7 @@ class WorkoutTypeTest extends TestCase
 
         $athlete = User::factory()->create();
         AthleteProfile::create(['user_id' => $athlete->id, 'welcomed_at' => now(), 'goals_set_at' => now()]);
+        \Illuminate\Support\Facades\DB::table('challenge_participations')->where('user_id', $athlete->id)->update(['start_date_confirmed_at' => now()]);
         $this->travelTo(Carbon::parse('2026-11-09 12:00:00', ChallengeAccess::TIMEZONE));
 
         $this->actingAs($athlete)->patch('/atleta/dias/1/objetivos/movement', [

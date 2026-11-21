@@ -52,6 +52,7 @@ class DayLog
             'movement_minutes' => $minutes,
             'water_ml' => (int) round($liters * 1000),
             'sleep_hours' => self::SLEEP_HOURS,
+            'enabled' => ChallengeContext::objectives($profile?->user),
         ];
     }
 

@@ -3,14 +3,15 @@ import { Head } from '@inertiajs/vue3';
 import { Apple, Droplets, Dumbbell, Lightbulb, Moon } from 'lucide-vue-next';
 import { computed } from 'vue';
 
-const props = defineProps<{ startDate: string; totalDays: number }>();
-const habits = [
-    { label: 'Alimentação', icon: Apple, color: '#319348' },
-    { label: 'Movimento', icon: Dumbbell, color: '#aa7a00' },
-    { label: 'Hidratação', icon: Droplets, color: '#1681b3' },
-    { label: 'Sono', icon: Moon, color: '#bb4379' },
-    { label: 'Habilidade', icon: Lightbulb, color: '#8055b4' },
+const props = defineProps<{ startDate: string; totalDays: number; objectives?: string[]; challengeName?: string }>();
+const habitOptions = [
+    { key: 'strength', label: 'Alimentação', icon: Apple, color: '#319348' },
+    { key: 'movement', label: 'Movimento', icon: Dumbbell, color: '#aa7a00' },
+    { key: 'water', label: 'Hidratação', icon: Droplets, color: '#1681b3' },
+    { key: 'sleep', label: 'Sono', icon: Moon, color: '#bb4379' },
+    { key: 'skill', label: 'Habilidade', icon: Lightbulb, color: '#8055b4' },
 ];
+const habits = computed(() => habitOptions.filter((habit) => !props.objectives || props.objectives.includes(habit.key)));
 const days = computed(() => {
     const start = new Date(`${props.startDate}T12:00:00`);
     const offset = (start.getDay() + 6) % 7;
@@ -36,7 +37,7 @@ const print = () => window.print();
         <div class="sheet-scroll">
             <main class="sheet">
                 <header class="sheet-header">
-                    <div><p class="brand">Desafio da Virada · {{ totalDays }} dias</p><h1>Monitoramento de hábitos</h1><p>{{ period }}</p></div>
+                    <div><p class="brand">{{ challengeName ?? 'Desafio' }} · {{ totalDays }} dias</p><h1>Monitoramento de hábitos</h1><p>{{ period }}</p></div>
                     <img src="/images/logo-mark-30-virada.png" alt="Desafio da Virada" width="80" height="80" />
                 </header>
                 <p class="name-line">Atleta: <span /></p>
@@ -44,7 +45,7 @@ const print = () => window.print();
                 <p class="instructions">Marque os hábitos cumpridos e escreva um breve resumo em cada dia. Os espaços seguem a ordem da legenda.</p>
                 <div class="weekdays"><div v-for="weekday in ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']" :key="weekday">{{ weekday }}</div></div>
                 <div class="calendar">
-                    <div v-for="(day, index) in days" :key="index" class="day" :class="{ empty: !day, first: day?.day === 1, middle: day?.day === 15, last: day?.day === totalDays }">
+                    <div v-for="(day, index) in days" :key="index" class="day" :class="{ empty: !day, first: day?.day === 1, middle: day?.day === Math.ceil(totalDays / 2), last: day?.day === totalDays }">
                         <template v-if="day">
                             <div class="date"><strong>{{ day.date }}</strong><span>Dia {{ day.day }}</span></div>
                             <div class="boxes"><span v-for="habit in habits" :key="habit.label" :style="{ borderColor: habit.color }" :aria-label="habit.label"><component :is="habit.icon" aria-hidden="true" /></span></div>
@@ -56,7 +57,7 @@ const print = () => window.print();
                     <section><h2>Conquistas</h2><div v-for="line in 5" :key="line" class="note-line" /></section>
                     <section><h2>O que preciso melhorar?</h2><div v-for="line in 5" :key="line" class="note-line" /></section>
                 </div>
-                <p class="closing">30 dias de comprometimento. A gente cresce junto! ❤️</p>
+                <p class="closing">{{ totalDays }} dias de comprometimento. A gente cresce junto! ❤️</p>
                 <footer class="nutritionist-footer">
                     <svg viewBox="40 530 1000 240" width="1000" height="240" class="nutritionist-logo" role="img" aria-label="Helen Freitas Nutricionista" overflow="hidden">
                         <image href="/images/helen-freitas-nutricionista-logo.png" width="1169" height="1260" />

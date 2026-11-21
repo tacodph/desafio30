@@ -4,19 +4,22 @@ namespace App\Http\Controllers;
 
 use App\Enums\UserRole;
 use App\Models\Achievement;
-use App\Models\AthleteProfile;
 use App\Models\Checkin;
 use App\Models\FoodGroup;
 use App\Models\User;
 use App\Models\UserType;
-use App\Support\ChallengeSheet;
 use App\Support\ChallengeAccess;
+use App\Support\ChallengeContext;
+use App\Support\ChallengeSheet;
 use App\Support\DayLog;
+use App\Support\ReleaseWelcome;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -53,7 +56,7 @@ class AthleteProgressController extends Controller
 
     public function acknowledgeReleaseWelcome(Request $request): RedirectResponse
     {
-        abort_unless(\App\Support\ReleaseWelcome::available($request->user()), 403);
+        abort_unless(ReleaseWelcome::available($request->user()), 403);
 
         User::query()->whereKey($request->user()->id)
             ->whereNull('release_welcome_acknowledged_at')
@@ -151,7 +154,7 @@ class AthleteProgressController extends Controller
             $profile = DB::transaction(function () use ($request, $disk, &$newPhotos, &$replacedPhotos) {
                 $userId = $request->user()->id;
                 User::query()->lockForUpdate()->findOrFail($userId);
-                $profile = AthleteProfile::query()->firstOrNew(['user_id' => $userId]);
+                $profile = $request->user()->athleteProfile()->firstOrNew(['user_id' => $userId]);
                 $photos = $profile->start_photos ?? [];
                 $rules = [
                     'weight' => 'nullable|numeric|between:30,300',
@@ -221,6 +224,7 @@ class AthleteProgressController extends Controller
             'waterMinimum' => DayLog::waterMinimumLiters($request->user()->athleteProfile?->weight),
         ]);
     }
+
     public function monitoring(Request $request): Response
     {
         $payload = ChallengeSheet::payload($request->user());
@@ -229,7 +233,7 @@ class AthleteProgressController extends Controller
             'days' => $payload['days'],
             'goals' => $payload['goals'],
             'weeklySkills' => $payload['weeklySkills'],
-            'startDate' => ChallengeSheet::START,
+            'startDate' => ChallengeSheet::startDate(),
         ]);
     }
 
@@ -239,7 +243,7 @@ class AthleteProgressController extends Controller
         $completedDays = 0;
 
         if ($user->isAthlete()) {
-            $lastDay = min(ChallengeSheet::TOTAL_DAYS, ChallengeSheet::dayOn(Carbon::today(ChallengeAccess::TIMEZONE)));
+            $lastDay = min(ChallengeSheet::totalDays(), ChallengeSheet::dayOn(Carbon::today(ChallengeAccess::TIMEZONE)));
             $completedDays = $user->checkins()->whereBetween('day', [1, $lastDay])->get()
                 ->filter(fn (Checkin $checkin) => ! in_array(false, DayLog::achieved(ChallengeSheet::detailsFor($checkin), $user->athleteProfile), true))
                 ->count();
@@ -249,7 +253,7 @@ class AthleteProgressController extends Controller
             'recipeUnlock' => [
                 'requiredDays' => 7,
                 'completedDays' => $completedDays,
-                'unlocked' => ! $user->isAthlete() || \App\Support\ChallengeAccess::sevenDayContentIsReleased(),
+                'unlocked' => ! $user->isAthlete() || ChallengeAccess::sevenDayContentIsReleased(),
             ],
         ]);
     }
@@ -280,7 +284,7 @@ class AthleteProgressController extends Controller
 
         $day = $request->integer('dia');
 
-        return $this->page($athlete, false, true)->with('selectedDay', $day >= 1 && $day <= ChallengeSheet::TOTAL_DAYS ? $day : null);
+        return $this->page($athlete, false, true)->with('selectedDay', $day >= 1 && $day <= ChallengeSheet::totalDays() ? $day : null);
     }
 
     public function updateGoals(Request $request): RedirectResponse
@@ -303,10 +307,14 @@ class AthleteProgressController extends Controller
             'penalty_note' => 'nullable|string|max:255',
         ]);
 
-        $profile = AthleteProfile::query()->firstOrNew(['user_id' => $request->user()->id]);
+        $profile = $request->user()->athleteProfile()->firstOrNew(['user_id' => $request->user()->id]);
         $firstTime = $profile->goals_set_at === null;
 
         $profile->fill([...$data, 'goals_set_at' => $profile->goals_set_at ?? now()])->save();
+
+        if (ChallengeContext::needsStartChoice($request->user()->fresh())) {
+            return to_route('athlete.challenge');
+        }
 
         return $firstTime ? to_route('dashboard') : to_route('athlete.start.goals');
     }
@@ -314,6 +322,7 @@ class AthleteProgressController extends Controller
     public function updateSkills(Request $request): RedirectResponse
     {
         $this->abortUnlessAthlete($request);
+        abort_unless(in_array('skill', ChallengeContext::objectives(), true), 403);
 
         if ($pending = $this->pendingStart($request)) {
             return $pending;
@@ -322,13 +331,13 @@ class AthleteProgressController extends Controller
         abort_unless($this->access->pageOpen('dias'), 403, 'A página de dias está bloqueada.');
 
         $data = $request->validate([
-            'week' => 'required|integer|between:1,'.count(ChallengeSheet::WEEKS),
+            'week' => 'required|integer|between:1,'.count(ChallengeSheet::weekRanges()),
             'picks' => 'required|array|size:1',
             'picks.*' => 'required|string|max:180',
         ]);
 
-        $profile = AthleteProfile::query()->firstOrNew(['user_id' => $request->user()->id]);
-        $weeks = array_replace(array_fill(0, count(ChallengeSheet::WEEKS), []), array_values($profile->weekly_skills ?? []));
+        $profile = $request->user()->athleteProfile()->firstOrNew(['user_id' => $request->user()->id]);
+        $weeks = array_replace(array_fill(0, count(ChallengeSheet::weekRanges()), []), array_values($profile->weekly_skills ?? []));
         $weeks[$data['week'] - 1] = array_values($data['picks']);
 
         $profile->fill(['weekly_skills' => array_values($weeks)])->save();
@@ -345,6 +354,8 @@ class AthleteProgressController extends Controller
         }
 
         $this->access->ensureDayEditable($day);
+
+        abort_unless($goal === 'notes' || in_array($goal, ChallengeContext::objectives(), true), 403, 'Este objetivo não faz parte do desafio.');
 
         $goalRules = match ($goal) {
             'movement' => [
@@ -376,6 +387,7 @@ class AthleteProgressController extends Controller
         DB::transaction(function () use ($request, $data, $day, $goal) {
             $userId = $request->user()->id;
             User::query()->lockForUpdate()->findOrFail($userId);
+            $this->access->ensureDayEditable($day);
             $checkin = Checkin::query()->firstOrNew(['user_id' => $userId, 'day' => $day]);
             $details = ChallengeSheet::detailsFor($checkin);
             $incoming = DayLog::normalize($data['details'] ?? []);
@@ -419,8 +431,8 @@ class AthleteProgressController extends Controller
         }
 
         $data = $request->validate([
-            'days' => 'required|array|max:30',
-            'days.*.day' => 'required|integer|between:1,30|distinct',
+            'days' => 'required|array|max:'.ChallengeSheet::totalDays(),
+            'days.*.day' => 'required|integer|between:1,'.ChallengeSheet::totalDays().'|distinct',
             'days.*.checked_in' => 'boolean',
             'days.*.movement' => 'boolean',
             'days.*.water' => 'boolean',
@@ -447,33 +459,44 @@ class AthleteProgressController extends Controller
             $this->access->ensureDayEditable((int) $day['day']);
         }
 
-        $profile = $request->user()->athleteProfile;
+        DB::transaction(function () use ($request, $data) {
+            User::lockForUpdate()->findOrFail($request->user()->id);
+            foreach ($data['days'] as $day) {
+                $this->access->ensureDayEditable((int) $day['day']);
+            }
+            $profile = $request->user()->athleteProfile;
 
-        foreach ($data['days'] as $day) {
-            $details = isset($day['details']) ? DayLog::normalize($day['details']) : null;
-            $achieved = $details ? DayLog::achieved($details, $profile) : [
-                'movement' => $day['movement'] ?? false,
-                'water' => $day['water'] ?? false,
-                'sleep' => $day['sleep'] ?? false,
-                'strength' => $day['strength'] ?? false,
-                'skill' => $day['skill'] ?? false,
-            ];
+            foreach ($data['days'] as $day) {
+                $details = isset($day['details']) ? DayLog::normalize($day['details']) : null;
+                $achieved = $details ? DayLog::achieved($details, $profile) : [
+                    'movement' => $day['movement'] ?? false,
+                    'water' => $day['water'] ?? false,
+                    'sleep' => $day['sleep'] ?? false,
+                    'strength' => $day['strength'] ?? false,
+                    'skill' => $day['skill'] ?? false,
+                ];
+                $enabled = ChallengeContext::objectives();
+                foreach ($achieved as $key => $value) {
+                    $achieved[$key] = in_array($key, $enabled, true) && $value;
+                }
 
-            Checkin::query()->updateOrCreate(
-                ['user_id' => $request->user()->id, 'day' => $day['day']],
-                [
-                    'checked_in' => true,
-                    ...$achieved,
-                    'details' => $details,
-                    'plus_count' => $day['plus_count'] ?? 0,
-                    'notes' => collect($day['notes'] ?? [])
-                        ->only(['movement', 'water', 'sleep', 'strength', 'skill', 'plus', 'day'])
-                        ->map(fn ($note) => filled($note) ? $note : null)
-                        ->filter()
-                        ->all() ?: null,
-                ],
-            );
-        }
+                Checkin::query()->updateOrCreate(
+                    ['user_id' => $request->user()->id, 'day' => $day['day']],
+                    [
+                        'checked_in' => true,
+                        ...$achieved,
+                        'details' => $details,
+                        'plus_count' => in_array('plus', $enabled, true) ? ($day['plus_count'] ?? 0) : 0,
+                        'notes' => collect($day['notes'] ?? [])
+                            ->only(['movement', 'water', 'sleep', 'strength', 'skill', 'plus', 'day'])
+                            ->map(fn ($note) => filled($note) ? $note : null)
+                            ->filter()
+                            ->all() ?: null,
+                    ],
+                );
+            }
+
+        });
 
         return to_route('athlete.progress.tab', 'dias');
     }
@@ -486,7 +509,7 @@ class AthleteProgressController extends Controller
             return $pending;
         }
 
-        abort_unless($day >= 1 && $day <= ChallengeSheet::TOTAL_DAYS, 404);
+        abort_unless($day >= 1 && $day <= ChallengeSheet::totalDays(), 404);
 
         $this->access->ensureDayEditable($day);
 
@@ -532,7 +555,7 @@ class AthleteProgressController extends Controller
             return $pending;
         }
 
-        abort_unless($day >= 1 && $day <= ChallengeSheet::TOTAL_DAYS, 404);
+        abort_unless($day >= 1 && $day <= ChallengeSheet::totalDays(), 404);
 
         $this->access->ensureDayEditable($day);
 
@@ -548,6 +571,7 @@ class AthleteProgressController extends Controller
             DB::transaction(function () use ($request, $day, $path) {
                 $userId = $request->user()->id;
                 User::query()->lockForUpdate()->findOrFail($userId);
+                $this->access->ensureDayEditable($day);
                 $checkin = Checkin::query()->firstOrNew(['user_id' => $userId, 'day' => $day]);
                 $checkin->meal_photos = [...($checkin->meal_photos ?? []), $path];
                 $checkin->save();
@@ -612,10 +636,10 @@ class AthleteProgressController extends Controller
     {
         abort_unless(UserRole::from($request->user()->userType->name) === UserRole::Nutricionista, 403);
         abort_unless($athlete->userType->name === UserRole::Atleta->value, 404);
-        abort_unless($day >= 1 && $day <= ChallengeSheet::TOTAL_DAYS, 404);
+        abort_unless($day >= 1 && $day <= ChallengeSheet::totalDays($athlete), 404);
 
         $data = $request->validate(['comment' => 'required|string|max:500']);
-        $checkin = Checkin::query()->firstOrNew(['user_id' => $athlete->id, 'day' => $day]);
+        $checkin = $athlete->checkins()->firstOrNew(['user_id' => $athlete->id, 'day' => $day]);
         $checkin->meal_comment = $data['comment'];
         $checkin->save();
 
@@ -625,9 +649,9 @@ class AthleteProgressController extends Controller
     public function reactToMeal(Request $request, User $athlete, int $day): RedirectResponse
     {
         abort_unless($request->user()->userType->name === UserRole::Nutricionista->value, 403);
-        abort_unless($athlete->isAthlete() && $day >= 1 && $day <= ChallengeSheet::TOTAL_DAYS, 404);
+        abort_unless($athlete->isAthlete() && $day >= 1 && $day <= ChallengeSheet::totalDays(), 404);
 
-        $data = $request->validate(['reaction' => ['present', 'nullable', \Illuminate\Validation\Rule::in(['❤️', '👏', '🙌', '🔥'])]]);
+        $data = $request->validate(['reaction' => ['present', 'nullable', Rule::in(['❤️', '👏', '🙌', '🔥'])]]);
         $checkin = $athlete->checkins()->where('day', $day)->firstOrFail();
         $checkin->meal_reaction = $data['reaction'];
         $checkin->save();
@@ -638,11 +662,11 @@ class AthleteProgressController extends Controller
     public function reactToCheckin(Request $request, User $athlete, int $day): RedirectResponse
     {
         abort_unless($request->user()->userType->name === UserRole::Nutricionista->value, 403);
-        abort_unless($athlete->isAthlete() && $day >= 1 && $day <= ChallengeSheet::TOTAL_DAYS, 404);
+        abort_unless($athlete->isAthlete() && $day >= 1 && $day <= ChallengeSheet::totalDays(), 404);
 
         $data = $request->validate([
             'target' => 'required|string|max:255',
-            'reaction' => ['present', 'nullable', \Illuminate\Validation\Rule::in(['❤️', '👏', '🙌', '🔥'])],
+            'reaction' => ['present', 'nullable', Rule::in(['❤️', '👏', '🙌', '🔥'])],
         ]);
 
         DB::transaction(function () use ($athlete, $day, $data) {
@@ -679,7 +703,7 @@ class AthleteProgressController extends Controller
         }
 
         $data = $request->validate([
-            'achieved_on' => 'nullable|date|after_or_equal:2026-11-09|before_or_equal:2026-12-08',
+            'achieved_on' => 'nullable|date|after_or_equal:'.ChallengeSheet::startDate().'|before_or_equal:'.ChallengeSheet::dateForDay(ChallengeSheet::totalDays()),
             'type' => 'required|in:'.implode(',', array_keys(ChallengeSheet::ACHIEVEMENTS)),
             'detail' => 'required|string|max:255',
         ]);
@@ -796,7 +820,6 @@ class AthleteProgressController extends Controller
             ]);
         }
 
-
         $used = collect($this->shoppingLists($request->user()))->pluck('week');
         $free = $this->shoppingWeeks()->reject(fn (array $week) => $used->contains($week['week']))->values();
 
@@ -823,7 +846,6 @@ class AthleteProgressController extends Controller
                 'access' => $this->access->payload(),
             ]);
         }
-
 
         $list = collect($this->shoppingLists($request->user()))->firstWhere('week', $week);
         abort_if($list === null, 404);
@@ -865,7 +887,7 @@ class AthleteProgressController extends Controller
             $data['extras'] ?? [],
         )));
 
-        $profile = AthleteProfile::query()->firstOrNew(['user_id' => $request->user()->id]);
+        $profile = $request->user()->athleteProfile()->firstOrNew(['user_id' => $request->user()->id]);
         $lists = $profile->shopping_lists ?? [];
         $key = (string) $data['week'];
 
@@ -885,10 +907,10 @@ class AthleteProgressController extends Controller
         return to_route('alimentacao.compras');
     }
 
-    /** @return \Illuminate\Support\Collection<int, array{week: int, period: string}> */
+    /** @return Collection<int, array{week: int, period: string}> */
     private function shoppingWeeks()
     {
-        return collect(ChallengeSheet::WEEKS)->map(function (array $range, int $week) {
+        return collect(ChallengeSheet::weekRanges())->map(function (array $range, int $week) {
             [$from, $to] = $range;
 
             return [
@@ -927,6 +949,7 @@ class AthleteProgressController extends Controller
         return match (true) {
             ! $profile?->welcomed_at => to_route('athlete.start.first-day'),
             ! $profile->goals_set_at => to_route('athlete.start.goals'),
+            ChallengeContext::needsStartChoice($request->user()) => to_route('athlete.challenge'),
             default => null,
         };
     }

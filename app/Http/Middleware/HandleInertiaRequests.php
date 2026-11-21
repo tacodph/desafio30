@@ -59,6 +59,9 @@ class HandleInertiaRequests extends Middleware
                 ];
             },
             'consultationMealsUnlocked' => fn () => $request->user()?->canViewConsultationMeals() ?? false,
+            'currentChallenge' => fn () => $request->user() ? \App\Support\ChallengeContext::summary() : null,
+            'staffChallenges' => fn () => in_array($request->user()?->userType?->name, ['administrador', 'nutricionista'], true)
+                ? \App\Models\Challenge::orderByDesc('id')->get(['id', 'name']) : [],
             'contentReleaseNotice' => function () use ($request) {
                 $pages = \App\Support\ContentReleaseNotice::pages($request);
 

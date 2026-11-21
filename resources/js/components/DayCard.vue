@@ -43,6 +43,8 @@ const props = withDefaults(
     { canEdit: true, canComment: false },
 );
 
+const enabled = (key: string) => !props.goals.enabled || props.goals.enabled.includes(key);
+
 const weekdayLabels: Record<string, string> = { dom: 'domingo', seg: 'segunda', ter: 'terça', qua: 'quarta', qui: 'quinta', sex: 'sexta', sáb: 'sábado' };
 
 const open = ref(props.defaultOpen ?? false);
@@ -357,12 +359,12 @@ const chipClass = (active: boolean) =>
                     <span class="text-sm font-semibold text-brand-muted">· {{ weekdayLabels[weekday] ?? weekday }}, {{ date }}</span>
                 </span>
                 <span class="flex items-center gap-2.5">
-                    <Lightbulb class="size-4" :class="done.skill ? 'text-brand-gold' : 'text-brand-line3'" />
-                    <Dumbbell class="size-4" :class="done.movement ? 'text-brand-gold' : 'text-brand-line3'" />
-                    <Droplets class="size-4" :class="done.water ? 'text-brand-gold' : 'text-brand-line3'" />
-                    <Moon class="size-4" :class="done.sleep ? 'text-brand-gold' : 'text-brand-line3'" />
-                    <Salad class="size-4" :class="done.strength ? 'text-brand-gold' : 'text-brand-line3'" />
-                    <Star class="size-4" :class="entry.plus_count > 0 ? 'text-brand-gold' : 'text-brand-line3'" />
+                    <Lightbulb v-if="enabled('skill')" class="size-4" :class="done.skill ? 'text-brand-gold' : 'text-brand-line3'" />
+                    <Dumbbell v-if="enabled('movement')" class="size-4" :class="done.movement ? 'text-brand-gold' : 'text-brand-line3'" />
+                    <Droplets v-if="enabled('water')" class="size-4" :class="done.water ? 'text-brand-gold' : 'text-brand-line3'" />
+                    <Moon v-if="enabled('sleep')" class="size-4" :class="done.sleep ? 'text-brand-gold' : 'text-brand-line3'" />
+                    <Salad v-if="enabled('strength')" class="size-4" :class="done.strength ? 'text-brand-gold' : 'text-brand-line3'" />
+                    <Star v-if="enabled('plus')" class="size-4" :class="entry.plus_count > 0 ? 'text-brand-gold' : 'text-brand-line3'" />
                 </span>
             </span>
             <span class="flex shrink-0 items-center gap-3">
@@ -377,7 +379,7 @@ const chipClass = (active: boolean) =>
             <CheckinReaction v-if="entry.checked_in" :athlete-id="canComment ? athleteId : null" :day="entry.day" target="checkin" :reaction="reactions?.checkin" label="Check-in do dia" />
             <fieldset :disabled="!canEdit || !editing" class="m-0 grid min-w-0 gap-3 border-0 p-0" :class="editing ? '' : 'pointer-events-none opacity-80'">
             <!-- Habilidade -->
-            <section class="grid gap-3 rounded-xl border px-3 py-3" :class="[canEdit ? 'pointer-events-auto' : '', done.skill ? 'border-brand-gold bg-brand-gold/10' : 'border-brand-line2']">
+            <section v-if="enabled('skill')" class="grid gap-3 rounded-xl border px-3 py-3" :class="[canEdit ? 'pointer-events-auto' : '', done.skill ? 'border-brand-gold bg-brand-gold/10' : 'border-brand-line2']">
                 <div class="flex items-center justify-between gap-3 text-sm font-semibold">
                     <span class="flex items-center gap-2"><Lightbulb class="size-4 text-brand-gold" /> Habilidade</span>
                     <span :class="done.skill ? 'text-brand-gold' : 'text-brand-muted'">{{ done.skill ? 'Praticada' : 'Ainda não' }}</span>
@@ -403,7 +405,7 @@ const chipClass = (active: boolean) =>
             </section>
 
             <!-- Treino -->
-            <section class="grid gap-3 rounded-xl border px-3 py-3" :class="done.movement ? 'border-brand-gold bg-brand-gold/10' : 'border-brand-line2'">
+            <section v-if="enabled('movement')" class="grid gap-3 rounded-xl border px-3 py-3" :class="done.movement ? 'border-brand-gold bg-brand-gold/10' : 'border-brand-line2'">
                 <div class="flex items-center justify-between gap-3 text-sm font-semibold">
                     <span class="flex items-center gap-2"><Dumbbell class="size-4 text-brand-gold" /> Treino</span>
                     <span :class="done.movement ? 'text-brand-gold' : 'text-brand-muted'">{{ minutes }} / {{ goals.movement_minutes }} min</span>
@@ -459,7 +461,7 @@ const chipClass = (active: boolean) =>
             </section>
 
             <!-- Água -->
-            <section class="grid gap-3 rounded-xl border px-3 py-3" :class="done.water ? 'border-brand-gold bg-brand-gold/10' : 'border-brand-line2'">
+            <section v-if="enabled('water')" class="grid gap-3 rounded-xl border px-3 py-3" :class="done.water ? 'border-brand-gold bg-brand-gold/10' : 'border-brand-line2'">
                 <div class="flex items-center justify-between gap-3 text-sm font-semibold">
                     <span class="flex items-center gap-2"><Droplets class="size-4 text-brand-gold" /> Água</span>
                     <span :class="done.water ? 'text-brand-gold' : 'text-brand-muted'">{{ (entry.details.water_ml / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 2 }) }} / {{ (goals.water_ml / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 2 }) }} L</span>
@@ -486,7 +488,7 @@ const chipClass = (active: boolean) =>
             </section>
 
             <!-- Sono -->
-            <section class="grid gap-3 rounded-xl border px-3 py-3" :class="done.sleep ? 'border-brand-gold bg-brand-gold/10' : 'border-brand-line2'">
+            <section v-if="enabled('sleep')" class="grid gap-3 rounded-xl border px-3 py-3" :class="done.sleep ? 'border-brand-gold bg-brand-gold/10' : 'border-brand-line2'">
                 <div class="flex items-center justify-between gap-3 text-sm font-semibold">
                     <span class="flex items-center gap-2"><Moon class="size-4 text-brand-gold" /> Sono</span>
                     <span :class="done.sleep ? 'text-brand-gold' : 'text-brand-muted'">{{ entry.details.sleep_hours || 0 }} / {{ goals.sleep_hours }} h</span>
@@ -509,7 +511,7 @@ const chipClass = (active: boolean) =>
             </section>
 
             <!-- Alimentação -->
-            <section class="grid gap-3 rounded-xl border px-3 py-3" :class="done.strength ? 'border-brand-gold bg-brand-gold/10' : 'border-brand-line2'">
+            <section v-if="enabled('strength')" class="grid gap-3 rounded-xl border px-3 py-3" :class="done.strength ? 'border-brand-gold bg-brand-gold/10' : 'border-brand-line2'">
                 <div class="flex items-center justify-between gap-3 text-sm font-semibold">
                     <span class="flex items-center gap-2"><Salad class="size-4 text-brand-gold" /> Alimentação</span>
                     <span :class="done.strength ? 'text-brand-gold' : 'text-brand-muted'">{{ done.strength ? 'Cumprida' : 'Marque o que cumpriu' }}</span>
@@ -556,7 +558,7 @@ const chipClass = (active: boolean) =>
             </section>
 
             <!-- Refeição luxo -->
-            <section class="grid gap-2 rounded-xl border px-3 py-3" :class="entry.plus_count > 0 ? 'border-brand-gold bg-brand-gold/10' : 'border-brand-line2'">
+            <section v-if="enabled('plus')" class="grid gap-2 rounded-xl border px-3 py-3" :class="entry.plus_count > 0 ? 'border-brand-gold bg-brand-gold/10' : 'border-brand-line2'">
                 <div class="flex items-center justify-between gap-3 text-sm font-semibold">
                     <span class="flex items-center gap-2"><Star class="size-4 text-brand-gold" /> Refeição luxo</span>
                     <input v-model.number="entry.plus_count" type="number" min="0" max="9" aria-label="Quantidade de refeição luxo" :class="[fieldClass, 'w-16']" />

@@ -62,6 +62,14 @@ Route::middleware('auth')->group(function () {
 Route::post('webhooks/asaas', WebhookController::class)->name('webhooks.asaas');
 
 Route::middleware(['auth', 'verified', 'challenge.paid'])->group(function () {
+    Route::get('admin/desafios', [\App\Http\Controllers\ChallengeController::class, 'index'])->name('admin.challenges');
+    Route::post('admin/desafios', [\App\Http\Controllers\ChallengeController::class, 'store'])->name('admin.challenges.store');
+    Route::put('admin/desafios/{challenge}', [\App\Http\Controllers\ChallengeController::class, 'update'])->name('admin.challenges.update');
+    Route::put('admin/desafios/{challenge}/padrao', [\App\Http\Controllers\ChallengeController::class, 'makeDefault'])->name('admin.challenges.default');
+    Route::put('equipe/desafios/{challenge}/visualizar', [\App\Http\Controllers\ChallengeController::class, 'selectView'])->name('challenges.view');
+    Route::get('atleta/meu-desafio', [\App\Http\Controllers\ChallengeController::class, 'show'])->name('athlete.challenge');
+    Route::put('atleta/meu-desafio/inicio', [\App\Http\Controllers\ChallengeController::class, 'updateStart'])->name('athlete.challenge.start');
+    Route::post('atleta/meu-desafio/{challenge}/participar', [\App\Http\Controllers\ChallengeController::class, 'join'])->name('athlete.challenge.join');
     Route::post('atleta/aviso-conteudos-liberados', [\App\Http\Controllers\ContentReleaseNoticeController::class, 'store'])->name('athlete.content-release-notice');
     Route::get('comentarios-privados', [\App\Http\Controllers\PrivateCommentController::class, 'index'])->name('private-comments.index');
     Route::post('comentarios-privados', [\App\Http\Controllers\PrivateCommentController::class, 'store'])->middleware('throttle:20,1')->name('private-comments.store');
@@ -70,8 +78,10 @@ Route::middleware(['auth', 'verified', 'challenge.paid'])->group(function () {
     Route::get('cantinho-da-nutri/a-nutri-indica', fn () => Inertia::render('dashboard/NutriIndica'))->middleware('challenge.feature:nutri')->name('nutri.recommendations');
     Route::get('cantinho-da-nutri/monitoramento', [AthleteProgressController::class, 'monitoring'])->middleware('challenge.feature:nutri')->name('nutri.monitoring');
     Route::get('cantinho-da-nutri/monitoramento/imprimir', fn () => Inertia::render('dashboard/MonitoramentoManual', [
-        'startDate' => \App\Support\ChallengeSheet::START,
-        'totalDays' => \App\Support\ChallengeSheet::TOTAL_DAYS,
+        'startDate' => \App\Support\ChallengeSheet::startDate(),
+        'totalDays' => \App\Support\ChallengeSheet::totalDays(),
+        'objectives' => \App\Support\ChallengeContext::objectives(),
+        'challengeName' => \App\Support\ChallengeContext::challenge()->name,
     ]))->middleware('challenge.feature:nutri')->name('nutri.monitoring.print');
     Route::redirect('alimentacao/como-combinar', '/cantinho-da-nutri')->name('alimentacao.combinacoes');
     Route::get('alimentacao/monte-seu-prato', fn () => Inertia::render('MonteSeuPrato'))->middleware('challenge.feature:alimentacao')->name('alimentacao.prato');

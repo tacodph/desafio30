@@ -36,7 +36,7 @@ class ChallengeAccessController extends Controller
             'modes' => $access->modes(),
             'releaseDate' => $access->releaseDate()->format('d/m/Y'),
             'startDate' => ChallengeSheet::dateForDay(1),
-            'endDate' => ChallengeSheet::dateForDay(ChallengeSheet::TOTAL_DAYS),
+            'endDate' => ChallengeSheet::dateForDay(ChallengeSheet::totalDays()),
             'environment' => app()->environment(),
             'ready' => Schema::hasTable('challenge_access_settings'),
             'saved' => (bool) $request->session()->get('access_saved', false),
@@ -75,7 +75,12 @@ class ChallengeAccessController extends Controller
 
         DB::transaction(function () use ($data, $request) {
             foreach (array_keys(ChallengeAccess::FEATURES) as $feature) {
-                DB::table('challenge_access_settings')->updateOrInsert(['feature' => $feature], [
+                $access = new ChallengeAccess;
+                $key = ['feature' => $feature];
+                if ($access->settingsTable() === 'challenge_feature_settings') {
+                    $key['challenge_id'] = \App\Support\ChallengeContext::challenge()->id;
+                }
+                DB::table($access->settingsTable())->updateOrInsert($key, [
                     'mode' => $data['modes'][$feature],
                     'updated_by' => $request->user()->id,
                     'created_at' => now(),

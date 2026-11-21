@@ -4,6 +4,8 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Enums\UserRole;
+use App\Support\ChallengeAccess;
+use App\Support\ChallengeContext;
 use Database\Factories\UserFactory;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Database\Eloquent\Builder;
@@ -13,9 +15,26 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\DB;
 
 class User extends Authenticatable
 {
+    protected static function booted(): void
+    {
+        static::creating(function (User $user) {
+            $user->active_challenge_id ??= Challenge::where('is_default', true)->value('id');
+        });
+        static::created(function (User $user) {
+            if ($user->active_challenge_id) {
+                $challenge = Challenge::findOrFail($user->active_challenge_id);
+                DB::table('challenge_participations')->insertOrIgnore([
+                    'user_id' => $user->id, 'challenge_id' => $challenge->id,
+                    'start_date' => $challenge->default_start_date->toDateString(), 'created_at' => now(), 'updated_at' => now(),
+                ]);
+            }
+        });
+    }
+
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
@@ -78,7 +97,8 @@ class User extends Authenticatable
 
     public function athleteProfile(): HasOne
     {
-        return $this->hasOne(AthleteProfile::class);
+        return $this->hasOne(AthleteProfile::class)->withoutGlobalScope('challenge')
+            ->where('athlete_profiles.challenge_id', ChallengeContext::challenge($this)->id);
     }
 
     public function payments(): HasMany
@@ -140,14 +160,14 @@ class User extends Authenticatable
             return true;
         }
 
-        $access = app(\App\Support\ChallengeAccess::class);
+        $access = app(ChallengeAccess::class);
         if (! $this->isAthlete() || ! $access->pageOpen('alimentacao')) {
             return false;
         }
 
         return match ($access->modes()['consultation_meals']) {
             'manual' => true,
-            'calendar' => \App\Support\ChallengeAccess::sevenDayContentIsReleased(),
+            'calendar' => ChallengeAccess::sevenDayContentIsReleased(),
             default => false,
         };
     }
@@ -169,11 +189,13 @@ class User extends Authenticatable
 
     public function checkins(): HasMany
     {
-        return $this->hasMany(Checkin::class);
+        return $this->hasMany(Checkin::class)->withoutGlobalScope('challenge')
+            ->where('checkins.challenge_id', ChallengeContext::challenge($this)->id);
     }
 
     public function achievements(): HasMany
     {
-        return $this->hasMany(Achievement::class);
+        return $this->hasMany(Achievement::class)->withoutGlobalScope('challenge')
+            ->where('achievements.challenge_id', ChallengeContext::challenge($this)->id);
     }
 }

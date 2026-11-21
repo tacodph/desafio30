@@ -41,6 +41,11 @@ defineProps<{
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-6 p-4 md:p-6">
+            <section v-if="$page.props.currentChallenge" class="surface-card space-y-2 p-5">
+                <h1 class="font-display text-2xl font-black text-brand-gold">{{ $page.props.currentChallenge.name }}</h1>
+                <p class="text-sm text-brand-muted">{{ $page.props.currentChallenge.start_date.split('-').reverse().join('/') }} a {{ $page.props.currentChallenge.end_date.split('-').reverse().join('/') }} · {{ $page.props.currentChallenge.duration_days }} dias</p>
+                <Link href="/atleta/meu-desafio" class="text-sm font-bold text-brand-gold">Meu desafio e data de início →</Link>
+            </section>
             <PlatformVideo />
 
             <section class="surface-card flex flex-col gap-5 p-5 sm:p-6">

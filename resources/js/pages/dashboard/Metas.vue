@@ -5,7 +5,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, useForm, usePage } from '@inertiajs/vue3';
+
+const page = usePage();
+const enabled = (key: string) => !page.props.currentChallenge || (page.props.currentChallenge as { objectives: string[] }).objectives.includes(key);
 
 const props = defineProps<{
     firstAccess: boolean;
@@ -50,8 +53,8 @@ const save = () => metas.put(route('athlete.goals.update'));
             </div>
 
                 <form class="surface-card grid gap-4 p-5 sm:p-6" @submit.prevent="save">
-                    <p class="m-0 text-brand-muted">Preencha no dia 1. Pode ajustar no dia 15 e no dia 30.</p>
-                    <div class="grid gap-2">
+                    <p class="m-0 text-brand-muted">Defina suas metas para este desafio. Elas ficam salvas separadamente do histórico dos desafios anteriores.</p>
+                    <div v-if="enabled('movement')" class="grid gap-2">
                         <Label for="movement_level">Nível de movimento</Label>
                         <select id="movement_level" v-model="metas.movement_level" class="h-11 rounded-xl border border-brand-line2 bg-brand-card2 px-3 text-brand-cream [color-scheme:dark]">
                             <option value="">Escolher</option>
@@ -61,12 +64,12 @@ const save = () => metas.put(route('athlete.goals.update'));
                         </select>
                     </div>
                     <div class="grid gap-4 sm:grid-cols-2">
-                        <div class="grid gap-2">
+                        <div v-if="enabled('movement')" class="grid gap-2">
                             <Label for="movement_minutes">Minutos de movimento por dia</Label>
                             <Input id="movement_minutes" v-model="metas.movement_minutes" type="number" min="0" max="300" />
                             <InputError :message="metas.errors.movement_minutes" />
                         </div>
-                        <div class="grid gap-2">
+                        <div v-if="enabled('water')" class="grid gap-2">
                             <Label for="water_liters">Meta de água (litros)</Label>
                             <Input id="water_liters" v-model="metas.water_liters" type="number" min="0" max="15" step="0.1" />
                             <p v-if="waterMinimum" class="m-0 text-xs text-brand-muted">Mínimo recomendado: {{ waterMinimum.toLocaleString('pt-BR') }} L (35 ml por kg × {{ Number(weight) }} kg).</p>
@@ -74,7 +77,7 @@ const save = () => metas.put(route('athlete.goals.update'));
                         <InputError :message="metas.errors.water_liters" />
                         </div>
                     </div>
-                    <div class="grid gap-2">
+                    <div v-if="enabled('sleep')" class="grid gap-2">
                         <Label for="sleep_goal">Meta de sono</Label>
                         <Input id="sleep_goal" v-model="metas.sleep_goal" placeholder="7h por noite ou deitar às 23h" />
                     </div>

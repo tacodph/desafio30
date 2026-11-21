@@ -14,7 +14,7 @@ defineProps<{
                 <div class="eyebrow">Desafio da Virada</div>
                 <h1 class="display-title text-4xl">{{ feature }}</h1>
                 <p class="m-0 leading-relaxed text-brand-muted">Esta página ainda não está disponível. A liberação pelo calendário começa em {{ access.releaseDate }}, um dia antes do desafio. A administração também pode controlar a disponibilidade.</p>
-                <p class="m-0 text-sm text-brand-muted">Os lançamentos serão habilitados apenas na data correspondente a cada dia, pelo horário de Brasília.</p>
+                <p class="m-0 text-sm text-brand-muted">Os lançamentos ficam disponíveis a partir da data correspondente a cada dia até 23h53 do dia seguinte, pelo horário de Brasília.</p>
                 <Link :href="route('dashboard')" class="w-fit rounded-full bg-brand-gold px-5 py-3 font-bold text-brand-ink">Voltar ao painel</Link>
             </div>
         </div>

@@ -58,9 +58,11 @@ const fieldClass = 'h-11 rounded-xl border border-brand-line2 bg-brand-card2 px-
                 <div class="eyebrow">{{ firstAccess ? 'Passo 1 de 2 · ponto de partida' : 'Ponto de partida' }}</div>
                 <h1 class="display-title text-[clamp(36px,5vw,56px)]">Primeiro dia</h1>
                 <p class="m-0 text-brand-muted">
-                    Registre suas medidas e, se quiser, fotos do início do desafio para acompanhar sua evolução até o dia 30.
+                    Registre suas medidas e, se quiser, fotos do início do desafio para acompanhar sua evolução até o final deste desafio.
                 </p>
             </div>
+
+            <Link href="/atleta/meu-desafio" class="text-sm font-bold text-brand-gold">Conferir ou ajustar minha data de início →</Link>
 
             <form class="surface-card flex flex-col gap-4 p-4 sm:p-6" @submit.prevent="save">
                 <div class="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">

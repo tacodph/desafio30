@@ -13,15 +13,17 @@ const props = defineProps<{
     startDate: string;
 }>();
 
-const habits = [
+const habitOptions = [
     { key: 'strength', label: 'Alimentação no plano', icon: Apple, color: '#65c96e' },
     { key: 'movement', label: 'Treino / movimento', icon: Dumbbell, color: '#facc15' },
     { key: 'water', label: 'Hidratação', icon: Droplets, color: '#55bde9' },
     { key: 'sleep', label: 'Sono de qualidade', icon: Moon, color: '#f58bb9' },
     { key: 'skill', label: 'Habilidade', icon: Lightbulb, color: '#b99bf7' },
 ] as const;
+const habits = computed(() => habitOptions.filter((habit) => !props.goals.enabled || props.goals.enabled.includes(habit.key)));
+const midpoint = computed(() => Math.ceil(props.days.length / 2));
 const weekdays = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
-const summary = (details: DayDetails, key: typeof habits[number]['key']) => {
+const summary = (details: DayDetails, key: typeof habitOptions[number]['key']) => {
     switch (key) {
         case 'movement': return details.workouts.length ? details.workouts.map((workout) => `${workout.type}${workout.minutes !== '' ? ` · ${workout.minutes} min` : ''}`).join(', ') : 'Sem treino detalhado.';
         case 'water': return details.water_ml ? `${(details.water_ml / 1000).toLocaleString('pt-BR')} L de água` : 'Quantidade não informada.';
@@ -46,19 +48,19 @@ const calendar = computed(() => {
     });
     return [...Array(offset).fill(null), ...cells, ...Array((7 - ((offset + cells.length) % 7)) % 7).fill(null)];
 });
-const completed = computed(() => props.days.reduce((sum, day) => sum + (day.saved ? Object.values(achieved(day.details, props.goals)).filter(Boolean).length : 0), 0));
-const totalObjectives = computed(() => props.days.length * habits.length);
+const completed = computed(() => props.days.reduce((sum, day) => sum + (day.saved ? habits.value.filter((habit) => achieved(day.details, props.goals)[habit.key]).length : 0), 0));
+const totalObjectives = computed(() => props.days.length * habits.value.length);
 const period = computed(() => `${props.days[0]?.date ?? ''} a ${props.days.at(-1)?.date ?? ''}`);
 </script>
 
 <template>
-    <Head title="Monitoramento 30 dias" />
-    <AppLayout :breadcrumbs="[{ title: 'Cantinho da Nutri', href: '/cantinho-da-nutri' }, { title: 'Monitoramento 30 dias', href: '/cantinho-da-nutri/monitoramento' }]">
+    <Head :title="`Monitoramento ${days.length} dias`" />
+    <AppLayout :breadcrumbs="[{ title: 'Cantinho da Nutri', href: '/cantinho-da-nutri' }, { title: `Monitoramento ${days.length} dias`, href: '/cantinho-da-nutri/monitoramento' }]">
         <main class="mx-auto w-full max-w-6xl p-4 md:p-8">
             <section class="rounded-3xl border border-white/10 bg-[#101010] p-4 text-white sm:p-7">
                 <header class="mb-7 flex flex-wrap items-start justify-between gap-6">
                     <div>
-                        <p class="text-xs font-extrabold uppercase tracking-[3px] text-yellow-400">Desafio da Virada · 30 dias</p>
+                        <p class="text-xs font-extrabold uppercase tracking-[3px] text-yellow-400">{{ $page.props.currentChallenge?.name }} · {{ days.length }} dias</p>
                         <h1 class="mt-3 text-3xl font-black uppercase leading-tight sm:text-5xl">Monitoramento<br />de hábitos</h1>
                         <p class="mt-4 flex items-center gap-2 text-xl font-bold"><CalendarDays class="size-6 text-yellow-400" aria-hidden="true" />{{ period }}</p>
                     </div>
@@ -72,19 +74,19 @@ const period = computed(() => `${props.days[0]?.date ?? ''} a ${props.days.at(-1
                     <p class="text-sm text-white/70">Os ícones coloridos mostram os objetivos cumpridos nos registros de Evolução. Clique em um objetivo cumprido para ver o resumo do dia. <strong class="text-yellow-400">{{ completed }} / {{ totalObjectives }} objetivos concluídos.</strong></p>
                     <a href="/cantinho-da-nutri/monitoramento/imprimir" target="_blank" rel="noopener noreferrer" class="rounded-xl border border-yellow-400 px-4 py-3 text-sm font-bold text-yellow-400 hover:bg-yellow-400/10">Versão para preencher à mão</a>
                 </div>
-                <div class="overflow-x-auto pb-2" tabindex="0" role="region" aria-label="Calendário de monitoramento dos 30 dias">
+                <div class="overflow-x-auto pb-2" tabindex="0" role="region" :aria-label="`Calendário de monitoramento dos ${days.length} dias`">
                     <div class="sm:min-w-[560px]">
                         <div class="mb-2 hidden grid-cols-7 gap-2 sm:grid">
                             <div v-for="weekday in weekdays" :key="weekday" class="rounded-xl bg-yellow-400 py-3 text-center text-lg font-black uppercase text-black">{{ weekday }}</div>
                         </div>
                         <div class="grid grid-cols-1 gap-2 sm:grid-cols-7">
-                            <div v-for="(day, index) in calendar" :key="index" class="min-h-28 rounded-2xl p-3 sm:min-h-32" :class="!day ? 'hidden bg-white/5 sm:block' : day.day === 1 ? 'bg-emerald-200 text-black' : day.day === 15 ? 'bg-sky-200 text-black' : day.day === days.length ? 'bg-yellow-100 text-black' : 'bg-[#faf8f0] text-black'">
+                            <div v-for="(day, index) in calendar" :key="index" class="min-h-28 rounded-2xl p-3 sm:min-h-32" :class="!day ? 'hidden bg-white/5 sm:block' : day.day === 1 ? 'bg-emerald-200 text-black' : day.day === midpoint ? 'bg-sky-200 text-black' : day.day === days.length ? 'bg-yellow-100 text-black' : 'bg-[#faf8f0] text-black'">
                                 <template v-if="day">
                                     <div class="flex items-start justify-between">
                                         <div><span class="text-3xl font-black leading-none">{{ day.number }}</span><span class="mt-1 block text-xs font-bold uppercase opacity-60">{{ day.month }}</span></div>
                                         <Trophy v-if="day.day === days.length" class="size-6" aria-label="Último dia do desafio" />
                                     </div>
-                                    <span v-if="day.day === 1 || day.day === 15" class="mt-2 block text-[10px] font-extrabold uppercase tracking-wide">{{ day.day === 1 ? 'Início · Dia 1' : 'Metade · Dia 15' }}</span>
+                                    <span v-if="day.day === 1 || day.day === midpoint" class="mt-2 block text-[10px] font-extrabold uppercase tracking-wide">{{ day.day === 1 ? 'Início · Dia 1' : `Metade · Dia ${midpoint}` }}</span>
                                     <div class="mt-5 flex flex-wrap gap-1">
                                         <template v-for="habit in habits" :key="habit.key">
                                             <Dialog v-if="day.saved && day.done[habit.key]">

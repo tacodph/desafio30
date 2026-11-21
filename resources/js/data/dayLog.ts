@@ -9,7 +9,7 @@ export type DayDetails = {
     manual: { movement: boolean; water: boolean; sleep: boolean; strength: boolean; skill: boolean };
 };
 
-export type DayGoals = { movement_minutes: number; water_ml: number; sleep_hours: number };
+export type DayGoals = { movement_minutes: number; water_ml: number; sleep_hours: number; enabled?: string[] };
 
 export type Achieved = { movement: boolean; water: boolean; sleep: boolean; strength: boolean; skill: boolean };
 
@@ -30,10 +30,10 @@ export const dayPoints = (checkedIn: boolean, details: DayDetails, goals: DayGoa
 
     return (
         (checkedIn ? p('checkin', 1) : 0) +
-        (done.movement ? p('movement', 3) : 0) +
-        (done.water ? p('water', 1) : 0) +
-        (done.sleep ? p('sleep', 1) : 0) +
-        (done.strength ? p('strength', 2) : 0) +
-        (done.skill ? p('skill', 2) : 0)
+        (done.movement && (!goals.enabled || goals.enabled.includes('movement')) ? p('movement', 3) : 0) +
+        (done.water && (!goals.enabled || goals.enabled.includes('water')) ? p('water', 1) : 0) +
+        (done.sleep && (!goals.enabled || goals.enabled.includes('sleep')) ? p('sleep', 1) : 0) +
+        (done.strength && (!goals.enabled || goals.enabled.includes('strength')) ? p('strength', 2) : 0) +
+        (done.skill && (!goals.enabled || goals.enabled.includes('skill')) ? p('skill', 2) : 0)
     );
 };

@@ -32,7 +32,7 @@ class PrivateCommentController extends Controller
     {
         $context = $this->context($request);
         $query = DB::table('private_comments')->join('users', 'users.id', '=', 'private_comments.user_id')
-            ->where('context', $context);
+            ->where('context', $context)->where('private_comments.challenge_id', \App\Support\ChallengeContext::challenge()->id);
         if ($request->user()->isAthlete()) {
             $query->where('private_comments.user_id', $request->user()->id);
         }
@@ -51,6 +51,7 @@ class PrivateCommentController extends Controller
         abort_if($body === '', 422, 'Escreva um comentário.');
         DB::table('private_comments')->insert([
             'user_id' => $request->user()->id, 'context' => $context,
+            'challenge_id' => \App\Support\ChallengeContext::challenge()->id,
             'body' => $body, 'created_at' => now(), 'updated_at' => now(),
         ]);
 

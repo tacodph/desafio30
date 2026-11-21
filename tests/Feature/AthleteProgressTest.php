@@ -285,7 +285,7 @@ class AthleteProgressTest extends TestCase
 
         $this->actingAs($athlete)->get('/dashboard')->assertRedirect('/atleta/ponto-de-partida/metas');
 
-        $this->actingAs($athlete)->put('/atleta/metas', ['movement_level' => 'iniciante', 'water_liters' => 2.5])->assertRedirect('/dashboard');
+        $this->actingAs($athlete)->put('/atleta/metas', ['movement_level' => 'iniciante', 'water_liters' => 2.5])->assertRedirect('/atleta/meu-desafio');
         $this->actingAs($athlete)->get('/dashboard')->assertOk();
         $this->assertNotNull($athlete->fresh()->athleteProfile->goals_set_at);
 
@@ -475,6 +475,7 @@ class AthleteProgressTest extends TestCase
     {
         $athlete = User::factory()->create();
         \App\Models\AthleteProfile::query()->create(['user_id' => $athlete->id, 'welcomed_at' => now(), 'goals_set_at' => now(), 'movement_level' => 'iniciante', 'water_liters' => 2]);
+        \Illuminate\Support\Facades\DB::table('challenge_participations')->where('user_id', $athlete->id)->update(['start_date_confirmed_at' => now()]);
 
         $this->actingAs($athlete)
             ->put('/atleta/dias', ['days' => [[
@@ -530,6 +531,8 @@ class AthleteProgressTest extends TestCase
 
         $athlete->athleteProfile()->update(['goals_set_at' => now()]);
 
+        $this->actingAs($athlete->fresh())->get('/atleta/evolucao/dias')->assertRedirect('/atleta/meu-desafio');
+        \Illuminate\Support\Facades\DB::table('challenge_participations')->where('user_id', $athlete->id)->update(['start_date_confirmed_at' => now()]);
         $this->actingAs($athlete->fresh())->get('/atleta/evolucao/dias')->assertOk();
     }
     public function test_an_athlete_adds_replaces_and_removes_the_workout_photo(): void
@@ -758,6 +761,7 @@ class AthleteProgressTest extends TestCase
     {
         $athlete = User::factory()->create();
         \App\Models\AthleteProfile::query()->create(['user_id' => $athlete->id, 'welcomed_at' => now(), 'goals_set_at' => now()]);
+        \Illuminate\Support\Facades\DB::table('challenge_participations')->where('user_id', $athlete->id)->update(['start_date_confirmed_at' => now()]);
 
         return $athlete;
     }

@@ -2,12 +2,29 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToChallenge;
+use App\Support\ChallengeContext;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\DB;
 
 class Checkin extends Model
 {
+    use BelongsToChallenge;
+
+    public function save(array $options = [])
+    {
+        return DB::transaction(function () use ($options) {
+            $owner = User::lockForUpdate()->findOrFail($this->user_id);
+            $challengeId = $this->challenge_id ?? ChallengeContext::challenge($owner)->id;
+            Challenge::lockForUpdate()->findOrFail($challengeId);
+
+            return parent::save($options);
+        });
+    }
+
     protected $fillable = [
+        'challenge_id',
         'user_id',
         'day',
         'checked_in',
